@@ -10,7 +10,10 @@ void beforeEach(Expression *exp, Instruction *program, int p_size);
 TestResult runExpressionTests(void);
 Test testPushToStack(void);
 Test testPushVarToStack(void);
-
+void assert_int_equals(int actual, int expected, Test *test);
+void assert_double_equals(double actual, double expected, Test *test);
+void assert_true(int actual, Test * test);
+void assert_false(int actual, Test * test);
 Test testAnd1(void);
 Test testAnd2(void);
 Test testAnd3(void);
