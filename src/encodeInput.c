@@ -131,7 +131,7 @@ bool decode_input_message(pb_istream_t *stream, Message *out) {
 void decoded_input_to_message(EndDeviceProtocol_Message decoded, Message *out){
   out->amount = decoded.queries_count;
 
-  Query queries[out->amount];
+  Query *queries = (Query *)malloc(sizeof(Query) * decoded.queries_count);
 
   for(int i = 0; i < decoded.queries_count; i++){
     Query current;
@@ -145,7 +145,7 @@ void decoded_input_to_message(EndDeviceProtocol_Message decoded, Message *out){
 void decoded_input_to_query(EndDeviceProtocol_Query decoded, Query *out){
   out->amount = decoded.operations_count;
 
-  Operation operations[out->amount];
+  Operation *operations = (Operation *)malloc(sizeof(Operation) * decoded.operations_count);
 
   for(int i = 0; i < decoded.operations_count; i++){
     Operation current;
@@ -158,19 +158,19 @@ void decoded_input_to_query(EndDeviceProtocol_Query decoded, Query *out){
 
 void decoded_input_to_operation(EndDeviceProtocol_Operation decoded, Operation *out){
   if(decoded.which_operation == EndDeviceProtocol_Operation_map_tag){
-    Map current;
-    decoded_input_to_map_operation(decoded.operation.map, &current);
-    out->operation.map = &current;
+    Map *current = (Map *)malloc(sizeof(Map));
+    decoded_input_to_map_operation(decoded.operation.map, current);
+    out->operation.map = current;
     out->unionCase = 0;
   } else if(decoded.which_operation == EndDeviceProtocol_Operation_filter_tag){
-    Filter current;
-    decoded_input_to_filter_operation(decoded.operation.filter, &current);
-    out->operation.filter = &current;
+    Filter *current = (Filter *)malloc(sizeof(Filter));
+    decoded_input_to_filter_operation(decoded.operation.filter, current);
+    out->operation.filter = current;
     out->unionCase = 1;
   } else if(decoded.which_operation == EndDeviceProtocol_Operation_window_tag){
-    Window current;
-    decoded_input_to_window_operation(decoded.operation.window, &current);
-    out->operation.window = &current;
+    Window *current = (Window *)malloc(sizeof(Window));
+    decoded_input_to_window_operation(decoded.operation.window, current);
+    out->operation.window = current;
     out->unionCase = 2;
   } else {
     printf("Unkown operation type!\n");
@@ -208,39 +208,39 @@ void decoded_input_to_window_operation(EndDeviceProtocol_WindowOperation decoded
 }
 
 void decoded_input_to_filter_operation(EndDeviceProtocol_FilterOperation decoded, Filter *out){
-  Expression submessage;
-  submessage.p_size = decoded.predicate_count;
+  Expression *submessage = (Expression *)malloc(sizeof(Expression));
+  submessage->p_size = decoded.predicate_count;
   
-  Instruction instructions[decoded.predicate_count];
+  Instruction *instructions = (Instruction *)malloc(sizeof(Instruction) * decoded.predicate_count);
 
   for(int i = 0; i < decoded.predicate_count; i++){
-    Instruction current;
-    decoded_input_to_instruction(decoded.predicate[i], &current);
-    instructions[i] = current;
+    Instruction *current = (Instruction *)malloc(sizeof(Instruction));
+    decoded_input_to_instruction(decoded.predicate[i], current);
+    instructions[i] = *current;
   }
 
-  submessage.program = instructions;
+  submessage->program = instructions;
 
-  out->predicate = &submessage;
+  out->predicate = submessage;
 }
 
 void decoded_input_to_map_operation(EndDeviceProtocol_MapOperation decoded, Map *out){
   out->attribute = decoded.attribute;
 
-  Expression submessage;
-  submessage.p_size = decoded.function_count;
+  Expression *submessage = (Expression *)malloc(sizeof(Expression));
+  submessage->p_size = decoded.function_count;
   
-  Instruction instructions[decoded.function_count];
+  Instruction *instructions = (Instruction *)malloc(sizeof(Instruction) * decoded.function_count);
   
   for(int i = 0; i < decoded.function_count; i++){
-    Instruction current;
-    decoded_input_to_instruction(decoded.function[i], &current);
-    instructions[i] = current;
+    Instruction *current = (Instruction *)malloc(sizeof(Instruction));
+    decoded_input_to_instruction(decoded.function[i], current);
+    instructions[i] = *current;
   }
 
-  submessage.program = instructions;
+  submessage->program = instructions;
 
-  out->expression = &submessage;
+  out->expression = submessage;
 }
 
 void decoded_input_to_instruction(EndDeviceProtocol_Data decoded, Instruction *out){
@@ -308,4 +308,37 @@ void decoded_input_to_instruction(EndDeviceProtocol_Data decoded, Instruction *o
   } else {
     printf("Unkown data type!\n");
   }
+}
+
+void free_message(Message *msg){
+  for(int i = 0; i < msg->amount; i++){
+    //queries
+    for(int q = 0; q < msg->queries[i].amount; q++){
+      //operations
+      if(msg->queries[i].operations[q].unionCase == 0){
+        //map
+        for(int m = 0; m < msg->queries[i].operations[q].operation.map->expression->p_size; m++){
+          free(&msg->queries[i].operations[q].operation.map->expression->program[m]);
+        }
+        free(msg->queries[i].operations[q].operation.map->expression);
+        free(msg->queries[i].operations[q].operation.map);
+      } else if (msg->queries[i].operations[q].unionCase == 1){
+        //filter
+        for(int m = 0; m < msg->queries[i].operations[q].operation.filter->predicate->p_size; m++){
+          free(&msg->queries[i].operations[q].operation.filter->predicate->program[m]);
+        }
+        free(msg->queries[i].operations[q].operation.filter->predicate);
+        free(msg->queries[i].operations[q].operation.filter);
+      } else if (msg->queries[i].operations[q].unionCase == 2){
+        //window
+        free(msg->queries[i].operations[q].operation.window);
+      } else {
+        printf("Unkown operation type!\n");
+      }
+      free(&msg->queries[i].operations[q]);
+    }
+    free(msg->queries[i].operations);
+  }
+  free(msg->queries);
+  free(msg);
 }

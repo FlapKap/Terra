@@ -7,6 +7,7 @@
 #include "expression.h"
 #include "ExpressionTests.h"
 #include "testType.h"
+#include "execution.h"
 
 void beforeEach(Expression *exp, Instruction *program, int p_size)
 {
@@ -77,7 +78,7 @@ TestResult runExpressionTests(void)
 
   TestResult res;
   
-  const int numTests = 37;
+  const int numTests = 41;
   res.total = numTests;
   res.passed = 0;
   res.tests = calloc(numTests, sizeof(Test));
@@ -119,6 +120,13 @@ TestResult runExpressionTests(void)
   res.tests[34] = lessThanEqual2();
   res.tests[35] = greaterThanEqual1();
   res.tests[36] = greaterThanEqual2();
+
+  //tests from the original testsuite
+  res.tests[37] = og_test_execute_query_with_result();
+  res.tests[38] = og_test_execute_query_without_result();
+  res.tests[39] = og_test_execute_quries_single_result();
+  res.tests[40] = og_test_execute_quries_multiple_results();
+
 
   return res;
 }
@@ -808,4 +816,271 @@ Test greaterThanEqual2(void){
   // Assert
   assert_int_equals(popped.type._int, expected, &res);
   return res;
+}
+
+Test og_test_execute_query_with_result(void){
+  Test res;
+  res.name = "Original execute query with result";
+  res.failed = 0;
+
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{VAR}, 0}, {.data._int = 0, 2}, {{MUL}, 0}};
+
+  Number envVal;
+  envVal.type._int = 4;
+  envVal.unionCase = 2;
+
+  Expression exp1;
+  beforeEach(&exp1, p, 5);
+  set_value(exp1.env, 0, envVal);
+  
+  Map map;
+  map.attribute = 1;
+  map.expression = &exp1;
+
+  Operation op;
+  op.operation.map = &map;
+  op.unionCase = 0;
+
+  Query query;
+  query.operations = &op;
+  query.amount = 1;
+
+  // Action
+  QueryResponse queryRes;
+  executeQuery(query, &queryRes, exp1.env);
+
+  // Assert
+  if(exp1.env->stack->stack[0].type._int != 8){
+    res.failed = 1;
+    char msg[341];
+    sprintf(msg, "Expected %d, got %d", 8, exp1.env->stack->stack[0].type._int);
+    res.message = msg;
+    return res;
+  }
+
+  if(exp1.env->stack->stack[1].type._int != 4){
+    res.failed = 1;
+    char msg[341];
+    sprintf(msg, "Expected %d, got %d", 4, exp1.env->stack->stack[1].type._int);
+    res.message = msg;
+    return res;
+  }
+
+  return res;
+}
+
+Test og_test_execute_query_without_result(void){
+  Test res;
+  res.name = "Original execute query without result";
+  res.failed = 0;
+
+  Instruction mapPro[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{VAR}, 0}, {.data._int = 0, 2}, {{MUL}, 0}};
+  Instruction filterPro[5] = {{{VAR}, 0}, {.data._int = 1, 2}, {{CONST}, 0}, {.data._int = 2, 2}, {{LT}, 0}};
+
+  Number envVal;
+  envVal.type._int = 4;
+  envVal.unionCase = 2;
+
+  Env *env = init_env();
+  set_value(env, 0, envVal);
+
+  Expression mapExp;
+  beforeEach(&mapExp, mapPro, 5);
+  mapExp.env = env;
+  
+  Expression filterExp;
+  beforeEach(&filterExp, filterPro, 5);
+  filterExp.env = env;
+
+  Map map;
+  map.attribute = 1;
+  map.expression = &mapExp;
+
+  Filter filter;
+  filter.predicate = &filterExp;
+
+  Operation mapOp;
+  mapOp.operation.map = &map;
+  mapOp.unionCase = 0;
+
+  Operation filterOp;
+  filterOp.operation.filter = &filter;
+  filterOp.unionCase = 1;
+
+  Operation ops[2] = {mapOp, filterOp};
+
+  Query query;
+  query.operations = ops;
+  query.amount = 2;
+
+  // Action
+  QueryResponse output;
+  executeQuery(query, &output, env);
+
+  // Assert
+  if(env->stack->stack[0].type._int != 0){
+    res.failed = 1;
+    char msg[341];
+    sprintf(msg, "Expected %d, got %d", 0, env->stack->stack[0].type._int);
+    res.message = msg;
+    return res;
+  }
+
+  return res;
+}
+
+Test og_test_execute_quries_single_result(void){
+  Test res;
+  res.name = "Original execute queries single result";
+  res.failed = 0;
+
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{VAR}, 0}, {.data._int = 0, 2}, {{MUL}, 0}};
+
+  Number envVal;
+  envVal.type._int = 4;
+  envVal.unionCase = 2;
+
+  Expression exp1;
+  beforeEach(&exp1, p, 5);
+  set_value(exp1.env, 0, envVal);
+  
+  Map map;
+  map.attribute = 1;
+  map.expression = &exp1;
+
+  Operation op;
+  op.operation.map = &map;
+  op.unionCase = 0;
+
+  Query query;
+  query.operations = &op;
+  query.amount = 1;
+
+  Message msg;
+  msg.amount = 1;
+  msg.queries = &query;
+
+  // Action
+  OutputMessage output;
+  executeQueries(msg, &output, exp1.env);
+
+  // Assert
+  if(exp1.env->stack->stack[0].type._int != 8){
+    res.failed = 1;
+    char msg[341];
+    sprintf(msg, "Expected %d, got %d", 8, exp1.env->stack->stack[0].type._int);
+    res.message = msg;
+    return res;
+  }
+
+  if(exp1.env->stack->stack[1].type._int != 4){
+    res.failed = 1;
+    char msg[341];
+    sprintf(msg, "Expected %d, got %d", 4, exp1.env->stack->stack[1].type._int);
+    res.message = msg;
+    return res;
+  }
+
+  return res;
+}
+
+Test og_test_execute_quries_multiple_results(void){
+  Test res;
+  res.name = "Original execute queries with multiple results";
+  res.failed = 0;
+  
+  Instruction mapPro[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{VAR}, 0}, {.data._int = 0, 2}, {{MUL}, 0}};
+  Instruction filterPro[5] = {{{VAR}, 0}, {.data._int = 1, 2}, {{CONST}, 0}, {.data._int = 2, 2}, {{LT}, 0}};
+
+  Number envVal;
+  envVal.type._int = 4;
+  envVal.unionCase = 2;
+
+  Env *env = init_env();
+  set_value(env, 0, envVal);
+
+  Expression mapExp;
+  beforeEach(&mapExp, mapPro, 5);
+  mapExp.env = env;
+  
+  Expression filterExp;
+  beforeEach(&filterExp, filterPro, 5);
+  filterExp.env = env;
+
+  Map map;
+  map.attribute = 1;
+  map.expression = &mapExp;
+
+  Filter filter;
+  filter.predicate = &filterExp;
+
+  Operation mapOp;
+  mapOp.operation.map = &map;
+  mapOp.unionCase = 0;
+
+  Operation filterOp;
+  filterOp.operation.filter = &filter;
+  filterOp.unionCase = 1;
+
+  Operation ops[2] = {mapOp, filterOp};
+
+  Query query1;
+  query1.operations = ops;
+  query1.amount = 2;
+
+  Instruction mapPro2[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{VAR}, 0}, {.data._int = 0, 2}, {{MUL}, 0}};
+
+  Expression mapExp2;
+  beforeEach(&mapExp2, mapPro2, 5);
+  mapExp2.env = env;
+
+  Map map2;
+  map2.attribute = 1;
+  map2.expression = &mapExp2;
+
+  Operation mapOp2;
+  mapOp2.operation.map = &map2;
+  mapOp2.unionCase = 0;
+
+  Query query2;
+  query2.operations = &mapOp2;
+  query2.amount = 1;
+
+  Query queries[2] = {query1, query2};
+
+  Message msg;
+  msg.amount = 2;
+  msg.queries = queries;
+
+  // Action
+  OutputMessage output;
+  executeQueries(msg, &output, env);
+
+  // Assert
+  if(env->stack->stack[0].type._int != 8){
+    res.failed = 1;
+    char msg[341];
+    sprintf(msg, "Expected %d, got %d", 8, env->stack->stack[0].type._int);
+    res.message = msg;
+    return res;
+  }
+
+  if(env->stack->stack[1].type._int != 4){
+    res.failed = 1;
+    char msg[341];
+    sprintf(msg, "Expected %d, got %d", 4, env->stack->stack[1].type._int);
+    res.message = msg;
+    return res;
+  }
+
+  if(env->stack->stack[2].type._int != 0){
+    res.failed = 1;
+    char msg[341];
+    sprintf(msg, "Expected %d, got %d", 0, env->stack->stack[2].type._int);
+    res.message = msg;
+    return res;
+  }
+  
+  return res;
+
 }

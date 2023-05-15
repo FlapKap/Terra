@@ -71,5 +71,11 @@ Test greaterThanEqual1(void);
 Test greaterThanEqual2(void);
 
 
+// Tests from the original test suite
+Test og_test_execute_query_with_result(void);
+Test og_test_execute_query_without_result(void);
+Test og_test_execute_quries_single_result(void);
+Test og_test_execute_quries_multiple_results(void);
+
 
 #endif // EXPRESSIONTESTS_H

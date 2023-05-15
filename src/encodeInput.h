@@ -26,4 +26,6 @@ void init_window_operation(Window window, EndDeviceProtocol_WindowOperation *out
 void init_filter_operation(Filter filter, EndDeviceProtocol_FilterOperation *out);
 void init_map_operation(Map map, EndDeviceProtocol_MapOperation *out);
 
+void free_message(Message *msg);
+
 #endif

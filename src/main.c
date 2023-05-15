@@ -17,7 +17,10 @@
 #include "encodeOutput.h"
 #ifndef BOARD_NATIVE
 #include "lora.h"
+#include "semtech_loramac.h"
 #endif
+
+#include <time.h>
 
 //Testing
 #include "runTest.h"
@@ -33,68 +36,72 @@ void test_encode_input(void);
 void test_encode_output(void);
 
 
+#ifndef BOARD_NATIVE
+extern semtech_loramac_t loramac;
+#endif
+
+
 int main(void)
 {
-  ztimer_sleep(ZTIMER_SEC, 1);
+  ztimer_sleep(ZTIMER_SEC, 3);
   puts("NebulaStream End Decive Runtime");
   puts("=====================================");
   
-  //Run Tests
-  //runTests(ALL);
+  //Run Tests (Only on native)
+#ifdef BOARD_NATIVE
+  runTests(ALL);
+#endif
+  runTests(ALL);
 
   // Connect lorawan and receive first message
 #ifndef BOARD_NATIVE
   connect_lorawan();
 #endif
   
-  // Mock message: Map operation with 1 + 1 expression 
-  uint8_t message[] = {0x0a, 0x18, 0x0a, 0x16, 0x0a, 0x14, 0x0a, 0x02, 0x08, 0x00, 0x0a, 0x02, 0x38, 0x02, 0x0a, 0x02, 0x08, 0x00, 0x0a, 0x02, 0x38, 0x02, 0x0a, 0x02, 0x08, 0x08};
 
-  // decode message
-  pb_istream_t istream = pb_istream_from_buffer(message, 26);
-  Message msg;
-  decode_input_message(&istream, &msg);
+#ifndef BOARD_NATIVE
+  // Trigger first send
+  uint8_t msg[1];
+  send_message(msg, (uint8_t) 1);
+#endif
 
   // Initialize global variable environment
   Env * global_env = init_env();
-
-  // Execute queries from message
-  OutputMessage out;
-  executeQueries(msg, &out, global_env);
-
-  // Encode output
-  uint8_t buffer[128];
-  pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(buffer));
-  printf("uc before encode: %d\n", out.responses[0].response[0].unionCase);
-
-  encode_output_message(&ostream, &out);
-  int message_length = ostream.bytes_written;
   
-  // Verify that output message gets encoded
-  for (int i = 0; i < message_length; ++i) {
-    printf("%02hx", buffer[i]);
-  }
-  printf("\n");
-
-  pb_istream_t test = pb_istream_from_buffer(buffer, message_length);
-  EndDeviceProtocol_Output response = EndDeviceProtocol_Output_init_zero;
-  decode_output_message(&test, &response);
-
-  printf("amount1: %d\n", response.responses_count);
-  printf("amount: %d\n", response.responses[0].response_count);
-  #ifdef BOARD_NATIVE
-  printf("value: %d\n", response.responses[0].response[0].data._int8);
-  #else
-  printf("value: %ld\n", response.responses[0].response[0].data._int16);
-  #endif
   while (1) {
     puts("Main loop iteration");
-#ifndef BOARD_NATIVE
-    send_message(message, sizeof(message));
-#endif
     ztimer_sleep(ZTIMER_SEC, 5);
+
+    
+    // Check for received messages
+    #ifndef BOARD_NATIVE
+    pb_istream_t istream = pb_istream_from_buffer(loramac.rx_data.payload, loramac.rx_data.payload_len);
+    #else
+    uint8_t buffer[1024];
+    pb_istream_t istream = pb_istream_from_buffer(buffer, sizeof(buffer));
+    // Since nothing is in the bugger it cannot be decoded.
+    #endif
+    Message msg;
+    bool status = decode_input_message(&istream, &msg);
+    
+    if(!status){
+      printf("no message\n");
+      continue;
+    }
+
+    // Execute queries
+    OutputMessage out;
+    executeQueries(msg, &out, global_env);
+
+    if (out.amount > 0) {
+      uint8_t buffer[256];
+      pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(buffer));
+      encode_output_message(&ostream, &out);
+      #ifndef BOARD_NATIVE
+      send_message(buffer, (uint8_t)256);
+      #endif
+    }
   }
   
-
   return 0;
 }

@@ -23,4 +23,13 @@ Test filter_operation_is_initialised(void);
 Test map_operation_is_initialised(void);
 Test message_gets_encoded(void);
 Test message_gets_decoded(void);
+
+// Original tests
+Test og_decode_map(void);
+Test og_test_filter(void);
+Test og_test_map_filter_msg(void);
+Test og_window_message(void);
+Test og_multiple_queries(void);
+Test og_output_single_response(void);
+Test og_output_multiple_response(void);
 #endif // PROTOCOLTESTS_H
