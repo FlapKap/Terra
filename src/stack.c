@@ -6,8 +6,8 @@
 
 Stack *init_stack(void)
 {
-    Stack *stack = calloc(1, sizeof(Stack));
-    stack->stack = calloc(10, sizeof(Number));
+    Stack *stack = (Stack*) malloc(sizeof(Stack));
+    stack->stack = (Number*) calloc(10, sizeof(Number));
     stack->size = 10;
     stack->top = -1;
     return stack;
@@ -36,7 +36,7 @@ Number pop(Stack *stack)
 void resize_stack(Stack *stack)
 {
     stack->size += 10;
-    stack->stack = realloc(stack->stack, stack->size * sizeof(int));
+    stack->stack = (Number*) realloc(stack->stack, stack->size * sizeof(int));
 }
 
 void print_stack(Stack *stack)

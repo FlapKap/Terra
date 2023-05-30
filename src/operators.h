@@ -20,7 +20,7 @@ typedef struct _Stack
 
 typedef struct _Env
 {
-    Number *env;
+    Number *array;
     int size;
     Stack *stack;
 } Env;

@@ -26,6 +26,7 @@
 // Testing
 #include "embUnit.h"
 #include "protocol_tests.h"
+#include "expression_tests.h"
 
 // RIOT includes
 #include "EndDeviceProtocol.pb.h"
@@ -49,6 +50,7 @@ int main(void)
   run_sync();
   TESTS_START();
   TESTS_RUN(tests_protocol());
+  TESTS_RUN(tests_expression());
   TESTS_END();
 
   return 0;

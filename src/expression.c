@@ -7,6 +7,8 @@
 #include "environment.h"
 #include "number.h"
 
+#define ENABLE_DEBUG  (1)
+#include "debug.h"
 // TODO: How do we handle functions that return doubles?
 // TODO: Fix linker errors with math.h functions.
 
@@ -301,6 +303,7 @@ void _GTEQ(Expression *e)
 
 void execute_next(Expression *e)
 {
+    //DEBUG("execute_next\n");
     switch (e->program[e->pc].data._instruction)
     {
     case 0:
@@ -383,6 +386,7 @@ Number call(Expression *e)
         execute_next(e);
         e->pc++;
     }
+
     Number val = pop(e->stack);
     return val;
 }

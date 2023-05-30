@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../RIOT"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"environment.h": "c",
+			"expression.h": "c",
+			"expressiontests.h": "c",
+			"runtest.h": "c",
+			"embunit.h": "c",
+			"protocoltests.h": "c",
+			"encodeinput.h": "c",
+			"protocol_tests.h": "c"
+		}
+	}
+}
