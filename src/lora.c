@@ -23,15 +23,15 @@ static uint8_t deveui[LORAMAC_DEVEUI_LEN];
 static uint8_t appeui[LORAMAC_APPEUI_LEN];
 static uint8_t appkey[LORAMAC_APPKEY_LEN];
 
-void send_message(uint8_t* serializedData, uint8_t len)
+uint8_t send_message(uint8_t* serializedData, uint8_t len)
 {
     printf("Sending: %s\n", serializedData);
     /* Try to send the message */
     uint8_t ret = semtech_loramac_send(&loramac,serializedData, len);
     if (ret != SEMTECH_LORAMAC_TX_DONE) {
         printf("Cannot send message, ret code: %d\n", ret);
-        return;
     }
+    return ret;
 }
 
 static void *_recv(void *arg)

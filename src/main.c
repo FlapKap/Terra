@@ -16,10 +16,8 @@
 #include "number.h"
 #include "encodeInput.h"
 #include "encodeOutput.h"
-#ifndef BOARD_NATIVE
 #include "lora.h"
 #include "semtech_loramac.h"
-#endif
 
 #include <time.h>
 
@@ -44,10 +42,10 @@ void test_encode_output(void);
 extern semtech_loramac_t loramac;
 #endif
 
-int main(void)
+int main2(void)
 {
   ztimer_sleep(ZTIMER_SEC, 1); // wait one second before starting
-  run_sync();
+
   TESTS_START();
   TESTS_RUN(tests_protocol());
   TESTS_RUN(tests_expression());
@@ -56,25 +54,23 @@ int main(void)
   return 0;
 }
 
-int main2(void)
+int main(void)
 {
+  run_sync();
   ztimer_sleep(ZTIMER_SEC, 3);
   puts("NebulaStream End Device Runtime");
   puts("=====================================");
 
   // Run Tests (Only on native)
-#if defined(BOARD_NATIVE)
 
-#else
   // Connect lorawan and receive first message
   connect_lorawan();
-#endif
 
-#ifndef BOARD_NATIVE
   // Trigger first send
   uint8_t msg[1];
-  send_message(msg, (uint8_t)1);
-#endif
+  if (send_message(msg, (uint8_t)1) != 0){
+    return -1;
+  };
 
   // Initialize global variable environment
   Env *global_env = init_env();
@@ -84,14 +80,8 @@ int main2(void)
     puts("Main loop iteration");
     ztimer_sleep(ZTIMER_SEC, 5);
 
-// Check for received messages
-#ifndef BOARD_NATIVE
+    // Check for received messages
     pb_istream_t istream = pb_istream_from_buffer(loramac.rx_data.payload, loramac.rx_data.payload_len);
-#else
-    uint8_t buffer[1024];
-    pb_istream_t istream = pb_istream_from_buffer(buffer, sizeof(buffer));
-// Since nothing is in the bugger it cannot be decoded.
-#endif
     Message msg;
     bool status = decode_input_message(&istream, &msg);
 
@@ -110,9 +100,7 @@ int main2(void)
       uint8_t buffer[256];
       pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(buffer));
       encode_output_message(&ostream, &out);
-#ifndef BOARD_NATIVE
       send_message(buffer, (uint8_t)256);
-#endif
     }
   }
 

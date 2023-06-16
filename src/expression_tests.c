@@ -24,8 +24,6 @@ static void tearDown(void)
   free(expres.env->array);
   free(expres.env->stack->stack);
   free(expres.env->stack);
-  //free(expres.stack->stack);
-  //free(expres.stack);
   free(expres.program);
 }
 
