@@ -1,7 +1,7 @@
 # RIOT Stuff
 APPLICATION = NSED_Runtime
 PROJECTBASE = $(CURDIR)
-BOARD ?= native
+BOARD ?= b-l072z-lrwan1
 
 ## We assume riot is placed next to this repo
 RIOTBASE ?= $(CURDIR)/../../RIOT
@@ -57,7 +57,7 @@ USEMODULE += ztimer_msec
 USEMODULE += embunit
 
 # change stack size and add some extra error checking
-CFLAGS += -DTHREAD_STACKSIZE_MAIN='(20 * 1024)'
+CFLAGS += -DTHREAD_STACKSIZE_MAIN='10480'
 CFLAGS += -Wall -Wextra -Wformat -Wformat-nonliteral -Werror=format-security -Werror=array-bounds
 
 # make sure build is unoptimized and with as many debug symbols as possible
