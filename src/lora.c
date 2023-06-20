@@ -38,7 +38,7 @@ static void *_recv(void *arg)
 {
     msg_init_queue(_recv_queue, RECV_MSG_QUEUE);
  
-    (void)arg;
+    // (void)arg;
     while (1) {
         /* blocks until some data is received */
         semtech_loramac_recv(&loramac);
@@ -61,28 +61,28 @@ int connect_lorawan(void)
 
     /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
     semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
-
+    puts("trying to join network\n");
     /* Join the network if not already joined */
-    if (!semtech_loramac_is_mac_joined(&loramac)) {
+    while (!semtech_loramac_is_mac_joined(&loramac)) {
         /* Start the Over-The-Air Activation (OTAA) procedure to retrieve the
          * generated device address and to get the network and application session
          * keys.
          */
         printf("Starting join procedure\n");
         if (semtech_loramac_join(&loramac, LORAMAC_JOIN_OTAA) != SEMTECH_LORAMAC_JOIN_SUCCEEDED) {
-            printf("Join procedure failed\n");
-            return 1;
+            printf("Join procedure failed. Trying again\n");
+            
         }
     }
     puts("Join procedure succeeded");
-
+    semtech_loramac_save();
     thread_create(_recv_stack, sizeof(_recv_stack),
               THREAD_PRIORITY_MAIN - 1, 0, _recv, NULL, "recv thread");
 
-    /* trigger the first send */
-    msg_t msg;
-    kernel_pid_t sender_pid = thread_getpid();
-    msg_send(&msg, sender_pid);
+    // /* trigger the first send */
+    // msg_t msg;
+    // kernel_pid_t sender_pid = thread_getpid();
+    // msg_send(&msg, sender_pid);
 
     return 0;
 }
