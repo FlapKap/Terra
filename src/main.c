@@ -42,6 +42,8 @@ void test_encode_output(void);
 extern semtech_loramac_t loramac;
 #endif
 
+bool running_query = false;
+
 int main2(void)
 {
   ztimer_sleep(ZTIMER_SEC, 1); // wait one second before starting
@@ -66,6 +68,7 @@ int main(void)
   // Connect lorawan and receive first message
   connect_lorawan();
 
+  
   // Trigger first send
   uint8_t msg[1];
   if (send_message(msg, (uint8_t)1) != 0){
@@ -75,6 +78,8 @@ int main(void)
   // Initialize global variable environment
   Env *global_env = init_env();
 
+  bool valid_query = false;
+  //main loop
   while (1)
   {
     puts("Main loop iteration");
@@ -101,6 +106,7 @@ int main(void)
       pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(buffer));
       encode_output_message(&ostream, &out);
       send_message(buffer, (uint8_t)256);
+      //TODO: it never listens
     }
   }
 
