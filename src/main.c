@@ -68,45 +68,48 @@ int main(void)
   // Connect lorawan and receive first message
   connect_lorawan();
 
-  
-  // Trigger first send
-  uint8_t msg[1];
-  if (send_message(msg, (uint8_t)1) != 0){
-    return -1;
-  };
-
   // Initialize global variable environment
   Env *global_env = init_env();
 
   bool valid_query = false;
-  //main loop
+  // main loop
   while (1)
   {
     puts("Main loop iteration");
     ztimer_sleep(ZTIMER_SEC, 5);
 
-    // Check for received messages
-    pb_istream_t istream = pb_istream_from_buffer(loramac.rx_data.payload, loramac.rx_data.payload_len);
-    Message msg;
-    bool status = decode_input_message(&istream, &msg);
-
-    if (!status)
+    if (valid_query)
     {
-      printf("no message\n");
-      continue;
-    }
+      // Check for received messages
+      pb_istream_t istream = pb_istream_from_buffer(loramac.rx_data.payload, loramac.rx_data.payload_len);
+      Message msg;
+      bool status = decode_input_message(&istream, &msg);
 
-    // Execute queries
-    OutputMessage out;
-    executeQueries(msg, &out, global_env);
+      if (!status)
+      {
+        printf("couldn't decode\n");
+        continue;
+      }
+      
+      // Execute queries
+      OutputMessage out;
+      executeQueries(msg, &out, global_env);
 
-    if (out.amount > 0)
-    {
-      uint8_t buffer[256];
-      pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(buffer));
-      encode_output_message(&ostream, &out);
-      send_message(buffer, (uint8_t)256);
-      //TODO: it never listens
+      if (out.amount > 0)
+      {
+        uint8_t buffer[256];
+        pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(buffer));
+        encode_output_message(&ostream, &out);
+        send_message(buffer, (uint8_t)256);
+        // TODO: it never listens
+      }
+    } else { //if not a valid query
+      // send message to receive
+      uint8_t msg[1];
+      if (send_message(msg, (uint8_t)1) != 0)
+      {
+        return -1;
+      };
     }
   }
 
