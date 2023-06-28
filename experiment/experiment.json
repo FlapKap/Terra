@@ -1,0 +1,47 @@
+{
+    "SITE": "saclay",
+    "USER": "berthels",
+    "DURATION": "20",
+    "DEVICES": [
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+            "DEVEUI": "70B3D57ED005E88A",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000"
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+            "DEVEUI": "70B3D57ED005EA55",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000"
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+            "DEVEUI": "70B3D57ED005EA56",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000"
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+            "DEVEUI": "70B3D57ED005EA57",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000"
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+            "DEVEUI": "70B3D57ED005EA59",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000"
+        }
+    ]
+}

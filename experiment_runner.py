@@ -7,44 +7,140 @@ import regex
 import sys
 import sqlite3
 import asyncio
+from shutil import which, copy
+import argparse
+
+parser = argparse.ArgumentParser(description='Experiment test runner')
+parser.add_argument('--make', action='store_true',help='make binaries')
+parser.add_argument('--dont-run',action='store_true',help='don\'t run the experiment')
+parser.add_argument('experiment_folder', type=Path, help='folder containing the binaries and metadata to run the experiment')
+args = parser.parse_args()
+# 
 
 # Experiment info
-DEVEUIS = [
-    "70B3D57ED005E88A",
-    "70B3D57ED005EA55",
-    "70B3D57ED005EA56",
-    "70B3D57ED005EA57",
-    "70B3D57ED005EA59",
-]
-APPKEY = "385794DDE70CE2EAB5B5B12A4807822C"
-APPEUI = "0000000000000000"
-NUM_NODES = len(DEVEUIS)
+EXPERIMENT_CONFIG_DEFAULT = {
+    "SITE": "saclay",
+    "USER": "berthels",
+    "DURATION": "20",
+    "DEVICES": [{
+        "PROFILE": "stm32Profile",
+        "RIOT_BOARD": "b-l072z-lrwan1",
+        "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+        "DEVEUI": "70B3D57ED005E88A",
+        "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+        "APPEUI": "0000000000000000"
+    },
+    {
+        "PROFILE": "stm32Profile",
+        "RIOT_BOARD": "b-l072z-lrwan1",
+        "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+        "DEVEUI": "70B3D57ED005EA55",
+        "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+        "APPEUI": "0000000000000000"
+    },
+    {
+        "PROFILE": "stm32Profile",
+        "RIOT_BOARD": "b-l072z-lrwan1",
+        "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+        "DEVEUI": "70B3D57ED005EA56",
+        "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+        "APPEUI": "0000000000000000"
+    },
+    {
+        "PROFILE": "stm32Profile",
+        "RIOT_BOARD": "b-l072z-lrwan1",
+        "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+        "DEVEUI": "70B3D57ED005EA57",
+        "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+        "APPEUI": "0000000000000000"
+    },
+    {
+        "PROFILE": "stm32Profile",
+        "RIOT_BOARD": "b-l072z-lrwan1",
+        "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+        "DEVEUI": "70B3D57ED005EA59",
+        "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+        "APPEUI": "0000000000000000"
+    }]
+}
+
+EXPERIMENT_FOLDER: Path = args.experiment_folder
+EXPERIMENT_CONFIG_PATH = EXPERIMENT_FOLDER / "experiment.json"
+## if no experiment.json exists in EXPERIMENT_FOLDER, create default one
+if not EXPERIMENT_FOLDER.exists():
+    EXPERIMENT_FOLDER.mkdir(parents=True)
+if not EXPERIMENT_CONFIG_PATH.exists():
+    json.dump(EXPERIMENT_CONFIG_DEFAULT, open(EXPERIMENT_CONFIG_PATH,"w"), indent=4)
+
+EXPERIMENT_CONFIG = json.load(open(EXPERIMENT_FOLDER / "experiment.json"))
 
 
 # IoT-lab info
-SITE = "saclay"
-USER = "berthels"
-PROFILE = "stm32Profile"
+SITE = EXPERIMENT_CONFIG["SITE"]
+USER = EXPERIMENT_CONFIG["USER"]
 SSH_URL = f"{USER}@{SITE}.iot-lab.info"
 # RIOT info
-BOARD = "b-l072z-lrwan1"
 SRC_PATH = Path.cwd() / "src"
 
+# make firmwares
+# make and upload binaries
+if args.make:
+    print("make firmware")
+    for device in EXPERIMENT_CONFIG["DEVICES"]:
+        # first make binary
+        print(f"make binary for device: {device['DEVEUI']}")
+        env = os.environ.copy()
+        env["BOARD"] = device["RIOT_BOARD"]
+        env["DEVEUI"] = device["DEVEUI"]
+        env["APPEUI"] = device["APPEUI"]
+        env["APPKEY"] = device["APPKEY"]
 
+        # make
+        p = subprocess.run(["make", "all"], cwd=SRC_PATH, env=env)
+
+        ## find flash file
+        p = subprocess.run(
+            ["make", "info-build-json"], cwd=SRC_PATH, env=env, capture_output=True
+        )
+        build_info = json.loads(p.stdout)
+        flash_file = Path(build_info["FLASHFILE"])
+        copy(flash_file, EXPERIMENT_FOLDER / f"{device['DEVEUI']}{flash_file.suffix}")
+
+# we run the experiment below, so if we dont want to do that: early exit
+if args.dont_run:
+    exit()
+
+# Check prerequisites
+for tool in ["iotlab", "parallel", "ssh"]:
+    if not which(tool):
+        print(f"{tool} not installed. Please install {tool}")
+        exit()
+
+## check if passwordless ssh is set up
+if subprocess.run(["ssh","-oNumberOfPasswordPrompts=0", SSH_URL, "hostname"]).returncode != 0:
+    print(f"Passwordless SSH access to the ssh front-end is required.\ncant log in to {SSH_URL} without password. Check if ssh-agent is running and if not run 'eval $(ssh-agent);ssh-add' to start the agent and add your key")
+    exit()
+
+
+print("Registering experiment")
 # create experiment
+## create arguments for nodes
+node_strings = []
+for device in EXPERIMENT_CONFIG["DEVICES"]:
+    node_strings.extend(["-l",f"1,archi={device['IOT-LAB_BOARD']}+site={SITE},,{device['PROFILE']}"])
 subprocess.run(
     [
         "iotlab",
         "experiment",
         "submit",
         "-d",
-        "20",
-        "-l",
-        f"{NUM_NODES},archi=st-lrwan1:sx1276+site={SITE},,{PROFILE}",
+        EXPERIMENT_CONFIG["DURATION"],
+        *node_strings
     ],
     stdout=sys.stdout,
 )
 
+print("Waiting for experiment to start")
 # find experiment
 subprocess.run(["iotlab", "experiment", "wait"])  # wait for experiment to start
 
@@ -53,11 +149,11 @@ p = subprocess.run(["iotlab", "experiment", "get", "-e"], capture_output=True)
 EXPERIMENT = json.loads(p.stdout)["Running"][
     0
 ]  # TODO: work with more than 1 experiment?
-
-
+DB_PATH = EXPERIMENT_FOLDER / f"{EXPERIMENT}.db"
+print(f"Create SqliteDB for experiment data at {str(DB_PATH)}")
 # Create DB for results
-create_sql_script = open("./experiment.db.sql")
-db_con = sqlite3.connect(f"{str(EXPERIMENT)}.db")
+create_sql_script = open("./experiment.db.sql").read()
+db_con = sqlite3.connect(f"{str(DB_PATH)}")
 
 db_cursor = db_con.executescript(create_sql_script)
 
@@ -79,12 +175,12 @@ db_cursor = db_con.executescript(create_sql_script)
 #     "y": "31.97",
 #     "z": "2.58"
 # }
+print("Fetching nodes in experiment...")
 p = subprocess.run(
     ["iotlab", "experiment", "get", "-i", str(EXPERIMENT), "-n"], capture_output=True
 )
 NODES = json.loads(p.stdout)["items"]
 node_ids = dict()
-
 # populate nodes table
 nodes = [(node["network_address"].split(".")[0],) for node in NODES]
 db_cursor.executemany("INSERT INTO nodes (name) VALUES (?)", nodes)
@@ -92,25 +188,14 @@ db_cursor.executemany("INSERT INTO nodes (name) VALUES (?)", nodes)
 for nid, name in db_cursor.execute("SELECT id, name FROM nodes"):
     node_ids[name] = nid
 
-# make and upload binaries
-for deveui, node_info in zip(DEVEUIS, NODES):
-    # first make binary
-    env = os.environ.copy()
-    env["BOARD"] = BOARD
-    env["DEVEUI"] = deveui
-    env["APPEUI"] = APPEUI
-    env["APPKEY"] = APPKEY
-
-    # make
-    p = subprocess.run(["make", "all"], cwd=SRC_PATH, env=env, capture_output=True)
-
-    ## find flash file
-    p = subprocess.run(
-        ["make", "info-build-json"], cwd=SRC_PATH, env=env, capture_output=True
-    )
-    build_info = json.loads(p.stdout)
-    flash_file = Path(build_info["FLASHFILE"])
-
+# get .bin files from experiment folder
+flash_files = [flash_file for flash_file in EXPERIMENT_FOLDER.glob("*.{bin,elf}")]
+## sanity check that number of files correspond with number of nodes in config and number of created nodes in iot-lab
+if len(flash_files) != len(NODES) != len(EXPERIMENT_CONFIG['DEVICES']):
+    print(f"Number of flash file ({len(flash_files)}) does not match number of nodes in config ({len(EXPERIMENT_CONFIG['DEVICES'])}) or number of created nodes in iot-lab ({len(NODES)})")
+    exit()
+    
+for flash_file,node_info in zip(flash_files,NODES):
     # construct nodelist for single node
     # might be easier with iotl"ab experiment get -d instead of -n
     node_id = regex.match(".*-(\d+)\.", node_info["network_address"]).group(1)
@@ -118,7 +203,7 @@ for deveui, node_info in zip(DEVEUIS, NODES):
     node_string = f"{node_info['site']},{node_info['archi'].split(':')[0]},{node_id}"
 
     # upload
-    print(node_string)
+    print(f"uploading binary file {str(flash_file)} to node_string {node_string}")
     p = subprocess.run(
         [
             "iotlab",
@@ -128,7 +213,7 @@ for deveui, node_info in zip(DEVEUIS, NODES):
             "-l",
             node_string,
             "-fl",
-            str(flash_file),
+            str(flash_file.absolute()),
         ],
         stdout=sys.stdout,
     )
@@ -136,7 +221,9 @@ for deveui, node_info in zip(DEVEUIS, NODES):
 
 # define data collection functions using asyncio
 ## serial aggregation
-async def serial_aggregation_listener():
+serial_count = 0
+async def serial_aggregation_coroutine():
+    print("Starting serial aggregation collection")
     p = await asyncio.create_subprocess_exec(
         "ssh",
         SSH_URL,
@@ -146,7 +233,9 @@ async def serial_aggregation_listener():
         stdout=asyncio.subprocess.PIPE,
     )
     while True:
-        record = p.stdout.readline().split(";")
+        record = await p.stdout.readline()
+        print(record)
+        record = record.split(";")
         if len(record) <= 2:  # probably something like <time>;Aggregator started
             continue
 
@@ -159,10 +248,15 @@ async def serial_aggregation_listener():
             time_us,
             msg,
         )
+        serial_count += 1
 
 
 ## power consumption metrics
-async def power_consumption_listener():
+power_consumption_count = 0
+async def power_consumption_coroutine():
+    print("starting power consumption collection")
+    ## wait 5 sec for the files to be created
+    await asyncio.sleep(5)
     ## use GNU Parallel to run multiple processes through a single ssh connection and collect the results in 1 stdout stream
     p = await asyncio.create_subprocess_exec(
         "parallel",
@@ -172,20 +266,100 @@ async def power_consumption_listener():
         "--tag",
         "--workdir",
         "~/.iot-lab/last/consumption/",
+        "--controlmaster",
         "-S",
         "berthels@saclay.iot-lab.info",
         "tail",
         "-f",
         ":::",
-        *node_ids.keys(),
+        *map(lambda k: f"{k.replace('-','_')}.oml",node_ids.keys()),
         stdout=asyncio.subprocess.PIPE,
     )
-
-    matcher = regex.compile(r"*^(?P<first_string>\S+)\s+(?P<number1>(?P<float1>\d+(\.\d*)?|\.\d+))\s+(?P<number2>\d+)\s+(?P<number3>\d+)\s+(?P<number4>\d+)\s+(?P<number5>\d+)\s+(?P<number6>(?P<float2>\d+(\.\d*)?|\.\d+))\s+(?P<number7>(?P<float3>\d+(\.\d*)?|\.\d+))\s+(?P<number8>(?P<float4>\d+(\.\d*)?|\.\.\d+)))$")
+    ## matches strings from the .oml files prepended with the name of the file.
+    ## The regex is made to match lines of (newlines is whitespace):
+    # "
+    # <node name :str>
+    # <run time in second since experiment start :float>
+    # <oml schema? :int>
+    # <some counter :int>
+    # <seconds part of timestamp :int>
+    # <microsecond part of timestamp :int>
+    # <power measurement :float>
+    # <voltage measurement :float>
+    # <current measurement :float>
+    matcher = regex.compile(r"^(?P<node_name>\S+)\s+(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$")
 
     while True:
-        record = p.stdout.readline().split()
+        record = matcher.match(await p.stdout.readline())
+        if record is None:
+            continue
+        timestamp: int = int(record["timestamp_s"])*1e6 + int(record["timestamp_us"])
+        db_cursor.execute("INSERT INTO power_consumption (node_id, timestamp, voltage, current, power) VALUES (?, ?, ?, ?, ?)", (node_ids[record["node_name"]], timestamp, float(record["voltage"]), float(record["current"]), float(record["power"])))
+        power_consumption_count += 1
 
+radio_count = 0
+async def radio_coroutine():
+    print("starting radio collection")
+    ## use GNU Parallel to run multiple processes through a single ssh connection and collect the results in 1 stdout stream
+    p = await asyncio.create_subprocess_exec(
+        "parallel",
+        "--jobs",
+        "0",
+        "--line-buffer",
+        "--tag",
+        "--workdir",
+        "~/.iot-lab/last/radio/",
+        "--controlmaster",
+        "-S",
+        "berthels@saclay.iot-lab.info",
+        "tail",
+        "-f",
+        ":::",
+        *map(lambda k: f"{k.replace('-','_')}.oml",node_ids.keys()),
+        stdout=asyncio.subprocess.PIPE,
+    )
+    ## matches strings from the .oml files prepended with the name of the file.
+    ## The regex is made to match lines of (newlines is whitespace):
+    # "
+    # <node name :str>
+    # <run time in second since experiment start :float>
+    # <oml schema? :int>
+    # <some counter :int>
+    # <seconds part of timestamp :int>
+    # <microsecond part of timestamp :int>
+    # <power measurement :float>
+    # <voltage measurement :float>
+    # <current measurement :float>
+    matcher = regex.compile(r"^(?P<node_name>\S+)\s+(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<channel>\d+)\s+(?P<rssi>\-?\d+)$")
+
+    while True:
+        record = matcher.match(await p.stdout.readline())
+        if record is None:
+            continue
+        timestamp: int = int(record["timestamp_s"])*1e6 + int(record["timestamp_us"])
+        db_cursor.execute("INSERT INTO radio (node_id, timestamp, channel, rssi) VALUES (?, ?, ?, ?)", (node_ids[record["node_name"]], timestamp, int(record["channel"]), int(record["rssi"])))
+        radio_count += 1
+
+async def print_progress():
+    print("\n"*3,end="")
+    while True:
+        print(f"serial lines: {serial_count}",
+            f"power_consumption lines: {power_consumption_count}",
+            f"radio lines: {radio_count}",
+            sep="\n")
+        await asyncio.sleep(0.5)
 
 ## reset all boards
 subprocess.run(["iotlab", "node", "--reset"])
+
+# run all data collection tasks and await their completion
+async def main():
+    print("starting data collection")
+    await asyncio.gather(
+        serial_aggregation_coroutine(),
+        power_consumption_coroutine(),
+        radio_coroutine(),
+        print_progress()
+        )
+
+asyncio.run(main())

@@ -38,7 +38,7 @@ static void *_recv(void *arg)
 {
     msg_init_queue(_recv_queue, RECV_MSG_QUEUE);
  
-    // (void)arg;
+    (void)arg; // just to get the compiler to stop complaining
     while (1) {
         /* blocks until some data is received */
         semtech_loramac_recv(&loramac);
@@ -75,7 +75,7 @@ int connect_lorawan(void)
         }
     }
     puts("Join procedure succeeded");
-    semtech_loramac_save();
+    //semtech_loramac_save();
     thread_create(_recv_stack, sizeof(_recv_stack),
               THREAD_PRIORITY_MAIN - 1, 0, _recv, NULL, "recv thread");
 
