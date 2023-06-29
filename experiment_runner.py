@@ -10,58 +10,64 @@ import asyncio
 from shutil import which, copy
 import argparse
 
-parser = argparse.ArgumentParser(description='Experiment test runner')
-parser.add_argument('--make', action='store_true',help='make binaries')
-parser.add_argument('--dont-run',action='store_true',help='don\'t run the experiment')
-parser.add_argument('experiment_folder', type=Path, help='folder containing the binaries and metadata to run the experiment')
+parser = argparse.ArgumentParser(description="Experiment test runner")
+parser.add_argument("--attach", action="store_true", help="attach to the experiment")
+parser.add_argument("--make", action="store_true", help="make binaries")
+parser.add_argument("--dont-run", action="store_true", help="don't run the experiment")
+parser.add_argument(
+    "experiment_folder",
+    type=Path,
+    help="folder containing the binaries and metadata to run the experiment",
+)
 args = parser.parse_args()
-# 
 
 # Experiment info
 EXPERIMENT_CONFIG_DEFAULT = {
     "SITE": "saclay",
     "USER": "berthels",
     "DURATION": "20",
-    "DEVICES": [{
-        "PROFILE": "stm32Profile",
-        "RIOT_BOARD": "b-l072z-lrwan1",
-        "IOT-LAB_BOARD": "st-lrwan1:sx1276",
-        "DEVEUI": "70B3D57ED005E88A",
-        "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
-        "APPEUI": "0000000000000000"
-    },
-    {
-        "PROFILE": "stm32Profile",
-        "RIOT_BOARD": "b-l072z-lrwan1",
-        "IOT-LAB_BOARD": "st-lrwan1:sx1276",
-        "DEVEUI": "70B3D57ED005EA55",
-        "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
-        "APPEUI": "0000000000000000"
-    },
-    {
-        "PROFILE": "stm32Profile",
-        "RIOT_BOARD": "b-l072z-lrwan1",
-        "IOT-LAB_BOARD": "st-lrwan1:sx1276",
-        "DEVEUI": "70B3D57ED005EA56",
-        "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
-        "APPEUI": "0000000000000000"
-    },
-    {
-        "PROFILE": "stm32Profile",
-        "RIOT_BOARD": "b-l072z-lrwan1",
-        "IOT-LAB_BOARD": "st-lrwan1:sx1276",
-        "DEVEUI": "70B3D57ED005EA57",
-        "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
-        "APPEUI": "0000000000000000"
-    },
-    {
-        "PROFILE": "stm32Profile",
-        "RIOT_BOARD": "b-l072z-lrwan1",
-        "IOT-LAB_BOARD": "st-lrwan1:sx1276",
-        "DEVEUI": "70B3D57ED005EA59",
-        "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
-        "APPEUI": "0000000000000000"
-    }]
+    "DEVICES": [
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+            "DEVEUI": "70B3D57ED005E88A",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000",
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+            "DEVEUI": "70B3D57ED005EA55",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000",
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+            "DEVEUI": "70B3D57ED005EA56",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000",
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+            "DEVEUI": "70B3D57ED005EA57",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000",
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
+            "DEVEUI": "70B3D57ED005EA59",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000",
+        },
+    ],
 }
 
 EXPERIMENT_FOLDER: Path = args.experiment_folder
@@ -70,7 +76,7 @@ EXPERIMENT_CONFIG_PATH = EXPERIMENT_FOLDER / "experiment.json"
 if not EXPERIMENT_FOLDER.exists():
     EXPERIMENT_FOLDER.mkdir(parents=True)
 if not EXPERIMENT_CONFIG_PATH.exists():
-    json.dump(EXPERIMENT_CONFIG_DEFAULT, open(EXPERIMENT_CONFIG_PATH,"w"), indent=4)
+    json.dump(EXPERIMENT_CONFIG_DEFAULT, open(EXPERIMENT_CONFIG_PATH, "w"), indent=4)
 
 EXPERIMENT_CONFIG = json.load(open(EXPERIMENT_FOLDER / "experiment.json"))
 
@@ -78,7 +84,7 @@ EXPERIMENT_CONFIG = json.load(open(EXPERIMENT_FOLDER / "experiment.json"))
 # IoT-lab info
 SITE = EXPERIMENT_CONFIG["SITE"]
 USER = EXPERIMENT_CONFIG["USER"]
-SSH_URL = f"{USER}@{SITE}.iot-lab.info"
+SSH_URL = f"{SITE}.iot-lab.info"
 # RIOT info
 SRC_PATH = Path.cwd() / "src"
 
@@ -117,35 +123,40 @@ for tool in ["iotlab", "parallel", "ssh"]:
         exit()
 
 ## check if passwordless ssh is set up
-if subprocess.run(["ssh","-oNumberOfPasswordPrompts=0", SSH_URL, "hostname"]).returncode != 0:
+if subprocess.run(["ssh","-oNumberOfPasswordPrompts=0", f"{USER}@{SSH_URL}", "hostname"]).returncode != 0:
     print(f"Passwordless SSH access to the ssh front-end is required.\ncant log in to {SSH_URL} without password. Check if ssh-agent is running and if not run 'eval $(ssh-agent);ssh-add' to start the agent and add your key")
     exit()
 
-
-print("Registering experiment")
-# create experiment
-## create arguments for nodes
-node_strings = []
-for device in EXPERIMENT_CONFIG["DEVICES"]:
-    node_strings.extend(["-l",f"1,archi={device['IOT-LAB_BOARD']}+site={SITE},,{device['PROFILE']}"])
-subprocess.run(
-    [
-        "iotlab",
-        "experiment",
-        "submit",
-        "-d",
-        EXPERIMENT_CONFIG["DURATION"],
-        *node_strings
-    ],
-    stdout=sys.stdout,
-)
+if not args.attach:
+    print("Registering experiment")
+    # create experiment
+    ## create arguments for nodes
+    node_strings = []
+    for device in EXPERIMENT_CONFIG["DEVICES"]:
+        node_strings.extend(
+            ["-l", f"1,archi={device['IOT-LAB_BOARD']}+site={SITE},,{device['PROFILE']}"]
+        )
+    subprocess.run(
+        [
+            "iotlab",
+            "experiment",
+            "submit",
+            "-d",
+            EXPERIMENT_CONFIG["DURATION"],
+            *node_strings,
+        ],
+        stdout=sys.stdout,
+        check=True,
+    )
 
 print("Waiting for experiment to start")
 # find experiment
 subprocess.run(["iotlab", "experiment", "wait"])  # wait for experiment to start
 
 # gets active experiments
-p = subprocess.run(["iotlab", "experiment", "get", "-e"], capture_output=True)
+p = subprocess.run(
+    ["iotlab", "experiment", "get", "-e"], capture_output=True, check=True
+)
 EXPERIMENT = json.loads(p.stdout)["Running"][
     0
 ]  # TODO: work with more than 1 experiment?
@@ -177,7 +188,9 @@ db_cursor = db_con.executescript(create_sql_script)
 # }
 print("Fetching nodes in experiment...")
 p = subprocess.run(
-    ["iotlab", "experiment", "get", "-i", str(EXPERIMENT), "-n"], capture_output=True
+    ["iotlab", "experiment", "get", "-i", str(EXPERIMENT), "-n"],
+    capture_output=True,
+    check=True,
 )
 NODES = json.loads(p.stdout)["items"]
 node_ids = dict()
@@ -191,11 +204,13 @@ for nid, name in db_cursor.execute("SELECT id, name FROM nodes"):
 # get .bin files from experiment folder
 flash_files = [flash_file for flash_file in EXPERIMENT_FOLDER.glob("*.{bin,elf}")]
 ## sanity check that number of files correspond with number of nodes in config and number of created nodes in iot-lab
-if len(flash_files) != len(NODES) != len(EXPERIMENT_CONFIG['DEVICES']):
-    print(f"Number of flash file ({len(flash_files)}) does not match number of nodes in config ({len(EXPERIMENT_CONFIG['DEVICES'])}) or number of created nodes in iot-lab ({len(NODES)})")
+if len(flash_files) != len(NODES) != len(EXPERIMENT_CONFIG["DEVICES"]):
+    print(
+        f"Number of flash file ({len(flash_files)}) does not match number of nodes in config ({len(EXPERIMENT_CONFIG['DEVICES'])}) or number of created nodes in iot-lab ({len(NODES)})"
+    )
     exit()
-    
-for flash_file,node_info in zip(flash_files,NODES):
+
+for flash_file, node_info in zip(flash_files, NODES):
     # construct nodelist for single node
     # might be easier with iotl"ab experiment get -d instead of -n
     node_id = regex.match(".*-(\d+)\.", node_info["network_address"]).group(1)
@@ -216,25 +231,135 @@ for flash_file,node_info in zip(flash_files,NODES):
             str(flash_file.absolute()),
         ],
         stdout=sys.stdout,
+        check=True,
     )
 
+import asyncssh
 
+
+## define async functions to handle lines coming from serial_aggregator, powerconsumption oml files and radio oml files
+# async def handle_serial_aggregator(process):
+#     async for record in process.stdout:
+#         print(f"serial: {record}")
+#         record = record.split(";", maxsplit=2)
+#         if len(record) <= 2:  # probably something like <time>;Aggregator started
+#             continue
+
+#         time_us = int(float(record[0]) * 1e6)
+#         node_id = node_ids[record[1]]
+#         msg = record[2]
+#         db_cursor.execute(
+#             "INSERT INTO metrics (node_id, timestamp, metric_string) VALUES (?,?,?)",
+#             node_id,
+#             time_us,
+#             msg,
+#         )
+
+
+# async def handle_power_consumption(process):
+#     matcher = regex.compile(
+#         r"^(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$"
+#     )
+
+#     async for line in process.stdout:
+#         print(f"pc: {line}")
+#         record = matcher.match(line)
+#         if record is None:
+#             continue
+#         timestamp: int = int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
+#         db_cursor.execute(
+#             "INSERT INTO power_consumption (node_id, timestamp, voltage, current, power) VALUES (?, ?, ?, ?, ?)",
+#             (
+#                 node_ids[record["node_name"]],
+#                 timestamp,
+#                 float(record["voltage"]),
+#                 float(record["current"]),
+#                 float(record["power"]),
+#             ),
+#         )
+
+
+# async def handle_radio(process):
+#     matcher = regex.compile(
+#         r"^(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<channel>\d+)\s+(?P<rssi>\-?\d+)$"
+#     )
+#     for line in process.stdout:
+#         print(f"radio: {line}")
+#         record = matcher.match(line)
+#         if record is None:
+#             continue
+#         timestamp: int = int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
+#         db_cursor.execute(
+#             "INSERT INTO radio (node_id, timestamp, channel, rssi) VALUES (?, ?, ?, ?)",
+#             (
+#                 node_ids[record["node_name"]],
+#                 timestamp,
+#                 int(record["channel"]),
+#                 int(record["rssi"]),
+#             ),
+#         )
+
+
+# passphrase = input("Enter passphrase: ")
+
+
+# # create ssh session to remote
+# async def data_collection():
+#     async with asyncssh.connect(SSH_URL, username=USER, passphrase=passphrase) as ssh:
+#         start processes
+#         # serial_aggregator
+#         serial_aggregator = await ssh.create_process("serial_aggregator")
+
+#         # power consumption
+#         pc_commands = [
+#             f"tail -F .iot-lab/last/consumption/{node_name.replace('-','_')}.oml"
+#             for node_name in node_ids.keys()
+#         ]
+#         pc_processes = [await ssh.create_process(cmd) for cmd in pc_commands]
+
+#         # radio
+#         radio_commands = [
+#             f"tail -F .iot-lab/last/radio/{node_name.replace('-','_')}.oml"
+#             for node_name in node_ids.keys()
+#         ]
+#         radio_processes = [await ssh.create_process(cmd) for cmd in radio_commands]
+
+#         attach handlers
+#         await asyncio.gather(
+#             handle_serial_aggregator(serial_aggregator),
+#             *[handle_power_consumption(pc) for pc in pc_processes],
+#             *[handle_radio(radio) for radio in radio_processes],
+#         )
+
+
+# import asyncio, asyncssh
+# async def test():
+#     print("1")
+#     async with asyncssh.connect("saclay.iot-lab.info", username="berthels", passphrase="X_U&kz`N]HXH$BD?") as ssh:
+#         serial_aggregator = await ssh.create_process("serial_aggregator")
+#         print("2")
+#         async for record in serial_aggregator.stdout:
+#             print("3")
+#             print(record)
+#         print("4")
 # define data collection functions using asyncio
-## serial aggregation
+# serial aggregation
 serial_count = 0
+
+
 async def serial_aggregation_coroutine():
+    global serial_count
     print("Starting serial aggregation collection")
     p = await asyncio.create_subprocess_exec(
         "ssh",
-        SSH_URL,
+        f"{USER}@{SSH_URL}",
         "serial_aggregator",
         "-i",
         str(EXPERIMENT),
         stdout=asyncio.subprocess.PIPE,
     )
     while True:
-        record = await p.stdout.readline()
-        print(record)
+        record = (await p.stdout.readline()).decode("utf-8")
         record = record.split(";")
         if len(record) <= 2:  # probably something like <time>;Aggregator started
             continue
@@ -244,16 +369,17 @@ async def serial_aggregation_coroutine():
         msg = record[2]
         db_cursor.execute(
             "INSERT INTO metrics (node_id, timestamp, metric_string) VALUES (?,?,?)",
-            node_id,
-            time_us,
-            msg,
+            (node_id, time_us, msg),
         )
         serial_count += 1
 
 
 ## power consumption metrics
 power_consumption_count = 0
+
+
 async def power_consumption_coroutine():
+    global power_consumption_count
     print("starting power consumption collection")
     ## wait 5 sec for the files to be created
     await asyncio.sleep(5)
@@ -264,15 +390,14 @@ async def power_consumption_coroutine():
         "0",
         "--line-buffer",
         "--tag",
-        "--workdir",
-        "~/.iot-lab/last/consumption/",
         "--controlmaster",
         "-S",
         "berthels@saclay.iot-lab.info",
-        "tail",
-        "-f",
+        "--workdir",
+        f"/senslab/users/berthels/.iot-lab/{EXPERIMENT}/consumption",
+        "tail -F",
         ":::",
-        *map(lambda k: f"{k.replace('-','_')}.oml",node_ids.keys()),
+        *map(lambda k: f"{k.replace('-','_')}.oml", node_ids.keys()),
         stdout=asyncio.subprocess.PIPE,
     )
     ## matches strings from the .oml files prepended with the name of the file.
@@ -287,18 +412,38 @@ async def power_consumption_coroutine():
     # <power measurement :float>
     # <voltage measurement :float>
     # <current measurement :float>
-    matcher = regex.compile(r"^(?P<node_name>\S+)\s+(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$")
+    matcher = regex.compile(
+        r"^(?P<node_name>\S+)\s+(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$"
+    )
 
     while True:
-        record = matcher.match(await p.stdout.readline())
+        line = (await p.stdout.readline()).decode("utf-8")
+        # print(line)
+        record = matcher.match(line)
         if record is None:
             continue
-        timestamp: int = int(record["timestamp_s"])*1e6 + int(record["timestamp_us"])
-        db_cursor.execute("INSERT INTO power_consumption (node_id, timestamp, voltage, current, power) VALUES (?, ?, ?, ?, ?)", (node_ids[record["node_name"]], timestamp, float(record["voltage"]), float(record["current"]), float(record["power"])))
+        timestamp: int = int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
+        ## we need to convert the node name back from the .oml file name to the proper node name
+        name = record["node_name"].replace("_", "-").split(".")[0]
+        db_cursor.execute(
+            "INSERT INTO power_consumption (node_id, timestamp, voltage, current, power) VALUES (?, ?, ?, ?, ?)",
+            (
+                node_ids[name],
+                timestamp,
+                float(record["voltage"]),
+                float(record["current"]),
+                float(record["power"]),
+            ),
+        )
         power_consumption_count += 1
 
+
 radio_count = 0
+
+
 async def radio_coroutine():
+    global radio_count
+    await asyncio.sleep(60)
     print("starting radio collection")
     ## use GNU Parallel to run multiple processes through a single ssh connection and collect the results in 1 stdout stream
     p = await asyncio.create_subprocess_exec(
@@ -307,15 +452,14 @@ async def radio_coroutine():
         "0",
         "--line-buffer",
         "--tag",
-        "--workdir",
-        "~/.iot-lab/last/radio/",
         "--controlmaster",
         "-S",
         "berthels@saclay.iot-lab.info",
-        "tail",
-        "-f",
+        "--workdir",
+        f"/senslab/users/berthels/.iot-lab/{EXPERIMENT}/radio",
+        "tail -F",
         ":::",
-        *map(lambda k: f"{k.replace('-','_')}.oml",node_ids.keys()),
+        *map(lambda k: f"{k.replace('-','_')}.oml", node_ids.keys()),
         stdout=asyncio.subprocess.PIPE,
     )
     ## matches strings from the .oml files prepended with the name of the file.
@@ -330,36 +474,54 @@ async def radio_coroutine():
     # <power measurement :float>
     # <voltage measurement :float>
     # <current measurement :float>
-    matcher = regex.compile(r"^(?P<node_name>\S+)\s+(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<channel>\d+)\s+(?P<rssi>\-?\d+)$")
+    matcher = regex.compile(
+        r"^(?P<node_name>\S+)\s+(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<channel>\d+)\s+(?P<rssi>\-?\d+)$"
+    )
 
     while True:
-        record = matcher.match(await p.stdout.readline())
+        line = await p.stdout.readline()
+        record = matcher.match(line.decode("utf-8"))
         if record is None:
             continue
-        timestamp: int = int(record["timestamp_s"])*1e6 + int(record["timestamp_us"])
-        db_cursor.execute("INSERT INTO radio (node_id, timestamp, channel, rssi) VALUES (?, ?, ?, ?)", (node_ids[record["node_name"]], timestamp, int(record["channel"]), int(record["rssi"])))
+        timestamp: int = int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
+        name = (
+            record["node_name"].replace("_", "-").split(".")[0]
+        )  # we need to convert the node name back from the .oml file name to the proper node name
+        db_cursor.execute(
+            "INSERT INTO radio (node_id, timestamp, channel, rssi) VALUES (?, ?, ?, ?)",
+            (node_ids[name], timestamp, int(record["channel"]), int(record["rssi"])),
+        )
         radio_count += 1
 
+
 async def print_progress():
-    print("\n"*3,end="")
+    print("\n" * 3, end="")
     while True:
-        print(f"serial lines: {serial_count}",
+        print(
+            f"serial lines: {serial_count}",
             f"power_consumption lines: {power_consumption_count}",
             f"radio lines: {radio_count}",
-            sep="\n")
+            sep="\n",
+        )
+        print("\033[F\033[K" * 3, end="")
         await asyncio.sleep(0.5)
+        db_con.commit()
+
 
 ## reset all boards
-subprocess.run(["iotlab", "node", "--reset"])
+# subprocess.run(["iotlab", "node", "--reset"], check=True)
+
 
 # run all data collection tasks and await their completion
 async def main():
     print("starting data collection")
+    # await power_consumption_coroutine()
     await asyncio.gather(
         serial_aggregation_coroutine(),
         power_consumption_coroutine(),
         radio_coroutine(),
-        print_progress()
-        )
+        print_progress(),
+    )
+
 
 asyncio.run(main())
