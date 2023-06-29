@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS "radio" (
 	"node_id"	INTEGER NOT NULL,
 	"channel"	INTEGER NOT NULL,
 	"RSSI"	INTEGER NOT NULL,
-	PRIMARY KEY("id"),
+	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("node_id") REFERENCES "nodes"("id")
 );
 DROP TABLE IF EXISTS "metrics";
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS "metrics" (
 	"node_id"	INTEGER NOT NULL,
 	"timestamp"	INTEGER NOT NULL,
 	"metric_string"	TEXT,
-	PRIMARY KEY("id"),
+	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("node_id") REFERENCES "nodes"("id")
 );
 DROP TABLE IF EXISTS "power_consumption";
@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS "power_consumption" (
 	"voltage"	REAL NOT NULL,
 	"current"	REAL NOT NULL,
 	"power"	REAL NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("node_id") REFERENCES "nodes"("id")
 );
 DROP INDEX IF EXISTS "timestamp_idx";
