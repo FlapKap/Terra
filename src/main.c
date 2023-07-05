@@ -16,15 +16,20 @@
 #include "number.h"
 #include "encodeInput.h"
 #include "encodeOutput.h"
-#include "lora.h"
-#include "semtech_loramac.h"
 
 #include <time.h>
 
+#if IS_USED(MODULE_AUTO_INIT_LORAMAC)
+#include "lora.h"
+#include "semtech_loramac.h"
+#endif
+
 // Testing
+#ifdef APPLICATION_RUN_TEST
 #include "embUnit.h"
 #include "protocol_tests.h"
 #include "expression_tests.h"
+#endif
 
 // RIOT includes
 #include "EndDeviceProtocol.pb.h"
@@ -34,20 +39,14 @@
 
 // Power tracking
 #include "power_sync.h"
-
+#ifdef APPLICATION_RUN_TEST
 void test_encode_input(void);
 void test_encode_output(void);
 
-#ifndef BOARD_NATIVE
-extern semtech_loramac_t loramac;
-#endif
-
-bool running_query = false;
-
-int main2(void)
+int main(void)
 {
   ztimer_sleep(ZTIMER_SEC, 1); // wait one second before starting
-
+  puts("Start tests");
   TESTS_START();
   TESTS_RUN(tests_protocol());
   TESTS_RUN(tests_expression());
@@ -55,7 +54,18 @@ int main2(void)
 
   return 0;
 }
+#elif IS_USED(MODULE_AUTO_INIT_LORAMAC) // we have to have lorawan enabled for the main to run
+extern semtech_loramac_t loramac;
 
+bool receive_and_decode(Message *msg)
+{
+  // Check for received messages
+  pb_istream_t istream = pb_istream_from_buffer(loramac.rx_data.payload, loramac.rx_data.payload_len);
+  return decode_input_message(&istream, msg);
+}
+
+Message msg;
+bool valid_msg = false;
 int main(void)
 {
   run_sync();
@@ -71,26 +81,35 @@ int main(void)
   // Initialize global variable environment
   Env *global_env = init_env();
 
-  bool valid_query = false;
   // main loop
   while (1)
   {
     puts("Main loop iteration");
     ztimer_sleep(ZTIMER_SEC, 5);
-
-    if (valid_query)
+    if (!valid_msg)
     {
-      // Check for received messages
-      pb_istream_t istream = pb_istream_from_buffer(loramac.rx_data.payload, loramac.rx_data.payload_len);
-      Message msg;
-      bool status = decode_input_message(&istream, &msg);
-
-      if (!status)
+      // if not a valid query
+      //  send message to receive
+      uint8_t tmp[1];
+      if (send_message(tmp, (uint8_t)1) != 0)
       {
-        printf("couldn't decode\n");
-        continue;
+        return -1;
+      };
+      Message msg_tmp;
+      if (receive_and_decode(&msg_tmp))
+      {
+        msg = msg_tmp;
+        valid_msg = true;
       }
-      
+      else
+      {
+        printf("couldn't decode message. Ignoring...\n");
+      }
+    }
+
+    if (valid_msg)
+    {
+
       // Execute queries
       OutputMessage out;
       executeQueries(msg, &out, global_env);
@@ -101,17 +120,16 @@ int main(void)
         pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(buffer));
         encode_output_message(&ostream, &out);
         send_message(buffer, (uint8_t)256);
-        // TODO: it never listens
+        Message msg_tmp;
+        // check if there is new messages
+        if (receive_and_decode(&msg_tmp))
+        {
+          msg = msg_tmp;
+          valid_msg = true;
+        }
       }
-    } else { //if not a valid query
-      // send message to receive
-      uint8_t msg[1];
-      if (send_message(msg, (uint8_t)1) != 0)
-      {
-        return -1;
-      };
     }
   }
-
   return 0;
 }
+#endif
