@@ -7,7 +7,7 @@
 #include "environment.h"
 #include "number.h"
 
-#define ENABLE_DEBUG  (1)
+#define ENABLE_DEBUG  0
 #include "debug.h"
 // TODO: How do we handle functions that return doubles?
 // TODO: Fix linker errors with math.h functions.

@@ -24,21 +24,19 @@ static void tearDown(void)
   free(expres.env->array);
   free(expres.env->stack->stack);
   free(expres.env->stack);
-  free(expres.program);
+  //free(expres.program);
 }
 
 // static void Adding a const to the stack
 static void testPushToStack(void)
 {
   // Arrange
-
   Instruction p[2] = {{{CONST}, 0}, {.data._int = 3, 2}};
   expres.program = p;
   expres.p_size = 2;
   // Act
   int actual = call(&expres).type._int;
   int expected = 3;
-
   // Assert
   TEST_ASSERT_EQUAL_INT(expected, actual);
 }
@@ -482,11 +480,11 @@ static void roundUnderHalf(void)
 
   // Action
   Number actual = call(&expres);
-  double expected = 1;
-
+  int expected = 1;
+  
   // Assert
-  TEST_ASSERT_EQUAL_INT(4, actual.unionCase);
-  TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
+  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void roundOverHalf(void)
@@ -498,11 +496,10 @@ static void roundOverHalf(void)
 
   // Action
   Number actual = call(&expres);
-  double expected = 2;
-
+  int expected = 2;
   // Assert
-  TEST_ASSERT_EQUAL_INT(4, actual.unionCase);
-  TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
+  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void absoluteValue1(void)
@@ -600,7 +597,7 @@ static void greaterThanEqual2(void)
 
 static void og_test_execute_query_with_result(void)
 {
-
+  //[CONST, 2, VAR, 0, MUL]
   Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{VAR}, 0}, {.data._int = 0, 2}, {{MUL}, 0}};
 
   Number envVal;
@@ -631,8 +628,7 @@ static void og_test_execute_query_with_result(void)
   TEST_ASSERT_EQUAL_INT(2, expres.env->stack->stack[0].unionCase);
   TEST_ASSERT_EQUAL_INT(8, expres.env->stack->stack[0].type._int);
 
-  TEST_ASSERT_EQUAL_INT(2, expres.env->stack->stack[1].unionCase);
-  TEST_ASSERT_EQUAL_INT(8, expres.env->stack->stack[1].type._int);
+  TEST_ASSERT_EQUAL_INT(-1, expres.env->stack->top); // stack should be empty
 }
 
 static void og_test_execute_query_without_result(void)
@@ -803,14 +799,19 @@ static void og_test_execute_quries_multiple_results(void)
   executeQueries(msg, &output, env);
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, env->stack->stack[0].unionCase);
-  TEST_ASSERT_EQUAL_INT(8, env->stack->stack[0].type._int);
+  TEST_ASSERT_EQUAL_INT(2, output.amount);
+  // output of query 1
+  TEST_ASSERT_EQUAL_INT(1, output.responses[0].amount);
+  TEST_ASSERT_EQUAL_INT(2, output.responses[0].response->unionCase);
+  TEST_ASSERT_EQUAL_INT(0, output.responses[0].response->data._int);
 
-  TEST_ASSERT_EQUAL_INT(2, env->stack->stack[1].unionCase);
-  TEST_ASSERT_EQUAL_INT(4, env->stack->stack[1].type._int);
+  //output of query 2
+  TEST_ASSERT_EQUAL_INT(1, output.responses[1].amount);
+  TEST_ASSERT_EQUAL_INT(2, output.responses[1].response->unionCase);
+  TEST_ASSERT_EQUAL_INT(8, output.responses[1].response->data._int);
 
-  TEST_ASSERT_EQUAL_INT(2, env->stack->stack[0].unionCase);
-  TEST_ASSERT_EQUAL_INT(0, env->stack->stack[0].type._int);
+  //check that stack is empty
+  TEST_ASSERT_EQUAL_INT(-1, env->stack->top);
 }
 TestRef tests_expression(void)
 {

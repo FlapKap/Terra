@@ -4,6 +4,8 @@
 #include <math.h>
 #include "number.h"
 
+#include <debug.h>
+
 void printNumberValue(Number val){
     if(val.unionCase == 1){
     #ifdef BOARD_NATIVE

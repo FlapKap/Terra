@@ -4,6 +4,10 @@
 #include "operators.h"
 #include "number.h"
 
+#define ENABLE_DEBUG  0
+#include <debug.h>
+
+
 Stack *init_stack(void)
 {
     Stack *stack = (Stack*) malloc(sizeof(Stack));
@@ -15,6 +19,7 @@ Stack *init_stack(void)
 
 void push(Stack *stack, Number val)
 {
+    DEBUG("push %d\n to stack with size before: %d. top: %d\n", val.type._int, stack->size, stack->top);
     if (stack->top == stack->size - 1)
     {
         resize_stack(stack);
@@ -25,6 +30,7 @@ void push(Stack *stack, Number val)
 
 Number pop(Stack *stack)
 {
+    DEBUG("pop from stack with size before: %d. top: %d\n", stack->size, stack->top);
     if(stack->top == -1) {
         printf("Stack is empty\n");
         return (Number){{CONST}, 2};
