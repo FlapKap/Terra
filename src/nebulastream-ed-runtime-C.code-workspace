@@ -19,7 +19,9 @@
 			"embunit.h": "c",
 			"protocoltests.h": "c",
 			"encodeinput.h": "c",
-			"protocol_tests.h": "c"
+			"protocol_tests.h": "c",
+			"power_sync.h": "c",
+			"debug.h": "c"
 		}
 	}
 }
