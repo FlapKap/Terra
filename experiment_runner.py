@@ -1,8 +1,10 @@
 #!/usr/bin/python3
+from dataclasses import dataclass
 from pathlib import Path
 import subprocess
 import json
 import os
+from typing import List, Optional
 import regex
 import sys
 import duckdb
@@ -23,10 +25,9 @@ args = parser.parse_args()
 
 # Experiment info
 EXPERIMENT_CONFIG_DEFAULT = {
-    "SITE": "saclay",
     "USER": "berthels",
     "DURATION": "20",
-    "DEVICES": [
+    "NODES": [
         {
             "PROFILE": "stm32Profile",
             "RIOT_BOARD": "b-l072z-lrwan1",
@@ -34,6 +35,7 @@ EXPERIMENT_CONFIG_DEFAULT = {
             "DEVEUI": "70B3D57ED005E88A",
             "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
             "APPEUI": "0000000000000000",
+            "SITE": "saclay"
         },
         {
             "PROFILE": "stm32Profile",
@@ -42,6 +44,7 @@ EXPERIMENT_CONFIG_DEFAULT = {
             "DEVEUI": "70B3D57ED005EA55",
             "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
             "APPEUI": "0000000000000000",
+            "SITE": "saclay"
         },
         {
             "PROFILE": "stm32Profile",
@@ -50,6 +53,7 @@ EXPERIMENT_CONFIG_DEFAULT = {
             "DEVEUI": "70B3D57ED005EA56",
             "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
             "APPEUI": "0000000000000000",
+            "SITE": "saclay"
         },
         {
             "PROFILE": "stm32Profile",
@@ -58,6 +62,7 @@ EXPERIMENT_CONFIG_DEFAULT = {
             "DEVEUI": "70B3D57ED005EA57",
             "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
             "APPEUI": "0000000000000000",
+            "SITE": "saclay"
         },
         {
             "PROFILE": "stm32Profile",
@@ -66,6 +71,7 @@ EXPERIMENT_CONFIG_DEFAULT = {
             "DEVEUI": "70B3D57ED005EA59",
             "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
             "APPEUI": "0000000000000000",
+            "SITE": "saclay"
         },
     ],
 }
@@ -80,13 +86,64 @@ if not EXPERIMENT_CONFIG_PATH.exists():
 
 EXPERIMENT_CONFIG = json.load(open(EXPERIMENT_FOLDER / "experiment.json"))
 
+@dataclass(init=False)
+class Node:
+    # IoT-lab info
+    node_id: str
+    board_id: str
+    radio_chipset: str
+    site: str
+    profile: str
+
+    #RIOT info
+    riot_board: str
+    deveui: str
+    appeui: str
+    appkey: str
+    @property
+    def network_address(self):
+        return f"{self.node_id}.{self.site}.iot-lab.info"
+    
+    @network_address.setter
+    def network_address(self, value):
+        self.node_id, self.site, _ = value.split(".") 
+
+    @property
+    def archi(self):
+        return f"{self.board_id}:{self.radio_chipset}"
+    
+    @archi.setter
+    def archi(self, value):
+        self.board_id, self.radio_chipset = value.split(":")
+
+
 
 # IoT-lab info
-SITE = EXPERIMENT_CONFIG["SITE"]
+## load nodes. at this point we dont know their ids yet
+nodes: List[Node] = []
+for node in EXPERIMENT_CONFIG["NODES"]:
+    no = Node()
+    no.profile = node["PROFILE"]
+    no.riot_board = node["RIOT_BOARD"]
+    no.archi = node["IOT-LAB_BOARD"]
+    no.deveui = node["DEVEUI"]
+    no.appeui = node["APPEUI"]
+    no.appkey = node["APPKEY"]
+    no.site = node["SITE"]
+
+sites = {node.site for node in nodes}
+site_urls = [f"{site}.iot-lab.info" for site in sites]
 USER = EXPERIMENT_CONFIG["USER"]
-SSH_URL = f"{SITE}.iot-lab.info"
+
 # RIOT info
 SRC_PATH = Path.cwd() / "src"
+
+## some nice functions
+
+
+
+
+
 
 # make firmwares
 # make and upload binaries
@@ -134,7 +191,7 @@ if not args.attach:
     node_strings = []
     for device in EXPERIMENT_CONFIG["DEVICES"]:
         node_strings.extend(
-            ["-l", f"1,archi={device['IOT-LAB_BOARD']}+site={SITE},,{device['PROFILE']}"]
+            ["-l", f"1,archi={device['IOT-LAB_BOARD']}+site={device['SITE']},,{device['PROFILE']}"]
         )
     subprocess.run(
         [
