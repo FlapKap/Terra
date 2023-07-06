@@ -5,7 +5,7 @@ import json
 import os
 import regex
 import sys
-import sqlite3
+import duckdb
 import asyncio
 from shutil import which, copy
 import argparse
@@ -160,11 +160,11 @@ p = subprocess.run(
 EXPERIMENT = json.loads(p.stdout)["Running"][
     0
 ]  # TODO: work with more than 1 experiment?
-DB_PATH = EXPERIMENT_FOLDER / f"{EXPERIMENT}.db"
-print(f"Create SqliteDB for experiment data at {str(DB_PATH)}")
+DB_PATH = EXPERIMENT_FOLDER / f"{EXPERIMENT}.duckdb"
+print(f"Create DuckDB for experiment data at {str(DB_PATH)}")
 # Create DB for results
 create_sql_script = open("./experiment.db.sql").read()
-db_con = sqlite3.connect(f"{str(DB_PATH)}")
+db_con = duckdb.connect(f"{str(DB_PATH)}")
 
 db_cursor = db_con.executescript(create_sql_script)
 
