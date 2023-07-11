@@ -1,6 +1,11 @@
 {
     "USER": "berthels",
     "DURATION": "20",
+    "MQTT": {
+        "ADDRESS": "eu1.cloud.thethings.network:8883",
+        "USERNAME": "nes-test-application@ttn",
+        "PASSWORD": "<redacted>"
+    },
     "NODES": [
         {
             "PROFILE": "stm32Profile",
