@@ -1,17 +1,19 @@
 BEGIN TRANSACTION;
 DROP TABLE IF EXISTS sites;
-DROP SEQUENCE IF EXISTS seq_sites_id;
-CREATE SEQUENCE seq_sites_id START 1;
 CREATE TABLE IF NOT EXISTS sites (
-	site_id	INTEGER PRIMARY KEY NOT NULL DEFAULT nextval('seq_sites_id'),
-	name	VARCHAR NOT NULL,
+	name	VARCHAR PRIMARY KEY NOT NULL
 );
 
 DROP TABLE IF EXISTS nodes;
 CREATE TABLE IF NOT EXISTS nodes (
-	node_deveui	BIGINT PRIMARY KEY,
-	name		VARCHAR NOT NULL,
-	site		INTEGER NOT NULL REFERENCES sites(site_id),
+	node_deveui		VARCHAR PRIMARY KEY,
+	node_appeui 	VARCHAR NOT NULL,
+	node_appkey 	VARCHAR NOT NULL,
+	board_id 		VARCHAR NOT NULL,
+	radio_chipset 	VARCHAR NOT NULL,
+	site			VARCHAR NOT NULL REFERENCES sites(name),
+	profile 		VARCHAR NOT NULL,
+	riot_board 		VARCHAR NOT NULL,
 );
 -- radios table
 DROP TABLE IF EXISTS radios;
@@ -20,7 +22,7 @@ CREATE SEQUENCE seq_radios_id START 1;
 CREATE TABLE IF NOT EXISTS radios (
 	radios_id	INTEGER PRIMARY KEY NOT NULL DEFAULT nextval('seq_radios_id'),
 	timestamp	TIMESTAMP NOT NULL,
-	node_id		BIGINT NOT NULL REFERENCES nodes(node_deveui),
+	node_id		VARCHAR NOT NULL REFERENCES nodes(node_deveui),
 	channel		INTEGER NOT NULL,
 	rssi		INTEGER NOT NULL
 );
@@ -32,7 +34,7 @@ DROP SEQUENCE IF EXISTS seq_traces_id;
 CREATE SEQUENCE seq_traces_id START 1;
 CREATE TABLE IF NOT EXISTS traces (
 	traces_id		INTEGER PRIMARY KEY NOT NULL DEFAULT nextval('seq_traces_id'),
-	node_id			BIGINT NOT NULL REFERENCES nodes(node_deveui),
+	node_id			VARCHAR NOT NULL REFERENCES nodes(node_deveui),
 	timestamp		TIMESTAMP NOT NULL,
 	message			VARCHAR
 );
@@ -44,7 +46,7 @@ DROP SEQUENCE IF EXISTS seq_power_consumptions_id;
 CREATE SEQUENCE seq_power_consumptions_id START 1;
 CREATE TABLE IF NOT EXISTS power_consumptions (
 	power_consumptions_id	INTEGER PRIMARY KEY NOT NULL DEFAULT nextval('seq_power_consumptions_id'),
-	node_id					BIGINT NOT NULL REFERENCES nodes(node_deveui),
+	node_id					VARCHAR NOT NULL REFERENCES nodes(node_deveui),
 	timestamp				TIMESTAMP NOT NULL,
 	voltage					REAL NOT NULL,
 	current					REAL NOT NULL,
@@ -59,10 +61,8 @@ CREATE TYPE CodingRate AS ENUM ('4/5','4/6','5/7','4/8');
 
 --gateways table
 DROP TABLE IF EXISTS gateways;
-DROP SEQUENCE IF EXISTS seq_gateways_id;
-CREATE SEQUENCE seq_gateways_id START 1;
 CREATE TABLE IF NOT EXISTS gateways (
-	gateway_deveui		UBIGINT PRIMARY KEY NOT NULL DEFAULT nextval('seq_gateways_id')
+	gateway_deveui		VARCHAR PRIMARY KEY NOT NULL
 );
 
 -- messages table
@@ -71,7 +71,8 @@ DROP SEQUENCE IF EXISTS seq_messages_id;
 CREATE SEQUENCE seq_messages_id START 1;
 CREATE TABLE IF NOT EXISTS messages (
 	messages_id			INTEGER PRIMARY KEY NOT NULL DEFAULT nextval('seq_messages_id'),
-	node_id				BIGINT NOT NULL REFERENCES nodes(node_deveui),
+	node_id				VARCHAR NOT NULL REFERENCES nodes(node_deveui),
+	gateway_id			VARCHAR NOT NULL REFERENCES gateways(gateway_deveui),
 	timestamp			TIMESTAMP NOT NULL,
 	direction			MessageDirection NOT NULL,
 	rssi 				INTEGER NOT NULL,

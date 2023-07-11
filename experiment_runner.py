@@ -11,10 +11,12 @@ import duckdb
 import asyncio
 from shutil import which, copy
 import argparse
+from datetime import datetime
 
 parser = argparse.ArgumentParser(description="Experiment test runner")
 parser.add_argument("--attach", action="store_true", help="attach to the experiment")
-parser.add_argument("--make", action="store_true", help="make binaries")
+parser.add_argument("--dont-make", action="store_true", help="dont make binaries")
+parser.add_argument("--dont-upload", action="store_true", help="dont upload binaries")
 parser.add_argument("--dont-run", action="store_true", help="don't run the experiment")
 parser.add_argument(
     "experiment_folder",
@@ -35,7 +37,7 @@ EXPERIMENT_CONFIG_DEFAULT = {
             "DEVEUI": "70B3D57ED005E88A",
             "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
             "APPEUI": "0000000000000000",
-            "SITE": "saclay"
+            "SITE": "saclay",
         },
         {
             "PROFILE": "stm32Profile",
@@ -44,7 +46,7 @@ EXPERIMENT_CONFIG_DEFAULT = {
             "DEVEUI": "70B3D57ED005EA55",
             "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
             "APPEUI": "0000000000000000",
-            "SITE": "saclay"
+            "SITE": "saclay",
         },
         {
             "PROFILE": "stm32Profile",
@@ -53,7 +55,7 @@ EXPERIMENT_CONFIG_DEFAULT = {
             "DEVEUI": "70B3D57ED005EA56",
             "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
             "APPEUI": "0000000000000000",
-            "SITE": "saclay"
+            "SITE": "saclay",
         },
         {
             "PROFILE": "stm32Profile",
@@ -62,7 +64,7 @@ EXPERIMENT_CONFIG_DEFAULT = {
             "DEVEUI": "70B3D57ED005EA57",
             "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
             "APPEUI": "0000000000000000",
-            "SITE": "saclay"
+            "SITE": "saclay",
         },
         {
             "PROFILE": "stm32Profile",
@@ -71,7 +73,7 @@ EXPERIMENT_CONFIG_DEFAULT = {
             "DEVEUI": "70B3D57ED005EA59",
             "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
             "APPEUI": "0000000000000000",
-            "SITE": "saclay"
+            "SITE": "saclay",
         },
     ],
 }
@@ -86,36 +88,49 @@ if not EXPERIMENT_CONFIG_PATH.exists():
 
 EXPERIMENT_CONFIG = json.load(open(EXPERIMENT_FOLDER / "experiment.json"))
 
+
 @dataclass(init=False)
 class Node:
-    # IoT-lab info
-    node_id: str
-    board_id: str
-    radio_chipset: str
-    site: str
-    profile: str
+    """
+    Class for all relevant node info. To be populated as information becomes available
+    """
 
-    #RIOT info
-    riot_board: str
-    deveui: str
-    appeui: str
-    appkey: str
+    # IoT-lab info
+    node_id: str = None
+    board_id: str = None
+    radio_chipset: str = None
+    site: str = None
+    profile: str = None
+
+    # RIOT info
+    riot_board: str = None
+    deveui: str = None
+    appeui: str = None
+    appkey: str = None
+
     @property
     def network_address(self):
         return f"{self.node_id}.{self.site}.iot-lab.info"
-    
+
     @network_address.setter
     def network_address(self, value):
-        self.node_id, self.site, _ = value.split(".") 
+        self.node_id, self.site, *_ = value.split(".")
 
     @property
     def archi(self):
         return f"{self.board_id}:{self.radio_chipset}"
-    
+
     @archi.setter
     def archi(self, value):
         self.board_id, self.radio_chipset = value.split(":")
 
+    @property
+    def oml_name(self):
+        return f"{self.node_id.replace('-', '_')}.oml"
+
+    @property
+    def node_id_number(self):
+        return self.node_id.split("-")[-1]
 
 
 # IoT-lab info
@@ -130,9 +145,10 @@ for node in EXPERIMENT_CONFIG["NODES"]:
     no.appeui = node["APPEUI"]
     no.appkey = node["APPKEY"]
     no.site = node["SITE"]
+    nodes.append(no)
 
-sites = {node.site for node in nodes}
-site_urls = [f"{site}.iot-lab.info" for site in sites]
+sites: set[str] = {node.site for node in nodes}
+site_to_site_urls = {site: f"{site}.iot-lab.info" for site in sites}
 USER = EXPERIMENT_CONFIG["USER"]
 
 # RIOT info
@@ -141,15 +157,11 @@ SRC_PATH = Path.cwd() / "src"
 ## some nice functions
 
 
-
-
-
-
 # make firmwares
 # make and upload binaries
-if args.make:
+if not args.dont_make:
     print("make firmware")
-    for device in EXPERIMENT_CONFIG["DEVICES"]:
+    for device in EXPERIMENT_CONFIG["NODES"]:
         # first make binary
         print(f"make binary for device: {device['DEVEUI']}")
         env = os.environ.copy()
@@ -180,8 +192,20 @@ for tool in ["iotlab", "parallel", "ssh"]:
         exit()
 
 ## check if passwordless ssh is set up
-if subprocess.run(["ssh","-oNumberOfPasswordPrompts=0", f"{USER}@{SSH_URL}", "hostname"]).returncode != 0:
-    print(f"Passwordless SSH access to the ssh front-end is required.\ncant log in to {SSH_URL} without password. Check if ssh-agent is running and if not run 'eval $(ssh-agent);ssh-add' to start the agent and add your key")
+if (
+    subprocess.run(
+        [
+            "ssh",
+            "-oNumberOfPasswordPrompts=0",
+            f"{USER}@saclay.iot-lab.info",
+            "hostname",
+        ]
+    ).returncode
+    != 0
+):
+    print(
+        f"Passwordless SSH access to the ssh front-end is required.\ncant log in to {USER}@saclay.iot-lab.info without password. Check if ssh-agent is running and if not run 'eval $(ssh-agent);ssh-add' to start the agent and add your key"
+    )
     exit()
 
 if not args.attach:
@@ -189,9 +213,12 @@ if not args.attach:
     # create experiment
     ## create arguments for nodes
     node_strings = []
-    for device in EXPERIMENT_CONFIG["DEVICES"]:
+    for device in EXPERIMENT_CONFIG["NODES"]:
         node_strings.extend(
-            ["-l", f"1,archi={device['IOT-LAB_BOARD']}+site={device['SITE']},,{device['PROFILE']}"]
+            [
+                "-l",
+                f"1,archi={device['IOT-LAB_BOARD']}+site={device['SITE']},,{device['PROFILE']}",
+            ]
         )
     subprocess.run(
         [
@@ -223,7 +250,10 @@ print(f"Create DuckDB for experiment data at {str(DB_PATH)}")
 create_sql_script = open("./experiment.db.sql").read()
 db_con = duckdb.connect(f"{str(DB_PATH)}")
 
-db_cursor = db_con.executescript(create_sql_script)
+db_con.execute(create_sql_script)
+
+print("Populating sites table")
+db_con.executemany("INSERT INTO sites (name) VALUES (?)", [sites])
 
 # NODES is a list of dictionaries with following info
 # {
@@ -249,58 +279,86 @@ p = subprocess.run(
     capture_output=True,
     check=True,
 )
-NODES = json.loads(p.stdout)["items"]
-node_ids = dict()
-# populate nodes table
-nodes = [(node["network_address"].split(".")[0],) for node in NODES]
-db_cursor.executemany("INSERT INTO nodes (name) VALUES (?)", nodes)
 
-for nid, name in db_cursor.execute("SELECT id, name FROM nodes"):
-    node_ids[name] = nid
+# go through nodes returned and populate internal node list with proper addresses
+for node in json.loads(p.stdout)["items"]:
+    try:
+        next(
+            filter(lambda n: n.archi == node["archi"] and n.node_id is None, nodes)
+        ).network_address = node["network_address"]
+    except StopIteration:
+        print("Node not found while populating internal node table")
+        exit()
 
-# get .bin files from experiment folder
-flash_files = [flash_file for flash_file in EXPERIMENT_FOLDER.glob("*.{bin,elf}")]
-## sanity check that number of files correspond with number of nodes in config and number of created nodes in iot-lab
-if len(flash_files) != len(NODES) != len(EXPERIMENT_CONFIG["DEVICES"]):
-    print(
-        f"Number of flash file ({len(flash_files)}) does not match number of nodes in config ({len(EXPERIMENT_CONFIG['DEVICES'])}) or number of created nodes in iot-lab ({len(NODES)})"
+
+db_con.begin()
+for node in nodes:
+    db_con.execute(
+        "INSERT INTO nodes (node_deveui,node_appeui,node_appkey,board_id,radio_chipset,site,profile,riot_board) VALUES (?,?,?,?,?,?,?,?)",
+        (
+            node.deveui,
+            node.appeui,
+            node.appkey,
+            node.board_id,
+            node.radio_chipset,
+            node.site,
+            node.profile,
+            node.riot_board,
+        ),
     )
-    exit()
+db_con.commit()
 
-for flash_file, node_info in zip(flash_files, NODES):
-    # construct nodelist for single node
-    # might be easier with iotl"ab experiment get -d instead of -n
-    node_id = regex.match(".*-(\d+)\.", node_info["network_address"]).group(1)
+if not args.dont_upload:
+    # get .bin files from experiment folder
+    flash_files = [flash_file for flash_file in EXPERIMENT_FOLDER.glob("*.elf")]
 
-    node_string = f"{node_info['site']},{node_info['archi'].split(':')[0]},{node_id}"
+    ## sanity check that number of files correspond with number of nodes in config and number of created nodes in iot-lab
+    assert (
+        len(flash_files) == len(nodes) == len(EXPERIMENT_CONFIG["NODES"])
+    ), f"Number of flash file ({len(flash_files)}) does not match number of nodes in config ({len(EXPERIMENT_CONFIG['NODES'])}) or number of created nodes in iot-lab ({len(nodes)})"
 
-    # upload
-    print(f"uploading binary file {str(flash_file)} to node_string {node_string}")
-    p = subprocess.run(
-        [
-            "iotlab",
-            "node",
-            "-i",
-            str(EXPERIMENT),
-            "-l",
-            node_string,
-            "-fl",
-            str(flash_file.absolute()),
-        ],
-        stdout=sys.stdout,
-        check=True,
-    )
+    for flash_file, node in zip(flash_files, nodes):
+        # construct nodelist for single node
+        node_string = f"{node.site},{node.board_id},{node.node_id_number}"
+
+        # find correct flash file
+        try:
+            flash_file = next(
+                filter(lambda f: f.stem.lower() == node.deveui.lower(), flash_files)
+            )
+        except StopIteration:
+            print(f"Flash file for node {node.deveui} not found in experiment folder")
+            exit()
+
+        # upload
+        print(f"uploading binary file {str(flash_file)} to node_string {node_string}")
+        p = subprocess.run(
+            [
+                "iotlab",
+                "node",
+                "-i",
+                str(EXPERIMENT),
+                "-l",
+                node_string,
+                "-fl",
+                str(flash_file.absolute()),
+            ],
+            stdout=sys.stdout,
+            check=True,
+        )
 
 # serial aggregation
 serial_count = 0
 
+nodes_by_id = {node.node_id: node for node in nodes}
+nodes_by_oml_name = {node.oml_name: node for node in nodes}
 
-async def serial_aggregation_coroutine():
+async def serial_aggregation_coroutine(site_url):
     global serial_count
     print("Starting serial aggregation collection")
     p = await asyncio.create_subprocess_exec(
         "ssh",
-        f"{USER}@{SSH_URL}",
+        f"{USER}@{site_url}",
         "serial_aggregator",
         "-i",
         str(EXPERIMENT),
@@ -313,11 +371,11 @@ async def serial_aggregation_coroutine():
             continue
 
         time_us = int(float(record[0]) * 1e6)
-        node_id = node_ids[record[1]]
+        node = nodes_by_id[record[1]]
         msg = record[2]
-        db_cursor.execute(
-            "INSERT INTO metrics (node_id, timestamp, metric_string) VALUES (?,?,?)",
-            (node_id, time_us, msg),
+        db_con.execute(
+            "INSERT INTO traces (node_id, timestamp, message) VALUES (?,?,?)",
+            (node.node_id, time_us, msg),
         )
         serial_count += 1
 
@@ -326,7 +384,7 @@ async def serial_aggregation_coroutine():
 power_consumption_count = 0
 
 
-async def power_consumption_coroutine():
+async def power_consumption_coroutine(site_url, oml_files):
     global power_consumption_count
     print("starting power consumption collection")
     ## wait 5 sec for the files to be created
@@ -340,12 +398,12 @@ async def power_consumption_coroutine():
         "--tag",
         "--controlmaster",
         "-S",
-        "berthels@saclay.iot-lab.info",
+        f"{USER}@{site_url}",
         "--workdir",
         f"/senslab/users/berthels/.iot-lab/{EXPERIMENT}/consumption",
         "tail -F",
         ":::",
-        *map(lambda k: f"{k.replace('-','_')}.oml", node_ids.keys()),
+        *oml_files,
         stdout=asyncio.subprocess.PIPE,
     )
     ## matches strings from the .oml files prepended with the name of the file.
@@ -366,18 +424,15 @@ async def power_consumption_coroutine():
 
     while True:
         line = (await p.stdout.readline()).decode("utf-8")
-        # print(line)
         record = matcher.match(line)
         if record is None:
             continue
-        timestamp: int = int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
-        ## we need to convert the node name back from the .oml file name to the proper node name
-        name = record["node_name"].replace("_", "-").split(".")[0]
-        db_cursor.execute(
-            "INSERT INTO power_consumption (node_id, timestamp, voltage, current, power) VALUES (?, ?, ?, ?, ?)",
+        timestamp = int(int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"]))
+        db_con.execute(
+            "INSERT INTO power_consumptions (node_id, timestamp, voltage, current, power) VALUES (?, ?, ?, ?, ?)",
             (
-                node_ids[name],
-                timestamp,
+                nodes_by_oml_name[record["node_name"]].deveui,
+                datetime.fromtimestamp(timestamp / 1e6),
                 float(record["voltage"]),
                 float(record["current"]),
                 float(record["power"]),
@@ -389,7 +444,7 @@ async def power_consumption_coroutine():
 radio_count = 0
 
 
-async def radio_coroutine():
+async def radio_coroutine(site_url, oml_files):
     global radio_count
     await asyncio.sleep(60)
     print("starting radio collection")
@@ -402,12 +457,12 @@ async def radio_coroutine():
         "--tag",
         "--controlmaster",
         "-S",
-        "berthels@saclay.iot-lab.info",
+        f"{USER}@{site_url}",
         "--workdir",
         f"/senslab/users/berthels/.iot-lab/{EXPERIMENT}/radio",
         "tail -F",
         ":::",
-        *map(lambda k: f"{k.replace('-','_')}.oml", node_ids.keys()),
+        *oml_files,
         stdout=asyncio.subprocess.PIPE,
     )
     ## matches strings from the .oml files prepended with the name of the file.
@@ -431,13 +486,15 @@ async def radio_coroutine():
         record = matcher.match(line.decode("utf-8"))
         if record is None:
             continue
-        timestamp: int = int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
-        name = (
-            record["node_name"].replace("_", "-").split(".")[0]
-        )  # we need to convert the node name back from the .oml file name to the proper node name
-        db_cursor.execute(
-            "INSERT INTO radio (node_id, timestamp, channel, rssi) VALUES (?, ?, ?, ?)",
-            (node_ids[name], timestamp, int(record["channel"]), int(record["rssi"])),
+        timestamp = int(int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"]))
+        db_con.execute(
+            "INSERT INTO radios (node_id, timestamp, channel, rssi) VALUES (?, ?, ?, ?)",
+            (
+                nodes_by_oml_name[record["node_name"]].deveui,
+                datetime.fromtimestamp(timestamp / 1e6),
+                int(record["channel"]),
+                int(record["rssi"]),
+            ),
         )
         radio_count += 1
 
@@ -453,8 +510,11 @@ async def print_progress():
         )
         print("\033[F\033[K" * 3, end="")
         await asyncio.sleep(0.5)
-        db_con.commit()
 
+async def commit():
+    while True:
+        await asyncio.sleep(1)
+        db_con.commit()
 
 ## reset all boards
 # subprocess.run(["iotlab", "node", "--reset"], check=True)
@@ -463,13 +523,18 @@ async def print_progress():
 # run all data collection tasks and await their completion
 async def main():
     print("starting data collection")
-    # await power_consumption_coroutine()
-    await asyncio.gather(
-        serial_aggregation_coroutine(),
-        power_consumption_coroutine(),
-        radio_coroutine(),
-        print_progress(),
-    )
+    # build list of tasks
+    tasks = []
+    nodes_by_site = {
+        site: list(filter(lambda n: n.site == site, nodes)) for site in sites
+    }
+    for site, ns in nodes_by_site.items():
+        tasks.append(serial_aggregation_coroutine(site_to_site_urls[site]))
+        tasks.append(power_consumption_coroutine(site_to_site_urls[site], [n.oml_name for n in ns]))
+        tasks.append(radio_coroutine(site_to_site_urls[site], [n.oml_name for n in ns]))
+    tasks.append(print_progress())
+    tasks.append(commit())
+    await asyncio.gather(*tasks)
 
 
 asyncio.run(main())
