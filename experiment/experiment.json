@@ -4,7 +4,8 @@
     "MQTT": {
         "ADDRESS": "eu1.cloud.thethings.network:8883",
         "USERNAME": "nes-test-application@ttn",
-        "PASSWORD": "<redacted>"
+        "PASSWORD": "<redacted>",
+        "TOPIC": "v3/nes-test-application/devices/#"
     },
     "NODES": [
         {

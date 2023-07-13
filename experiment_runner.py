@@ -12,6 +12,7 @@ import asyncio
 from shutil import which, copy
 import argparse
 from datetime import datetime
+import aiomqtt
 
 parser = argparse.ArgumentParser(description="Experiment test runner")
 parser.add_argument("--attach", action="store_true", help="attach to the experiment")
@@ -96,17 +97,17 @@ class Node:
     """
 
     # IoT-lab info
-    node_id: str = None
-    board_id: str = None
-    radio_chipset: str = None
-    site: str = None
-    profile: str = None
+    node_id: Optional[str] = None
+    board_id: Optional[str] = None
+    radio_chipset: Optional[str] = None
+    site: Optional[str] = None
+    profile: Optional[str] = None
 
     # RIOT info
-    riot_board: str = None
-    deveui: str = None
-    appeui: str = None
-    appkey: str = None
+    riot_board: Optional[str] = None
+    deveui: Optional[str] = None
+    appeui: Optional[str] = None
+    appkey: Optional[str] = None
 
     @property
     def network_address(self):
@@ -147,7 +148,8 @@ for node in EXPERIMENT_CONFIG["NODES"]:
     no.site = node["SITE"]
     nodes.append(no)
 
-sites: set[str] = {node.site for node in nodes}
+assert all([node.site for node in nodes])  # make sure all nodes have a site
+sites: set[str] = {node.site for node in nodes}  # type: ignore[misc] # we know after this that all nodes have a site
 site_to_site_urls = {site: f"{site}.iot-lab.info" for site in sites}
 USER = EXPERIMENT_CONFIG["USER"]
 
@@ -353,6 +355,7 @@ serial_count = 0
 nodes_by_id = {node.node_id: node for node in nodes}
 nodes_by_oml_name = {node.oml_name: node for node in nodes}
 
+
 async def serial_aggregation_coroutine(site_url):
     global serial_count
     print("Starting serial aggregation collection")
@@ -499,6 +502,350 @@ async def radio_coroutine(site_url, oml_files):
         radio_count += 1
 
 
+MQTT_CONFIG = EXPERIMENT_CONFIG["MQTT"]
+
+
+async def mqtt_coroutine():
+    async with aiomqtt.Client(
+        hostname=MQTT_CONFIG["ADDRESS"],
+        port=8883,
+        username=MQTT_CONFIG["USERNAME"],
+        password=MQTT_CONFIG["PASSWORD"],
+        clean_session=False,
+    ) as client:
+        async with client.messages() as messages:
+            await client.subscribe(MQTT_CONFIG["TOPIC"], qos=2)
+            async for msg in messages:
+                # region topics:
+                # v3/{application id}@{tenant id}/devices/{device id}/join
+                # v3/{application id}@{tenant id}/devices/{device id}/up
+                # v3/{application id}@{tenant id}/devices/{device id}/down/queued
+                # v3/{application id}@{tenant id}/devices/{device id}/down/sent
+                # v3/{application id}@{tenant id}/devices/{device id}/down/ack
+                # v3/{application id}@{tenant id}/devices/{device id}/down/nack
+                # v3/{application id}@{tenant id}/devices/{device id}/down/failed
+                # v3/{application id}@{tenant id}/devices/{device id}/service/data
+                # v3/{application id}@{tenant id}/devices/{device id}/location/solved
+                # endregion
+                parsed_msg = json.loads(msg.payload.decode("utf-8"))
+                msg_topic = msg.topic.decode("utf-8")
+
+                # formats taken from https://www.thethingsindustries.com/docs/the-things-stack/concepts/data-formats/
+                ## insert the message into the database. we wrap with a transaction
+                db_con.begin()
+                match msg_topic.split("")[4:]:
+                    case ["join"]:
+                        # region example
+                        # {
+                        #     "end_device_ids" : {
+                        #         "device_id" : "dev1",                      // Device ID
+                        #         "application_ids" : {
+                        #         "application_id" : "app1"                  // Application ID
+                        #         },
+                        #         "dev_eui" : "0004A30B001C0530",            // DevEUI of the end device
+                        #         "join_eui" : "800000000000000C",           // JoinEUI of the end device (also known as AppEUI in LoRaWAN versions below 1.1)
+                        #         "dev_addr" : "00BCB929"                    // Device address known by the Network Server
+                        #     },
+                        #     "correlation_ids" : [ "as:up:01..." ],         // Correlation identifiers of the message
+                        #     "received_at" : "2020-02-12T15:15..."          // ISO 8601 UTC timestamp at which the message has been received by the Application Server
+                        #     "join_accept" : {
+                        #         "session_key_id" : "AXBSH1Pk6Z0G166...",   // Join Server issued identifier for the session keys
+                        #         "received_at" : "2020-02-17T07:49..."      // ISO 8601 UTC timestamp at which the uplink has been received by the Network Server
+                        #     }
+                        # }
+                        # endregion
+
+                        ## extract relevant info from mqtt payload
+                        dev_eui = parsed_msg["end_device_ids"]["dev_eui"]
+                        app_recieved_at = datetime.fromisoformat(
+                            parsed_msg["received_at"]
+                        )
+                        network_recieved_at = datetime.fromisoformat(
+                            parsed_msg["join_accept"]["received_at"]
+                        )
+
+                        db_con.execute(
+                            "INSERT INTO Message (related_node, network_recieved_at) VALUES (?,?) RETURNING message_id",
+                            (dev_eui, network_recieved_at),
+                        )
+                        message_id = db_con.fetchone()[0]
+                        db_con.execute(
+                            "INSERT INTO Join_Message (join_message_id, app_received_at) VALUES (?,?)",
+                            (message_id, app_recieved_at),
+                        )
+
+                    case ["up"]:
+                        # region example
+                        # {
+                        # "end_device_ids" : {
+                        #     "device_id" : "dev1",                    // Device ID
+                        #     "application_ids" : {
+                        #     "application_id" : "app1"              // Application ID
+                        #     },
+                        #     "dev_eui" : "0004A30B001C0530",          // DevEUI of the end device
+                        #     "join_eui" : "800000000000000C",         // JoinEUI of the end device (also known as AppEUI in LoRaWAN versions below 1.1)
+                        #     "dev_addr" : "00BCB929"                  // Device address known by the Network Server
+                        # },
+                        # "correlation_ids" : [ "as:up:01...", ... ],// Correlation identifiers of the message
+                        # "received_at" : "2020-02-12T15:15..."      // ISO 8601 UTC timestamp at which the message has been received by the Application Server
+                        # "uplink_message" : {
+                        #     "session_key_id": "AXA50...",            // Join Server issued identifier for the session keys used by this uplink
+                        #     "f_cnt": 1,                              // Frame counter
+                        #     "f_port": 1,                             // Frame port
+                        #     "frm_payload": "gkHe",                   // Frame payload (Base64)
+                        #     "decoded_payload" : {                    // Decoded payload object, decoded by the device payload formatter
+                        #     "temperature": 1.0,
+                        #     "luminosity": 0.64
+                        #     },
+                        #     "rx_metadata": [{                        // A list of metadata for each antenna of each gateway that received this message
+                        #     "gateway_ids": {
+                        #         "gateway_id": "gtw1",                // Gateway ID
+                        #         "eui": "9C5C8E00001A05C4"            // Gateway EUI
+                        #     },
+                        #     "time": "2020-02-12T15:15:45.787Z",    // ISO 8601 UTC timestamp at which the uplink has been received by the gateway
+                        #     "timestamp": 2463457000,               // Timestamp of the gateway concentrator when the message has been received
+                        #     "rssi": -35,                           // Received signal strength indicator (dBm)
+                        #     "channel_rssi": -35,                   // Received signal strength indicator of the channel (dBm)
+                        #     "snr": 5.2,                            // Signal-to-noise ratio (dB)
+                        #     "uplink_token": "ChIKEA...",           // Uplink token injected by gateway, Gateway Server or fNS
+                        #     "channel_index": 2                     // Index of the gateway channel that received the message
+                        #     "location": {                          // Gateway location metadata (only for gateways with location set to public)
+                        #         "latitude": 37.97155556731436,       // Location latitude
+                        #         "longitude": 23.72678801175413,      // Location longitude
+                        #         "altitude": 2,                       // Location altitude
+                        #         "source": "SOURCE_REGISTRY"          // Location source. SOURCE_REGISTRY is the location from the Identity Server.
+                        #     }
+                        #     }],
+                        #     "settings": {                            // Settings for the transmission
+                        #     "data_rate": {                         // Data rate settings
+                        #         "lora": {                            // LoRa modulation settings
+                        #         "bandwidth": 125000,               // Bandwidth (Hz)
+                        #         "spreading_factor": 7              // Spreading factor
+                        #         }
+                        #     },
+                        #     "coding_rate": "4/6",                  // LoRa coding rate
+                        #     "frequency": "868300000",              // Frequency (Hz)
+                        #     },
+                        #     "received_at": "2020-02-12T15:15..."     // ISO 8601 UTC timestamp at which the uplink has been received by the Network Server
+                        #     "consumed_airtime": "0.056576s",         // Time-on-air, calculated by the Network Server using payload size and transmission settings
+                        #     "locations": {                           // End device location metadata
+                        #     "user": {
+                        #         "latitude": 37.97155556731436,       // Location latitude
+                        #         "longitude": 23.72678801175413,      // Location longitude
+                        #         "altitude": 10,                      // Location altitude
+                        #         "source": "SOURCE_REGISTRY"          // Location source. SOURCE_REGISTRY is the location from the Identity Server.
+                        #     }
+                        #     },
+                        #     "version_ids": {                          // End device version information
+                        #         "brand_id": "the-things-products",    // Device brand
+                        #         "model_id": "the-things-uno",         // Device model
+                        #         "hardware_version": "1.0",            // Device hardware version
+                        #         "firmware_version": "quickstart",     // Device firmware version
+                        #         "band_id": "EU_863_870"               // Supported band ID
+                        #     },
+                        #     "network_ids": {                          // Network information
+                        #     "net_id": "000013",                     // Network ID
+                        #     "tenant_id": "tenant1",                 // Tenant ID
+                        #     "cluster_id": "eu1"                     // Cluster ID
+                        #     }
+                        # },
+                        # "simulated": true,                         // Signals if the message is coming from the Network Server or is simulated.
+                        # }
+                        # endregion
+                        ## extract needed info from mqtt payload
+                        dev_eui = parsed_msg["end_device_ids"]["dev_eui"]
+                        app_recieved_at = datetime.fromisoformat(
+                            parsed_msg["received_at"]
+                        )
+                        gateway_recieved_at = datetime.fromisoformat(
+                            parsed_msg["uplink_message"]["time"]
+                        )
+                        network_recieved_at = datetime.fromisoformat(
+                            parsed_msg["uplink_message"]["received_at"]
+                        )
+                        frame_counter = parsed_msg["uplink_message"]["f_cnt"]
+                        frame_port = parsed_msg["uplink_message"]["f_port"]
+                        frame_payload = parsed_msg["uplink_message"]["frm_payload"]
+                        gateway_deveui = parsed_msg["uplink_message"]["gateway_ids"][
+                            "eui"
+                        ]
+                        rssi = parsed_msg["uplink_message"]["rssi"]
+                        snr = parsed_msg["uplink_message"]["snr"]
+                        bandwidth = parsed_msg["uplink_message"]["data_rate"]["lora"][
+                            "bandwidth"
+                        ]
+                        spreading_factor = f'SF{parsed_msg["uplink_message"]["data_rate"]["lora"]["spreading_factor"]}'
+                        frequency = parsed_msg["uplink_message"]["frequency"]
+                        coding_rate = parsed_msg["uplink_message"]["coding_rate"]
+                        consumed_airtime_s = parsed_msg["uplink_message"][
+                            "consumed_airtime"
+                        ]
+
+                        # add to db
+                        db_con.begin()
+                        ## create message
+                        db_con.execute(
+                            "INSERT INTO Message (related_node, network_recieved_at) VALUES (?,?) RETURNING message_id",
+                            (dev_eui, network_recieved_at),
+                        )
+                        message_id = db_con.fetchone()[0]
+                        ## create content_message
+                        db_con.execute(
+                            "INSERT INTO Content_Message VALUES (?,?,?,?) RETURNING content_message_id",
+                            (message_id, frame_counter, frame_port, frame_payload),
+                        )
+                        content_message_id = db_con.fetchone()[0]
+                        ## create uplink_message
+                        db_con.execute(
+                            "INSERT INTO Uplink_Message VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                            (
+                                content_message_id,
+                                gateway_deveui,
+                                gateway_recieved_at,
+                                app_recieved_at,
+                                rssi,
+                                snr,
+                                bandwidth,
+                                frequency,
+                                consumed_airtime_s,
+                                spreading_factor,
+                                coding_rate,
+                            ),
+                        )
+                        db_con.commit()
+                    case ["down", "failed"]:
+                        # region example
+                        # {
+                        # "end_device_ids" : {
+                        #     "device_id" : "dev1",                    // Device ID
+                        #     "application_ids" : {
+                        #     "application_id" : "app1"              // Application ID
+                        #     }
+                        # },
+                        # "correlation_ids" : [ "as:downlink:..." ], // Correlation identifiers of the message
+                        # "downlink_failed" : {
+                        #     "downlink" : {                           // Downlink that which triggered the failure
+                        #     "f_port" : 15,                         // Frame port
+                        #     "frm_payload" : "YWFhYWFhY...",        // Frame payload (Base64)
+                        #     "confirmed" : true,                    // If the downlink expects a confirmation from the device or not
+                        #     "priority" : "NORMAL",                 // Priority of the message in the downlink queue
+                        #     "correlation_ids" : [ "as:downli..." ] // Correlation identifiers of the message
+                        #     },
+                        #     "error" : {                              // Error that was encountered while sending the downlink
+                        #     "namespace" : "pkg/networkserver",     // Component in which the error occurred
+                        #     "name" : "application_downlink_to...", // Error ID
+                        #     "message_format" : "application ...",  // Error message
+                        #     "correlation_id" : "2e7f786912e94...", // Correlation identifiers of the error
+                        #     "code" : 3                             // gRPC error code
+                        #     }
+                        # }
+                        # }
+                        # endregion
+
+                        # Extract needed info from mqtt payload
+                        error_namespace = parsed_msg["downlink_failed"]["error"][
+                            "namespace"
+                        ]
+                        error_id = parsed_msg["downlink_failed"]["error"]["name"]
+                        error_message = parsed_msg["downlink_failed"]["error"][
+                            "message_format"
+                        ]
+                        error_code = parsed_msg["downlink_failed"]["error"]["code"]
+                        ## find the related Downlink event message
+                        error_correlation_ids = parsed_msg["correlation_ids"]
+                        ##TODO: verify that this actually works. Maybe correlation_ids use many ids and only 1 of them is relevant
+                        db_con.execute(
+                            "SELECT downlink_event_message_id FROM Downlink_Event_Message WHERE list_contains(correlation_ids, ?)",
+                            (error_correlation_ids[0]),
+                        )
+                        downlink_event_message_id = db_con.fetchone()[0]
+
+                        ## create the downlink_event_error message
+                        db_con.execute(
+                            "INSERT INTO Downlink_Event_Error_Message VALUES (?,?,?,?,?)",
+                            (
+                                downlink_event_message_id,
+                                error_namespace,
+                                error_id,
+                                error_message,
+                                error_code
+                            ),
+                        )
+
+                    case ["down", down_type]:
+                        # region example
+                        # {
+                        # "end_device_ids" : {
+                        #     "device_id" : "dev1",                    // Device ID
+                        #     "application_ids" : {
+                        #     "application_id" : "app1"              // Application ID
+                        #     },
+                        #     "dev_eui" : "0004A30B001C0530",          // DevEUI of the end device
+                        #     "join_eui" : "800000000000000C",         // JoinEUI of the end device (also known as AppEUI in LoRaWAN versions below 1.1)
+                        #     "dev_addr" : "00BCB929"                  // Device address known by the Network Server
+                        # },
+                        # "correlation_ids" : [ "as:downlink:..." ], // Correlation identifiers of the message
+                        # "received_at" : "2020-02-17T10:32:24...",  // ISO 8601 UTC timestamp at which the message has been received by the Network Server
+                        # "downlink_queued" : {                      // Name of the event (ack, nack, queued or sent)
+                        #     "session_key_id" : "AXBSH1Pk6Z0G166...", // Join Server issued identifier for the session keys
+                        #     "f_port" : 15,                           // Frame port
+                        #     "f_cnt" : 1,                             // Frame counter
+                        #     "frm_payload" : "vu8=",                  // Frame payload (Base64)
+                        #     "confirmed" : true,                      // If the downlink expects a confirmation from the device or not
+                        #     "priority" : "NORMAL",                   // Priority of the message in the downlink queue
+                        #     "correlation_ids" : [ "as:downlink..." ] // Correlation identifiers of the message
+                        # }
+                        # }
+
+                        # endregion
+
+                        ## get needed info from mqtt payload
+                        dev_eui = parsed_msg["end_device_ids"]["dev_eui"]
+                        network_recieved_at = datetime.fromisoformat(
+                            parsed_msg["received_at"]
+                        )
+                        downlink_key = f"downlink_{down_type}"
+                        frame_port: int = parsed_msg[downlink_key]["f_port"]
+                        frame_counter: int = parsed_msg[downlink_key]["f_cnt"]
+                        frame_payload: str = parsed_msg[downlink_key]["frm_payload"]
+                        confirmed: bool = parsed_msg[downlink_key]["confirmed"]
+                        priority: str = parsed_msg[downlink_key]["priority"]
+                        correlation_ids: list[str] = parsed_msg["correlation_ids"]
+
+                        # add to db
+                        ## add message
+                        db_con.execute(
+                            "INSERT INTO Message (related_node, network_recieved_at) VALUES (?,?) RETURNING message_id",
+                            (dev_eui, network_recieved_at),
+                        )
+                        message_id = db_con.fetchone()[0]
+
+                        ## add content message
+                        db_con.execute(
+                            "INSERT INTO Content_Message VALUES (?,?,?,?) RETURNING content_message_id",
+                            (message_id, frame_counter, frame_port, frame_payload),
+                        )
+                        content_message_id = db_con.fetchone()[0]
+
+                        ## add downlink event message
+                        db_con.execute(
+                            "INSERT INTO Downlink_Event_Message VALUES (?,?,?,?,?)",
+                            (
+                                content_message_id,
+                                confirmed,
+                                down_type,
+                                priority,
+                                correlation_ids,
+                            ),
+                        )
+                    case ["service", "data"]:
+                        pass
+                    case ["location", "solved"]:
+                        pass
+
+                db_con.commit()
+
+
 async def print_progress():
     print("\n" * 3, end="")
     while True:
@@ -511,10 +858,12 @@ async def print_progress():
         print("\033[F\033[K" * 3, end="")
         await asyncio.sleep(0.5)
 
+
 async def commit():
     while True:
         await asyncio.sleep(1)
         db_con.commit()
+
 
 ## reset all boards
 # subprocess.run(["iotlab", "node", "--reset"], check=True)
@@ -530,7 +879,11 @@ async def main():
     }
     for site, ns in nodes_by_site.items():
         tasks.append(serial_aggregation_coroutine(site_to_site_urls[site]))
-        tasks.append(power_consumption_coroutine(site_to_site_urls[site], [n.oml_name for n in ns]))
+        tasks.append(
+            power_consumption_coroutine(
+                site_to_site_urls[site], [n.oml_name for n in ns]
+            )
+        )
         tasks.append(radio_coroutine(site_to_site_urls[site], [n.oml_name for n in ns]))
     tasks.append(print_progress())
     tasks.append(commit())
