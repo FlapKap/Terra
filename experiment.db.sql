@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS Content_Message (
 
 -- JOIN_MESSAGE
 CREATE TABLE IF NOT EXISTS Join_Message (
-    join_message_id INTEGER PRIMARY KEY REFERENCES MESSAGE(message_id),
+    join_message_id INTEGER PRIMARY KEY REFERENCES Message(message_id),
     app_received_at TIMESTAMP NOT NULL
 );
 

@@ -248,6 +248,12 @@ EXPERIMENT = json.loads(p.stdout)["Running"][
 ]  # TODO: work with more than 1 experiment?
 DB_PATH = EXPERIMENT_FOLDER / f"{EXPERIMENT}.duckdb"
 print(f"Create DuckDB for experiment data at {str(DB_PATH)}")
+# Check if file already exists
+if DB_PATH.exists():
+    answer = input(f"Database already exists at {str(DB_PATH)}. Do you want us to delete it? [y/n]")
+    if answer == "y":
+        DB_PATH.unlink()
+    else: exit()
 # Create DB for results
 create_sql_script = open("./experiment.db.sql").read()
 db_con = duckdb.connect(f"{str(DB_PATH)}")
@@ -255,7 +261,7 @@ db_con = duckdb.connect(f"{str(DB_PATH)}")
 db_con.execute(create_sql_script)
 
 print("Populating sites table")
-db_con.executemany("INSERT INTO sites (name) VALUES (?)", [sites])
+db_con.executemany("INSERT INTO Site (name) VALUES (?)", [sites])
 
 # NODES is a list of dictionaries with following info
 # {
@@ -296,7 +302,7 @@ for node in json.loads(p.stdout)["items"]:
 db_con.begin()
 for node in nodes:
     db_con.execute(
-        "INSERT INTO nodes (node_deveui,node_appeui,node_appkey,board_id,radio_chipset,site,profile,riot_board) VALUES (?,?,?,?,?,?,?,?)",
+        "INSERT INTO Node (node_deveui,node_appeui,node_appkey,board_id,radio_chipset,node_site,profile,riot_board) VALUES (?,?,?,?,?,?,?,?)",
         (
             node.deveui,
             node.appeui,
@@ -333,7 +339,7 @@ if not args.dont_upload:
             exit()
 
         # upload
-        print(f"uploading binary file {str(flash_file)} to node_string {node_string}")
+        print(f"uploading binary file {str(flash_file)} to node_string {node_string}...", end="",flush=True)
         p = subprocess.run(
             [
                 "iotlab",
@@ -345,9 +351,17 @@ if not args.dont_upload:
                 "-fl",
                 str(flash_file.absolute()),
             ],
-            stdout=sys.stdout,
+            capture_output=True,
             check=True,
         )
+        ## check to see if we succeeded
+        try:
+            if json.loads(p.stdout.decode("utf-8"))["0"][0] == node.network_address:
+                print("success")
+        except:
+            print("failed")
+            exit()
+
 
 # serial aggregation
 serial_count = 0
@@ -357,30 +371,34 @@ nodes_by_oml_name = {node.oml_name: node for node in nodes}
 
 
 async def serial_aggregation_coroutine(site_url):
-    global serial_count
-    print("Starting serial aggregation collection")
-    p = await asyncio.create_subprocess_exec(
-        "ssh",
-        f"{USER}@{site_url}",
-        "serial_aggregator",
-        "-i",
-        str(EXPERIMENT),
-        stdout=asyncio.subprocess.PIPE,
-    )
-    while True:
-        record = (await p.stdout.readline()).decode("utf-8")
-        record = record.split(";")
-        if len(record) <= 2:  # probably something like <time>;Aggregator started
-            continue
-
-        time_us = int(float(record[0]) * 1e6)
-        node = nodes_by_id[record[1]]
-        msg = record[2]
-        db_con.execute(
-            "INSERT INTO traces (node_id, timestamp, message) VALUES (?,?,?)",
-            (node.node_id, time_us, msg),
+    try:
+        global serial_count
+        print("Starting serial aggregation collection")
+        p = await asyncio.create_subprocess_exec(
+            "ssh",
+            f"{USER}@{site_url}",
+            "serial_aggregator",
+            "-i",
+            str(EXPERIMENT),
+            stdout=asyncio.subprocess.PIPE,
         )
-        serial_count += 1
+        while True:
+            record = (await p.stdout.readline()).decode("utf-8")
+            record = record.split(";")
+            if len(record) <= 2:  # probably something like <time>;Aggregator started
+                continue
+
+            time_unix_s = float(record[0])
+            node = nodes_by_id[record[1]]
+            msg = record[2]
+            db_con.execute(
+                "INSERT INTO Trace (node_id, timestamp, message) VALUES (?,?,?)",
+                (node.node_id, datetime.fromtimestamp(time_unix_s), msg),
+            )
+            serial_count += 1
+    finally:
+        print("Stopping serial aggregation collection")
+        p.terminate()
 
 
 ## power consumption metrics
@@ -388,118 +406,126 @@ power_consumption_count = 0
 
 
 async def power_consumption_coroutine(site_url, oml_files):
-    global power_consumption_count
-    print("starting power consumption collection")
-    ## wait 5 sec for the files to be created
-    await asyncio.sleep(5)
-    ## use GNU Parallel to run multiple processes through a single ssh connection and collect the results in 1 stdout stream
-    p = await asyncio.create_subprocess_exec(
-        "parallel",
-        "--jobs",
-        "0",
-        "--line-buffer",
-        "--tag",
-        "--controlmaster",
-        "-S",
-        f"{USER}@{site_url}",
-        "--workdir",
-        f"/senslab/users/berthels/.iot-lab/{EXPERIMENT}/consumption",
-        "tail -F",
-        ":::",
-        *oml_files,
-        stdout=asyncio.subprocess.PIPE,
-    )
-    ## matches strings from the .oml files prepended with the name of the file.
-    ## The regex is made to match lines of (newlines is whitespace):
-    # "
-    # <node name :str>
-    # <run time in second since experiment start :float>
-    # <oml schema? :int>
-    # <some counter :int>
-    # <seconds part of timestamp :int>
-    # <microsecond part of timestamp :int>
-    # <power measurement :float>
-    # <voltage measurement :float>
-    # <current measurement :float>
-    matcher = regex.compile(
-        r"^(?P<node_name>\S+)\s+(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$"
-    )
-
-    while True:
-        line = (await p.stdout.readline()).decode("utf-8")
-        record = matcher.match(line)
-        if record is None:
-            continue
-        timestamp = int(int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"]))
-        db_con.execute(
-            "INSERT INTO power_consumptions (node_id, timestamp, voltage, current, power) VALUES (?, ?, ?, ?, ?)",
-            (
-                nodes_by_oml_name[record["node_name"]].deveui,
-                datetime.fromtimestamp(timestamp / 1e6),
-                float(record["voltage"]),
-                float(record["current"]),
-                float(record["power"]),
-            ),
+    try:
+        global power_consumption_count
+        print("starting power consumption collection")
+        ## wait 5 sec for the files to be created
+        await asyncio.sleep(5)
+        ## use GNU Parallel to run multiple processes through a single ssh connection and collect the results in 1 stdout stream
+        p = await asyncio.create_subprocess_exec(
+            "parallel",
+            "--jobs",
+            "0",
+            "--line-buffer",
+            "--tag",
+            "--controlmaster",
+            "-S",
+            f"{USER}@{site_url}",
+            "--workdir",
+            f"/senslab/users/berthels/.iot-lab/{EXPERIMENT}/consumption",
+            "tail -F",
+            ":::",
+            *oml_files,
+            stdout=asyncio.subprocess.PIPE,
         )
-        power_consumption_count += 1
+        ## matches strings from the .oml files prepended with the name of the file.
+        ## The regex is made to match lines of (newlines is whitespace):
+        # "
+        # <node name :str>
+        # <run time in second since experiment start :float>
+        # <oml schema? :int>
+        # <some counter :int>
+        # <seconds part of timestamp :int>
+        # <microsecond part of timestamp :int>
+        # <power measurement :float>
+        # <voltage measurement :float>
+        # <current measurement :float>
+        matcher = regex.compile(
+            r"^(?P<node_name>\S+)\s+(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$"
+        )
+
+        while True:
+            line = (await p.stdout.readline()).decode("utf-8")
+            record = matcher.match(line)
+            if record is None:
+                continue
+            timestamp = int(int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"]))
+            db_con.execute(
+                "INSERT INTO power_consumptions (node_id, timestamp, voltage, current, power) VALUES (?, ?, ?, ?, ?)",
+                (
+                    nodes_by_oml_name[record["node_name"]].deveui,
+                    datetime.fromtimestamp(timestamp / 1e6),
+                    float(record["voltage"]),
+                    float(record["current"]),
+                    float(record["power"]),
+                ),
+            )
+            power_consumption_count += 1
+    finally:
+        print("Stopping power consumption collection")
+        p.terminate()
 
 
 radio_count = 0
 
 
 async def radio_coroutine(site_url, oml_files):
-    global radio_count
-    await asyncio.sleep(60)
-    print("starting radio collection")
-    ## use GNU Parallel to run multiple processes through a single ssh connection and collect the results in 1 stdout stream
-    p = await asyncio.create_subprocess_exec(
-        "parallel",
-        "--jobs",
-        "0",
-        "--line-buffer",
-        "--tag",
-        "--controlmaster",
-        "-S",
-        f"{USER}@{site_url}",
-        "--workdir",
-        f"/senslab/users/berthels/.iot-lab/{EXPERIMENT}/radio",
-        "tail -F",
-        ":::",
-        *oml_files,
-        stdout=asyncio.subprocess.PIPE,
-    )
-    ## matches strings from the .oml files prepended with the name of the file.
-    ## The regex is made to match lines of (newlines is whitespace):
-    # "
-    # <node name :str>
-    # <run time in second since experiment start :float>
-    # <oml schema? :int>
-    # <some counter :int>
-    # <seconds part of timestamp :int>
-    # <microsecond part of timestamp :int>
-    # <power measurement :float>
-    # <voltage measurement :float>
-    # <current measurement :float>
-    matcher = regex.compile(
-        r"^(?P<node_name>\S+)\s+(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<channel>\d+)\s+(?P<rssi>\-?\d+)$"
-    )
-
-    while True:
-        line = await p.stdout.readline()
-        record = matcher.match(line.decode("utf-8"))
-        if record is None:
-            continue
-        timestamp = int(int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"]))
-        db_con.execute(
-            "INSERT INTO radios (node_id, timestamp, channel, rssi) VALUES (?, ?, ?, ?)",
-            (
-                nodes_by_oml_name[record["node_name"]].deveui,
-                datetime.fromtimestamp(timestamp / 1e6),
-                int(record["channel"]),
-                int(record["rssi"]),
-            ),
+    try:
+        global radio_count
+        await asyncio.sleep(60)
+        print("starting radio collection")
+        ## use GNU Parallel to run multiple processes through a single ssh connection and collect the results in 1 stdout stream
+        p = await asyncio.create_subprocess_exec(
+            "parallel",
+            "--jobs",
+            "0",
+            "--line-buffer",
+            "--tag",
+            "--controlmaster",
+            "-S",
+            f"{USER}@{site_url}",
+            "--workdir",
+            f"/senslab/users/berthels/.iot-lab/{EXPERIMENT}/radio",
+            "tail -F",
+            ":::",
+            *oml_files,
+            stdout=asyncio.subprocess.PIPE,
         )
-        radio_count += 1
+        ## matches strings from the .oml files prepended with the name of the file.
+        ## The regex is made to match lines of (newlines is whitespace):
+        # "
+        # <node name :str>
+        # <run time in second since experiment start :float>
+        # <oml schema? :int>
+        # <some counter :int>
+        # <seconds part of timestamp :int>
+        # <microsecond part of timestamp :int>
+        # <power measurement :float>
+        # <voltage measurement :float>
+        # <current measurement :float>
+        matcher = regex.compile(
+            r"^(?P<node_name>\S+)\s+(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<channel>\d+)\s+(?P<rssi>\-?\d+)$"
+        )
+
+        while True:
+            line = await p.stdout.readline()
+            record = matcher.match(line.decode("utf-8"))
+            if record is None:
+                continue
+            timestamp = int(int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"]))
+            db_con.execute(
+                "INSERT INTO radios (node_id, timestamp, channel, rssi) VALUES (?, ?, ?, ?)",
+                (
+                    nodes_by_oml_name[record["node_name"]].deveui,
+                    datetime.fromtimestamp(timestamp / 1e6),
+                    int(record["channel"]),
+                    int(record["rssi"]),
+                ),
+            )
+            radio_count += 1
+    finally:
+        print("Stopping radio collection")
+        p.terminate()
 
 
 MQTT_CONFIG = EXPERIMENT_CONFIG["MQTT"]
@@ -512,6 +538,7 @@ async def mqtt_coroutine():
         username=MQTT_CONFIG["USERNAME"],
         password=MQTT_CONFIG["PASSWORD"],
         clean_session=False,
+        client_id=str(EXPERIMENT)
     ) as client:
         async with client.messages() as messages:
             await client.subscribe(MQTT_CONFIG["TOPIC"], qos=2)
@@ -848,20 +875,35 @@ async def mqtt_coroutine():
 
 async def print_progress():
     print("\n" * 3, end="")
+    ## fetch stats from db
+    nodes_count = db_con.execute("SELECT COUNT(*) FROM Node").fetchone()[0]
+    serial_count = db_con.execute("SELECT COUNT(*) FROM Trace").fetchone()[0]
+    power_consumption_count = db_con.execute("SELECT COUNT(*) FROM Power_Consumption").fetchone()[0]
+    radio_count = db_con.execute("SELECT COUNT(*) FROM Radio").fetchone()[0]
+    sites = db_con.execute("SELECT * from Site").fetchall()
+    mqtt_messages_count = db_con.execute("SELECT COUNT(*) FROM Message").fetchone()[0]
+    gateways_count = db_con.execute("SELECT COUNT(*) FROM Gateway").fetchone()[0]
     while True:
-        print(
-            f"serial lines: {serial_count}",
-            f"power_consumption lines: {power_consumption_count}",
-            f"radio lines: {radio_count}",
-            sep="\n",
-        )
-        print("\033[F\033[K" * 3, end="")
+        # print stats
+        output_strings = [
+            f"Nodes: {nodes_count}",
+            f"Sites: {str(sites)}",
+            f"Traces: {serial_count}",
+            f"Power Consumption: {power_consumption_count}",
+            f"Radio: {radio_count}",
+            f"Gateway: {gateways_count}",
+            f"Messages: {mqtt_messages_count}",
+            ]
+        print(*output_strings)
         await asyncio.sleep(0.5)
+        print("\033[F\033[K" * len(output_strings), end="")
+
+
 
 
 async def commit():
     while True:
-        await asyncio.sleep(1)
+        await asyncio.sleep(5)
         db_con.commit()
 
 
@@ -885,9 +927,17 @@ async def main():
             )
         )
         tasks.append(radio_coroutine(site_to_site_urls[site], [n.oml_name for n in ns]))
+        tasks.append(mqtt_coroutine())
     tasks.append(print_progress())
-    tasks.append(commit())
-    await asyncio.gather(*tasks)
+    #tasks.append(commit())
+    group = asyncio.gather(*tasks,)
+    try:
+        await group
+    except Exception as e:
+        print(e)
+        for task in group:
+            task.cancel()
+        
 
 
 asyncio.run(main())
