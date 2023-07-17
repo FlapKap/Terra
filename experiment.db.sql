@@ -22,8 +22,9 @@ CREATE TABLE IF NOT EXISTS Node (
 );
 
 -- POWER_CONSUMPTION
+CREATE SEQUENCE IF NOT EXISTS Power_Consumption_id_seq;
 CREATE TABLE IF NOT EXISTS Power_Consumption (
-    power_consumption_id INTEGER PRIMARY KEY,
+    power_consumption_id INTEGER PRIMARY KEY DEFAULT nextval('Power_Consumption_id_seq'),
     node_id VARCHAR REFERENCES Node(node_deveui),
     timestamp TIMESTAMP NOT NULL,
     current REAL NOT NULL,

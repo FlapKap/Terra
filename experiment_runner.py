@@ -211,7 +211,7 @@ if (
     exit()
 
 if not args.attach:
-    print("Registering experiment")
+    print("Registering experiment... ", end="")
     # create experiment
     ## create arguments for nodes
     node_strings = []
@@ -222,7 +222,7 @@ if not args.attach:
                 f"1,archi={device['IOT-LAB_BOARD']}+site={device['SITE']},,{device['PROFILE']}",
             ]
         )
-    subprocess.run(
+    p = subprocess.run(
         [
             "iotlab",
             "experiment",
@@ -231,9 +231,12 @@ if not args.attach:
             EXPERIMENT_CONFIG["DURATION"],
             *node_strings,
         ],
-        stdout=sys.stdout,
+        capture_output=True,
         check=True,
     )
+    exp_id = json.loads(p.stdout.decode("utf-8")).get("id")
+    if exp_id != None:
+        print(f"Sucess! Got id {exp_id}")
 
 print("Waiting for experiment to start")
 # find experiment
@@ -250,7 +253,7 @@ DB_PATH = EXPERIMENT_FOLDER / f"{EXPERIMENT}.duckdb"
 print(f"Create DuckDB for experiment data at {str(DB_PATH)}")
 # Check if file already exists
 if DB_PATH.exists():
-    answer = input(f"Database already exists at {str(DB_PATH)}. Do you want us to delete it? [y/n]")
+    answer = input(f"Database already exists at {str(DB_PATH)}. Do you want us to delete it? [y/n] ")
     if answer == "y":
         DB_PATH.unlink()
     else: exit()
@@ -371,6 +374,7 @@ nodes_by_oml_name = {node.oml_name: node for node in nodes}
 
 
 async def serial_aggregation_coroutine(site_url):
+    p = None # initialize p to None so we in finally can check and terminate if it has been set
     try:
         global serial_count
         print("Starting serial aggregation collection")
@@ -393,12 +397,13 @@ async def serial_aggregation_coroutine(site_url):
             msg = record[2]
             db_con.execute(
                 "INSERT INTO Trace (node_id, timestamp, message) VALUES (?,?,?)",
-                (node.node_id, datetime.fromtimestamp(time_unix_s), msg),
+                (node.deveui, datetime.fromtimestamp(time_unix_s), msg),
             )
             serial_count += 1
     finally:
         print("Stopping serial aggregation collection")
-        p.terminate()
+        if p:
+            p.terminate()
 
 
 ## power consumption metrics
@@ -406,6 +411,7 @@ power_consumption_count = 0
 
 
 async def power_consumption_coroutine(site_url, oml_files):
+    p = None # initialize p to None so we in finally can check and terminate if it has been set
     try:
         global power_consumption_count
         print("starting power consumption collection")
@@ -451,7 +457,7 @@ async def power_consumption_coroutine(site_url, oml_files):
                 continue
             timestamp = int(int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"]))
             db_con.execute(
-                "INSERT INTO power_consumptions (node_id, timestamp, voltage, current, power) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO Power_Consumption (node_id, timestamp, voltage, current, power) VALUES (?, ?, ?, ?, ?)",
                 (
                     nodes_by_oml_name[record["node_name"]].deveui,
                     datetime.fromtimestamp(timestamp / 1e6),
@@ -463,13 +469,15 @@ async def power_consumption_coroutine(site_url, oml_files):
             power_consumption_count += 1
     finally:
         print("Stopping power consumption collection")
-        p.terminate()
+        if p:
+            p.terminate()
 
 
 radio_count = 0
 
 
 async def radio_coroutine(site_url, oml_files):
+    p = None # initialize p to None so we in finally can check and terminate if it has been set
     try:
         global radio_count
         await asyncio.sleep(60)
@@ -514,7 +522,7 @@ async def radio_coroutine(site_url, oml_files):
                 continue
             timestamp = int(int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"]))
             db_con.execute(
-                "INSERT INTO radios (node_id, timestamp, channel, rssi) VALUES (?, ?, ?, ?)",
+                "INSERT INTO Radio (node_id, timestamp, channel, rssi) VALUES (?, ?, ?, ?)",
                 (
                     nodes_by_oml_name[record["node_name"]].deveui,
                     datetime.fromtimestamp(timestamp / 1e6),
@@ -525,7 +533,8 @@ async def radio_coroutine(site_url, oml_files):
             radio_count += 1
     finally:
         print("Stopping radio collection")
-        p.terminate()
+        if p:
+            p.terminate()
 
 
 MQTT_CONFIG = EXPERIMENT_CONFIG["MQTT"]
@@ -534,12 +543,13 @@ MQTT_CONFIG = EXPERIMENT_CONFIG["MQTT"]
 async def mqtt_coroutine():
     async with aiomqtt.Client(
         hostname=MQTT_CONFIG["ADDRESS"],
-        port=8883,
+        port=int(MQTT_CONFIG["PORT"]),
         username=MQTT_CONFIG["USERNAME"],
         password=MQTT_CONFIG["PASSWORD"],
         clean_session=False,
         client_id=str(EXPERIMENT)
     ) as client:
+        
         async with client.messages() as messages:
             await client.subscribe(MQTT_CONFIG["TOPIC"], qos=2)
             async for msg in messages:
@@ -874,7 +884,7 @@ async def mqtt_coroutine():
 
 
 async def print_progress():
-    print("\n" * 3, end="")
+    #print("\n" * 3, end="")
     ## fetch stats from db
     nodes_count = db_con.execute("SELECT COUNT(*) FROM Node").fetchone()[0]
     serial_count = db_con.execute("SELECT COUNT(*) FROM Trace").fetchone()[0]
@@ -896,7 +906,7 @@ async def print_progress():
             ]
         print(*output_strings)
         await asyncio.sleep(0.5)
-        print("\033[F\033[K" * len(output_strings), end="")
+    #    print("\033[F\033[K" * len(output_strings), end="")
 
 
 
