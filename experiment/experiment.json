@@ -6,7 +6,7 @@
         "PORT": 1883,
         "USERNAME": "nes-test-application@ttn",
         "PASSWORD": "<redacted>",
-        "TOPIC": "v3/nes-test-application/devices/#"
+        "TOPIC": "v3/nes-test-application@ttn/devices/#"
     },
     "NODES": [
         {
