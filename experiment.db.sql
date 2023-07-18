@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS Site (
 
 -- GATEWAY
 CREATE TABLE IF NOT EXISTS Gateway (
-    gateway_deveui VARCHAR PRIMARY KEY
+    gateway_id VARCHAR PRIMARY KEY
 );
 
 -- NODE
@@ -82,8 +82,8 @@ CREATE TYPE CodingRateEnum AS ENUM ('4/5', '4/6', '5/7', '4/8');
 
 CREATE TABLE IF NOT EXISTS Uplink_Message (
     uplink_message_id INTEGER PRIMARY KEY REFERENCES Content_Message(content_message_id),
-    through_gateway VARCHAR NOT NULL REFERENCES Gateway(gateway_deveui),
-    gateway_received_at TIMESTAMP NOT NULL,
+    through_gateway VARCHAR NOT NULL REFERENCES Gateway(gateway_id),
+    gateway_received_at TIMESTAMP,
     app_received_at TIMESTAMP NOT NULL,
     rssi INTEGER NOT NULL,
     snr INTEGER NOT NULL,
