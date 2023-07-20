@@ -11,11 +11,9 @@ typedef struct _Number {
         float _float;     // case 3
         double _double;   // case 4
     } type;
-    int unionCase;
+    uint8_t unionCase;
 } Number;
 
-void printNumberValue(Number val);
-void printNumberValueAndUcase(Number val);
 
 int compare(Number n1, Number n2);
 Number bin_op(Number n1, Number n2, char op);

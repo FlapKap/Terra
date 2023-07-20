@@ -6,7 +6,7 @@
 Env *init_env(void)
 {
     Env *env = (Env*) malloc(sizeof(Env));
-    env->array = (Number *) calloc(10, sizeof(Number));
+    env->memory = (Number *) calloc(10, sizeof(Number));
     env->size = 10;
     env->stack = init_stack();
     return env;
@@ -19,18 +19,18 @@ void clear_env(Env *env)
         Number number;
         number.type._int = 0;
         number.unionCase = 1;
-        env->array[i] = number;
+        env->memory[i] = number;
     }
 }
 
 Number get_value(Env *env, int index)
 {
-    return env->array[index];
+    return env->memory[index];
 }
 
 void set_value(Env *env, int index, Number val)
 {
-    env->array[index] = val;
+    env->memory[index] = val;
 }
 
 void clear_stack(Env *env)
@@ -49,5 +49,5 @@ Stack *get_stack(Env *env)
 void resize_env(Env *env)
 {
     env->size += 10;
-    env->array = (Number*)realloc(env->array, (env->size * sizeof(Number)));
+    env->memory = (Number*)realloc(env->memory, (env->size * sizeof(Number)));
 }

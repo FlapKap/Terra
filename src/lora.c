@@ -49,18 +49,29 @@ static void *_recv(void *arg)
     return NULL;
 }
 
-int connect_lorawan(void)
-{
+int init_lorawan(void) {
     /* Convert identifiers and keys strings to byte arrays */
-    fmt_hex_bytes(deveui, CONFIG_LORAMAC_DEV_EUI_DEFAULT);
-    fmt_hex_bytes(appeui, CONFIG_LORAMAC_APP_EUI_DEFAULT);
-    fmt_hex_bytes(appkey, CONFIG_LORAMAC_APP_KEY_DEFAULT);
+    size_t deveui_size = fmt_hex_bytes(deveui, CONFIG_LORAMAC_DEV_EUI_DEFAULT);
+    size_t appeui_size = fmt_hex_bytes(appeui, CONFIG_LORAMAC_APP_EUI_DEFAULT);
+    size_t appkey_size = fmt_hex_bytes(appkey, CONFIG_LORAMAC_APP_KEY_DEFAULT);
     semtech_loramac_set_deveui(&loramac, deveui);
     semtech_loramac_set_appeui(&loramac, appeui);
     semtech_loramac_set_appkey(&loramac, appkey);
 
     /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
     semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
+
+    // if any of deveui_size, appeui_size, or appkey_size is zero, return -1
+    if (deveui_size == 0 || appeui_size == 0 || appkey_size == 0) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+
+int connect_lorawan(void)
+{
     puts("trying to join network\n");
     /* Join the network if not already joined */
     while (!semtech_loramac_is_mac_joined(&loramac)) {
@@ -76,9 +87,10 @@ int connect_lorawan(void)
     }
     puts("Join procedure succeeded");
     //semtech_loramac_save();
-    thread_create(_recv_stack, sizeof(_recv_stack),
+    puts("creating recv thread");
+    int ret = thread_create(_recv_stack, sizeof(_recv_stack),
               THREAD_PRIORITY_MAIN - 1, 0, _recv, NULL, "recv thread");
-
+    printf("ret: %d\n", ret);
     // /* trigger the first send */
     // msg_t msg;
     // kernel_pid_t sender_pid = thread_getpid();

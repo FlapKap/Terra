@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <kernel_defines.h>
-
+#include <fmt.h>
+ 
 // Local includes
 #include "stack.h"
 #include "environment.h"
@@ -16,6 +17,7 @@
 #include "number.h"
 #include "encodeInput.h"
 #include "encodeOutput.h"
+#include "print_utils.h"
 
 #include <time.h>
 
@@ -57,7 +59,7 @@ int main(void)
 #elif IS_USED(MODULE_AUTO_INIT_LORAMAC) // we have to have lorawan enabled for the main to run
 extern semtech_loramac_t loramac;
 
-bool receive_and_decode(Message *msg)
+static bool receive_and_decode(Message *msg)
 {
   // Check for received messages
   pb_istream_t istream = pb_istream_from_buffer(loramac.rx_data.payload, loramac.rx_data.payload_len);
@@ -72,6 +74,17 @@ int main(void)
   ztimer_sleep(ZTIMER_SEC, 3);
   puts("NebulaStream End Device Runtime");
   puts("=====================================");
+  puts("initializing lorawan");
+  init_lorawan();
+  puts("LoRaWAN Info:");
+  //fputs to avoid newlines in the end
+  fputs("  Device EUI: ", stdout);
+  print_bytes_hex(loramac.deveui, LORAMAC_DEVEUI_LEN);
+  fputs("\n  Application EUI: ", stdout);
+  print_bytes_hex(loramac.appeui, LORAMAC_APPEUI_LEN);
+  fputs("\n  Application Key: ", stdout);
+  print_bytes_hex(loramac.appkey, LORAMAC_APPKEY_LEN);
+  puts("\n");
 
   // Run Tests (Only on native)
 
@@ -85,30 +98,36 @@ int main(void)
   while (1)
   {
     puts("Main loop iteration");
-    ztimer_sleep(ZTIMER_SEC, 5);
+    //ztimer_sleep(ZTIMER_SEC, 5);
     if (!valid_msg)
     {
+      printf("no valid message received\n");
       // if not a valid query
       //  send message to receive
       uint8_t tmp[1];
-      if (send_message(tmp, (uint8_t)1) != 0)
-      {
-        return -1;
-      };
+      puts("Main loop: sending message");
+      send_message(tmp, (uint8_t)1);
       Message msg_tmp;
       if (receive_and_decode(&msg_tmp))
       {
-        msg = msg_tmp;
-        valid_msg = true;
+        printf("received message\n");
+        
+        if (msg_tmp.amount > 0){
+          valid_msg = true;
+          msg = msg_tmp;
+          printMessage(&msg);
+        }
+        }
       }
       else
       {
         printf("couldn't decode message. Ignoring...\n");
       }
     }
-
+    
     if (valid_msg)
     {
+      printf("message is valid. Running queries...\n");
 
       // Execute queries
       OutputMessage out;
@@ -124,11 +143,14 @@ int main(void)
         // check if there is new messages
         if (receive_and_decode(&msg_tmp))
         {
-          msg = msg_tmp;
+        if (msg_tmp.amount > 0){
           valid_msg = true;
+          msg = msg_tmp;
+          printMessage(&msg);
         }
       }
     }
+    ztimer_sleep(ZTIMER_SEC, 5);
   }
   return 0;
 }

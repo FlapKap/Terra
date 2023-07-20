@@ -21,7 +21,7 @@ static void setUp(void)
 
 static void tearDown(void)
 {
-  free(expres.env->array);
+  free(expres.env->memory);
   free(expres.env->stack->stack);
   free(expres.env->stack);
   //free(expres.program);
