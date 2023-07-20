@@ -1,9 +1,10 @@
 
-#include "encodeInput.h"
+
 #include "operators.h"
 #include "pb_encode.h"
 #include "pb_decode.h"
-#include "encodeOutput.h"
+#include "input_serialization.h"
+#include "output_serialization.h"
 #include "EndDeviceProtocol.pb.h"
 
 void init_map_operation(Map map, EndDeviceProtocol_MapOperation *out){

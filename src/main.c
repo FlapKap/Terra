@@ -15,8 +15,8 @@
 #include "execution.h"
 #include "operators.h"
 #include "number.h"
-#include "encodeInput.h"
-#include "encodeOutput.h"
+#include "input_serialization.h"
+#include "output_serialization.h"
 #include "print_utils.h"
 
 #include <time.h>

@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include "protocol_tests.h"
 #include "environment.h"
-#include "encodeInput.h"
-#include "encodeOutput.h"
+#include "input_serialization.h"
+#include "output_serialization.h"
 #include "pb_encode.h"
 #include "pb_decode.h"
 
