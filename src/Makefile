@@ -6,11 +6,14 @@ BOARD ?= b-l072z-lrwan1
 ## We assume riot is placed next to this repo
 RIOTBASE ?= $(CURDIR)/../../RIOT
 
+# Set the compile_commands.json file to a known location
+COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
+
 # Different build configurations. Optimized builds run without any debug symbols and o3 optimizations
 APPLICATION_BUILD_OPTIMIZED ?= 0
 
 # Application run tests instead of the normal "main" function
-APPLICATION_RUN_TEST ?= 1
+APPLICATION_RUN_TEST ?= 0
 
 # for native builds we want to disable lora
 DISABLE_LORA ?= 0
@@ -19,7 +22,7 @@ DISABLE_LORA ?= 0
 QUIET ?= 1
 
 # Packages
-USEMODULE += saul_default
+#USEMODULE += saul_default
 USEMODULE += fmt
 
 ## Nanopb stuff
@@ -36,7 +39,7 @@ FEATURES_OPTIONAL += periph_uart
 
 
 # change stack size
-CFLAGS += -DTHREAD_STACKSIZE_MAIN='20480'
+CFLAGS += -DTHREAD_STACKSIZE_MAIN='10480'
 
 ifeq (1, $(APPLICATION_BUILD_OPTIMIZED))
 CFLAGS += -O3
@@ -52,7 +55,7 @@ DEVELHELP ?= 1 # development helpers
 CREATE_STACKTEST ?= 1 # check stacksizes
 endif
 
-ifdef APPLICATION_RUN_TEST
+ifeq (1, $(APPLICATION_RUN_TEST))
 # Test stuff
 CFLAGS += -DAPPLICATION_RUN_TEST
 USEMODULE += embunit
@@ -63,7 +66,7 @@ endif
 ifneq ($(BOARD), native)
 
 # Include the Semtech-loramac package
-USEMODULE += netdev_default
+#USEMODULE += netdev_default
 DRIVER ?= sx1276
 USEMODULE += $(DRIVER)
 USEPKG += semtech-loramac
@@ -73,13 +76,13 @@ endif
 
 
 # LoRaWAN Stuff
-ifeq (,$(filter semtech-loramac,$(USEPKG)))
+ifneq (,$(filter semtech-loramac,$(USEPKG)))
 # Currently only supports otaa
 ACTIVATION_MODE ?= otaa
 
 APPEUI ?= 0000000000000000
-DEVEUI ?= 0000000000000000
-APPKEY ?= 00000000000000000000000000000000
+DEVEUI ?= 70B3D57ED005EA59
+APPKEY ?= 385794DDE70CE2EAB5B5B12A4807822C
 CFLAGS += -DCONFIG_LORAMAC_APP_KEY_DEFAULT=\"$(APPKEY)\"
 CFLAGS += -DCONFIG_LORAMAC_APP_EUI_DEFAULT=\"$(APPEUI)\"
 CFLAGS += -DCONFIG_LORAMAC_DEV_EUI_DEFAULT=\"$(DEVEUI)\"
