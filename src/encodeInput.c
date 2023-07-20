@@ -28,26 +28,35 @@ void init_filter_operation(Filter filter, EndDeviceProtocol_FilterOperation *out
 
 void init_window_operation(Window window, EndDeviceProtocol_WindowOperation *out){
   out->size = window.size;
-  if(window.sizeType == TIMEBASED){
-    out->sizeType = EndDeviceProtocol_WindowSizeType_TIMEBASED;
-  } else if (window.sizeType == COUNTBASED){
-    out->sizeType = EndDeviceProtocol_WindowSizeType_COUNTBASED;
-  } else {
-    printf("unknown window sizetype!\n");
-  }
+    switch (window.sizeType) {
+        case TIMEBASED:
+            out->sizeType = EndDeviceProtocol_WindowSizeType_TIMEBASED;
+            break;
+        case COUNTBASED:
+            out->sizeType = EndDeviceProtocol_WindowSizeType_COUNTBASED;
+            break;
+        default:
+            printf("unknown window sizetype!\n");
+    }
 
-  if(window.aggregationType == MIN){
-    out->aggregationType = EndDeviceProtocol_WindowAggregationType_MIN;
-  } else if(window.aggregationType == MAX){
-    out->aggregationType = EndDeviceProtocol_WindowAggregationType_MAX;
-  } else if(window.aggregationType == SUM){
-    out->aggregationType = EndDeviceProtocol_WindowAggregationType_SUM;
-  } else if(window.aggregationType == AVG){
-    out->aggregationType = EndDeviceProtocol_WindowAggregationType_AVG;
-  } else if(window.aggregationType == COUNT){
-    out->aggregationType = EndDeviceProtocol_WindowAggregationType_COUNT;
-  } else {
-    printf("Unkown window aggregation type!\n");
+  switch (window.aggregationType) {
+    case MIN:
+        out->aggregationType = EndDeviceProtocol_WindowAggregationType_MIN;
+        break;
+    case MAX:
+        out->aggregationType = EndDeviceProtocol_WindowAggregationType_MAX;
+        break;
+    case SUM:
+        out->aggregationType = EndDeviceProtocol_WindowAggregationType_SUM;
+        break;
+    case AVG:
+        out->aggregationType = EndDeviceProtocol_WindowAggregationType_AVG;
+        break;
+    case COUNT:
+        out->aggregationType = EndDeviceProtocol_WindowAggregationType_COUNT;
+        break;
+    default:
+        printf("unknown window aggregation type!\n");
   }
   
   out->startAttribute = window.startAttribute;
@@ -57,23 +66,32 @@ void init_window_operation(Window window, EndDeviceProtocol_WindowOperation *out
 }
 
 void init_operation(Operation op, EndDeviceProtocol_Operation *out){
-  if(op.unionCase == 0){
-    EndDeviceProtocol_MapOperation current = EndDeviceProtocol_MapOperation_init_zero;
-    init_map_operation(*op.operation.map, &current);
-    out->operation.map = current;
-    out->which_operation = EndDeviceProtocol_Operation_map_tag;
-  } else if(op.unionCase == 1){
-    EndDeviceProtocol_FilterOperation current = EndDeviceProtocol_FilterOperation_init_zero;
-    init_filter_operation(*op.operation.filter, &current);
-    out->operation.filter = current;
-    out->which_operation = EndDeviceProtocol_Operation_filter_tag;
-  } else if(op.unionCase == 2){
-    EndDeviceProtocol_WindowOperation current = EndDeviceProtocol_WindowOperation_init_zero;
-    init_window_operation(*op.operation.window, &current);
-    out->operation.window = current;
-    out->which_operation = EndDeviceProtocol_Operation_window_tag;
-  } else {
-    printf("Unkonwn operation type!");
+  // wont these initialisations be created on the stack?
+  switch (op.unionCase) {
+    case 0: {
+      EndDeviceProtocol_MapOperation current = EndDeviceProtocol_MapOperation_init_zero;
+      init_map_operation(*op.operation.map, &current);
+      out->operation.map = current;
+      out->which_operation = EndDeviceProtocol_Operation_map_tag;
+      break;
+    }
+    case 1: {
+      EndDeviceProtocol_FilterOperation current = EndDeviceProtocol_FilterOperation_init_zero;
+      init_filter_operation(*op.operation.filter, &current);
+      out->operation.filter = current;
+      out->which_operation = EndDeviceProtocol_Operation_filter_tag;
+      break;
+    }
+
+    case 2: {
+      EndDeviceProtocol_WindowOperation current = EndDeviceProtocol_WindowOperation_init_zero;
+      init_window_operation(*op.operation.window, &current);
+      out->operation.window = current;
+      out->which_operation = EndDeviceProtocol_Operation_window_tag;
+      break;
+    }
+    default:
+      printf("Unknown operation type!\n");
   }
 }
 
@@ -177,34 +195,46 @@ void decoded_input_to_operation(EndDeviceProtocol_Operation decoded, Operation *
   }
 }
 
-void decoded_input_to_window_operation(EndDeviceProtocol_WindowOperation decoded, Window *out){
-  out->size = decoded.size;
-  if(decoded.sizeType == EndDeviceProtocol_WindowSizeType_COUNTBASED){
-    out->sizeType = COUNTBASED;
-  } else if(decoded.sizeType == EndDeviceProtocol_WindowSizeType_TIMEBASED){
-    out->sizeType = TIMEBASED;
-  } else {
-    printf("Unkown window size type!\n");
+void decoded_input_to_window_operation(EndDeviceProtocol_WindowOperation input, Window *out) {
+  out->size = input.size;
+
+  switch (input.sizeType) {
+    case EndDeviceProtocol_WindowSizeType_COUNTBASED:
+      out->sizeType = COUNTBASED;
+      break;
+    case EndDeviceProtocol_WindowSizeType_TIMEBASED:
+      out->sizeType = TIMEBASED;
+      break;
+    default:
+      printf("Unknown window size type!\n");
+      break;
   }
 
-  if(decoded.aggregationType == EndDeviceProtocol_WindowAggregationType_MIN){
-    out->aggregationType = MIN;
-  } else if(decoded.aggregationType == EndDeviceProtocol_WindowAggregationType_MAX){
-    out->aggregationType = MAX;
-  } else if(decoded.aggregationType == EndDeviceProtocol_WindowAggregationType_SUM){
-    out->aggregationType = SUM;
-  } else if(decoded.aggregationType == EndDeviceProtocol_WindowAggregationType_AVG){
-    out->aggregationType = AVG;
-  } else if(decoded.aggregationType == EndDeviceProtocol_WindowAggregationType_COUNT){
-    out->aggregationType = COUNT;
-  } else {
-    printf("Unkown window aggregation type!\n");
+  switch (input.aggregationType) {
+    case EndDeviceProtocol_WindowAggregationType_MIN:
+      out->aggregationType = MIN;
+      break;
+    case EndDeviceProtocol_WindowAggregationType_MAX:
+      out->aggregationType = MAX;
+      break;
+    case EndDeviceProtocol_WindowAggregationType_SUM:
+      out->aggregationType = SUM;
+      break;
+    case EndDeviceProtocol_WindowAggregationType_AVG:
+      out->aggregationType = AVG;
+      break;
+    case EndDeviceProtocol_WindowAggregationType_COUNT:
+      out->aggregationType = COUNT;
+      break;
+    default:
+      printf("Unknown window aggregation type!\n");
+      break;
   }
 
-  out->startAttribute = decoded.startAttribute;
-  out->endAttribute = decoded.endAttribute;
-  out->resultAttribute = decoded.resultAttribute;
-  out->readAttribute = decoded.readAttribute;
+  out->startAttribute = input.startAttribute;
+  out->endAttribute = input.endAttribute;
+  out->resultAttribute = input.resultAttribute;
+  out->readAttribute = input.readAttribute;
 }
 
 void decoded_input_to_filter_operation(EndDeviceProtocol_FilterOperation decoded, Filter *out){
@@ -243,70 +273,102 @@ void decoded_input_to_map_operation(EndDeviceProtocol_MapOperation decoded, Map 
   out->expression = submessage;
 }
 
-void decoded_input_to_instruction(EndDeviceProtocol_Data decoded, Instruction *out){
-  if(decoded.which_data == EndDeviceProtocol_Data_instruction_tag){
-    if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST){
-      out->data._instruction = CONST;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_VAR){
-      out->data._instruction = VAR;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_AND){
-      out->data._instruction = AND;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_OR){
-      out->data._instruction = OR;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_NOT){
-      out->data._instruction = NOT;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_LT){
-      out->data._instruction = LT;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_GT){
-      out->data._instruction = GT;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_EQ){
-      out->data._instruction = EQ;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_ADD){
-      out->data._instruction = ADD;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_SUB){
-      out->data._instruction = SUB;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_MUL){
-      out->data._instruction = MUL;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_DIV){
-      out->data._instruction = DIV;
-    } else if(decoded.data.instruction == EndDeviceProtocol_ExpressionInstructions_MOD){
-      out->data._instruction = MOD;
-    } else {
-      printf("Unkown instruction type!\n");
-    }
-    out->unionCase = 0;
-  } else if (decoded.which_data == EndDeviceProtocol_Data__uint8_tag){
-    out->data._uint32 = decoded.data._uint8;
-    out->unionCase = 1;
-  } else if (decoded.which_data == EndDeviceProtocol_Data__uint16_tag){
-    out->data._uint32 = decoded.data._uint16;
-    out->unionCase = 1;
-  } else if (decoded.which_data == EndDeviceProtocol_Data__uint32_tag){
-    out->data._uint32 = decoded.data._uint32;
-    out->unionCase = 1;
-  } else if (decoded.which_data == EndDeviceProtocol_Data__uint64_tag){
-    out->data._uint32 = decoded.data._uint32;
-    out->unionCase = 1;
-  } else if (decoded.which_data == EndDeviceProtocol_Data__int8_tag){
-    out->data._int = decoded.data._int8;
-    out->unionCase = 2;
-  } else if (decoded.which_data == EndDeviceProtocol_Data__int16_tag){
-    out->data._int = decoded.data._int16;
-    out->unionCase = 2;
-  } else if (decoded.which_data == EndDeviceProtocol_Data__int32_tag){
-    out->data._int = decoded.data._int32;
-    out->unionCase = 2;
-  } else if (decoded.which_data == EndDeviceProtocol_Data__int64_tag){
-    out->data._int = decoded.data._int32;
-    out->unionCase = 2;
-  } else if (decoded.which_data == EndDeviceProtocol_Data__float_tag){
-    out->data._float = decoded.data._float;
-    out->unionCase = 3;
-  } else if (decoded.which_data == EndDeviceProtocol_Data__double_tag){
-    out->data._double = decoded.data._double;
-    out->unionCase = 4;
-  } else {
-    printf("Unkown data type!\n");
+void decoded_input_to_instruction(EndDeviceProtocol_Data input, Instruction *out){
+  //TODO: split this up to make it shorter
+  switch (input.which_data) {
+    case EndDeviceProtocol_Data_instruction_tag:
+      switch (input.data.instruction) {
+        case EndDeviceProtocol_ExpressionInstructions_CONST:
+          out->data._instruction = CONST;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_VAR:
+          out->data._instruction = VAR;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_AND:
+          out->data._instruction = AND;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_OR:
+          out->data._instruction = OR;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_NOT:
+          out->data._instruction = NOT;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_LT:
+          out->data._instruction = LT;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_GT:
+          out->data._instruction = GT;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_EQ:
+          out->data._instruction = EQ;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_ADD:
+          out->data._instruction = ADD;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_SUB:
+          out->data._instruction = SUB;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_MUL:
+          out->data._instruction = MUL;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_DIV:
+          out->data._instruction = DIV;
+          break;
+        case EndDeviceProtocol_ExpressionInstructions_MOD:
+          out->data._instruction = MOD;
+          break;
+        default:
+          // Unknown instruction type
+          printf("Unknown instruction type!\n");
+          break;
+      }
+      out->unionCase = 0;
+      break;
+
+    case EndDeviceProtocol_Data__uint8_tag:
+      out->data._uint32 = input.data._uint8;
+      out->unionCase = 1;
+      break;
+    case EndDeviceProtocol_Data__uint16_tag:
+      out->data._uint32 = input.data._uint16;
+      out->unionCase = 1;
+      break;
+    case EndDeviceProtocol_Data__uint32_tag:
+      out->data._uint32 = input.data._uint32;
+      out->unionCase = 1;
+      break;
+    case EndDeviceProtocol_Data__uint64_tag:
+      out->data._uint32 = input.data._uint64;
+      out->unionCase = 1;
+      break;
+    case EndDeviceProtocol_Data__int8_tag:
+      out->data._int = input.data._int8;
+      out->unionCase = 2;
+      break;
+    case EndDeviceProtocol_Data__int16_tag:
+      out->data._int = input.data._int16;
+      out->unionCase = 2;
+      break;
+    case EndDeviceProtocol_Data__int32_tag:
+      out->data._int = input.data._int32;
+      out->unionCase = 2;
+      break;
+    case EndDeviceProtocol_Data__int64_tag:
+      out->data._int = input.data._int64;
+      out->unionCase = 2;
+      break;
+    case EndDeviceProtocol_Data__float_tag:
+      out->data._float = input.data._float;
+      out->unionCase = 3;
+      break;
+    case EndDeviceProtocol_Data__double_tag:
+      out->data._double = input.data._double;
+      out->unionCase = 4;
+      break;
+    default:
+      // Unknown data type
+      printf("Unknown data type!\n");
+      break;
   }
 }
 
