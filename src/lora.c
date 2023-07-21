@@ -12,6 +12,9 @@
 #include "net/loramac.h"
 #include "semtech_loramac.h"
 
+#define ENABLE_DEBUG 1
+#include "debug.h"
+
 #define RECV_MSG_QUEUE (4U)
 
 static msg_t _recv_queue[RECV_MSG_QUEUE];
@@ -25,7 +28,7 @@ static uint8_t appkey[LORAMAC_APPKEY_LEN];
 
 uint8_t send_message(uint8_t* serializedData, uint8_t len)
 {
-    printf("Sending: %s\n", serializedData);
+    DEBUG("Sending: %s\n", serializedData);
     /* Try to send the message */
     uint8_t ret = semtech_loramac_send(&loramac,serializedData, len);
     if (ret != SEMTECH_LORAMAC_TX_DONE) {
@@ -43,8 +46,10 @@ static void *_recv(void *arg)
         /* blocks until some data is received */
         semtech_loramac_recv(&loramac);
         loramac.rx_data.payload[loramac.rx_data.payload_len] = 0;
-        printf("Data received: %s, port: %d\n length: %d\n",
+        if (loramac.rx_data.payload_len > 0) {
+            DEBUG("Data received: %s, port: %d\n length: %d\n",
                (char *)loramac.rx_data.payload, loramac.rx_data.port, loramac.rx_data.payload_len);
+        }
     }
     return NULL;
 }
@@ -88,9 +93,9 @@ int connect_lorawan(void)
     puts("Join procedure succeeded");
     //semtech_loramac_save();
     puts("creating recv thread");
-    int ret = thread_create(_recv_stack, sizeof(_recv_stack),
+    thread_create(_recv_stack, sizeof(_recv_stack),
               THREAD_PRIORITY_MAIN - 1, 0, _recv, NULL, "recv thread");
-    printf("ret: %d\n", ret);
+    //printf("ret: %d\n", ret);
     // /* trigger the first send */
     // msg_t msg;
     // kernel_pid_t sender_pid = thread_getpid();
