@@ -3,11 +3,19 @@ APPLICATION = NSED_Runtime
 PROJECTBASE = $(CURDIR)
 BOARD ?= b-l072z-lrwan1
 
-## We assume riot is placed next to this repo
-RIOTBASE ?= $(CURDIR)/../../RIOT
 
-# Set the compile_commands.json file to a known location
-COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
+# APPLICATION SPECIFIC CONFIGURATION ENTRIES
+## EXECUTE INTERVAL
+EXECUTION_INTERVAL_S ?= 20
+## LORA
+ACTIVATION_MODE ?= otaa # only otaa is supported
+LORA_REGION ?= EU868
+APPEUI ?= 0000000000000000
+DEVEUI ?= 70B3D57ED005EA59
+APPKEY ?= 385794DDE70CE2EAB5B5B12A4807822C
+# change stack size
+MAIN_STACKSIZE ?= 10480
+
 
 # Different build configurations. Optimized builds run without any debug symbols and o3 optimizations
 APPLICATION_BUILD_OPTIMIZED ?= 0
@@ -21,7 +29,20 @@ DISABLE_LORA ?= 0
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
 
-# Packages
+## Apply configuration
+CFLAGS += -DEXECUTION_INTERVAL_S=$(EXECUTION_INTERVAL_S)
+CFLAGS += -DTHREAD_STACKSIZE_MAIN=$(MAIN_STACKSIZE)
+
+
+## RIOT CONFIGURATION
+## We assume riot is placed next to this repo
+RIOTBASE ?= $(CURDIR)/../../RIOT
+
+# Set the compile_commands.json file to a known location
+COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
+
+
+# PACKAGES
 #USEMODULE += saul_default
 USEMODULE += fmt
 
@@ -38,8 +59,7 @@ USEMODULE += ztimer_msec
 FEATURES_OPTIONAL += periph_uart
 
 
-# change stack size
-CFLAGS += -DTHREAD_STACKSIZE_MAIN='10480'
+
 
 ifeq (1, $(APPLICATION_BUILD_OPTIMIZED))
 CFLAGS += -O3
@@ -77,19 +97,10 @@ endif
 
 # LoRaWAN Stuff
 ifneq (,$(filter semtech-loramac,$(USEPKG)))
-# Currently only supports otaa
-ACTIVATION_MODE ?= otaa
 
-APPEUI ?= 0000000000000000
-DEVEUI ?= 70B3D57ED005EA59
-APPKEY ?= 385794DDE70CE2EAB5B5B12A4807822C
 CFLAGS += -DCONFIG_LORAMAC_APP_KEY_DEFAULT=\"$(APPKEY)\"
 CFLAGS += -DCONFIG_LORAMAC_APP_EUI_DEFAULT=\"$(APPEUI)\"
 CFLAGS += -DCONFIG_LORAMAC_DEV_EUI_DEFAULT=\"$(DEVEUI)\"
-
-LORA_REGION ?= EU868
-
-CFLAGS += -DSEND_PERIOD_S=$(SEND_PERIOD_S)
 CFLAGS += -DUSE_OTAA
 endif
 

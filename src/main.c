@@ -1,4 +1,4 @@
-#define LOG_LEVEL LOG_DEBUG
+
 // Standard library includes
 #include <stdio.h>
 #include <unistd.h>
@@ -7,7 +7,8 @@
 #include <string.h>
 #include <kernel_defines.h>
 #include <fmt.h>
- 
+#include <macros/utils.h>
+
 // Local includes
 #include "stack.h"
 #include "environment.h"
@@ -41,6 +42,12 @@
 
 // Power tracking
 #include "power_sync.h"
+
+// Debug
+#define ENABLE_DEBUG 1
+#include "debug.h"
+
+
 #ifdef APPLICATION_RUN_TEST
 void test_encode_input(void);
 void test_encode_output(void);
@@ -63,21 +70,18 @@ static bool receive_and_decode(Message *msg)
 {
   // Check for received messages
   pb_istream_t istream = pb_istream_from_buffer(loramac.rx_data.payload, loramac.rx_data.payload_len);
-  return decode_input_message(&istream, msg);
+  return decode_input_message(&istream, msg) || msg->amount > 0; // true if successfully decoded and contains at least one query
 }
 
-Message msg;
-bool valid_msg = false;
 int main(void)
 {
   run_sync();
-  ztimer_sleep(ZTIMER_SEC, 3);
   puts("NebulaStream End Device Runtime");
   puts("=====================================");
   puts("initializing lorawan");
   init_lorawan();
   puts("LoRaWAN Info:");
-  //fputs to avoid newlines in the end
+  // fputs to avoid newlines in the end
   fputs("  Device EUI: ", stdout);
   print_bytes_hex(loramac.deveui, LORAMAC_DEVEUI_LEN);
   fputs("\n  Application EUI: ", stdout);
@@ -94,14 +98,19 @@ int main(void)
   // Initialize global variable environment
   Env *global_env = init_env();
 
+  Message msg;
+  bool valid_msg = false;
+
   // main loop
+  const uint32_t timeout_s = EXECUTION_INTERVAL_S;
   while (1)
   {
     puts("Main loop iteration");
-    //ztimer_sleep(ZTIMER_SEC, 5);
+    ztimer_now_t start_time = ztimer_now(ZTIMER_SEC);
+
     if (!valid_msg)
     {
-      printf("no valid message received\n");
+      printf("no valid message\n");
       // if not a valid query
       //  send message to receive
       uint8_t tmp[1];
@@ -111,12 +120,12 @@ int main(void)
       if (receive_and_decode(&msg_tmp))
       {
         printf("received message\n");
-        
-        if (msg_tmp.amount > 0){
+
+        if (msg_tmp.amount > 0)
+        {
           valid_msg = true;
           msg = msg_tmp;
           printMessage(&msg);
-        }
         }
       }
       else
@@ -124,8 +133,7 @@ int main(void)
         printf("couldn't decode message. Ignoring...\n");
       }
     }
-    
-    if (valid_msg)
+    else
     {
       printf("message is valid. Running queries...\n");
 
@@ -143,14 +151,19 @@ int main(void)
         // check if there is new messages
         if (receive_and_decode(&msg_tmp))
         {
-        if (msg_tmp.amount > 0){
-          valid_msg = true;
-          msg = msg_tmp;
-          printMessage(&msg);
+          if (msg_tmp.amount > 0)
+          {
+            valid_msg = true;
+            msg = msg_tmp;
+            printMessage(&msg);
+          }
         }
       }
     }
-    ztimer_sleep(ZTIMER_SEC, 5);
+    // figure out how long the iteration took and sleep for the remaining time
+    ztimer_now_t end_time = ztimer_now(ZTIMER_SEC);
+    DEBUG("Sleeping for %ld seconds\n", timeout_s - (end_time - start_time));
+    ztimer_sleep(ZTIMER_SEC, MAX(timeout_s - (end_time - start_time), 0));
   }
   return 0;
 }
