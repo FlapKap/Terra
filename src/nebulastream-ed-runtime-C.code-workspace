@@ -21,7 +21,8 @@
 			"encodeinput.h": "c",
 			"protocol_tests.h": "c",
 			"power_sync.h": "c",
-			"debug.h": "c"
+			"debug.h": "c",
+			"*.inc": "c"
 		}
 	}
 }

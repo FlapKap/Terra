@@ -51,7 +51,7 @@ void _AND(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    Number val = bin_op(l1, l2, '&');
+    Number val = bin_op(l1, l2, AND);
 
     push(e->stack, val);
 }
@@ -61,7 +61,7 @@ void _OR(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
     
-    Number val = bin_op(l1, l2, '|');
+    Number val = bin_op(l1, l2, OR);
 
     push(e->stack, val);
 }
@@ -69,7 +69,7 @@ void _OR(Expression *e)
 void _NOT(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, "not");
+    Number val = un_op(l1, NOT);
     push(e->stack, val);
 }
 
@@ -137,7 +137,7 @@ void _ADD(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    val = bin_op(l1, l2, '+');
+    val = bin_op(l1, l2, ADD);
     
     push(e->stack, val);
 }
@@ -149,7 +149,7 @@ void _SUB(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    val = bin_op(l1, l2, '-');
+    val = bin_op(l1, l2, SUB);
 
     push(e->stack, val);
 }
@@ -161,7 +161,7 @@ void _MUL(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    val = bin_op(l1, l2, '*');
+    val = bin_op(l1, l2, MUL);
 
     push(e->stack, val);
 }
@@ -173,7 +173,7 @@ void _DIV(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    val = bin_op(l1, l2, '/');
+    val = bin_op(l1, l2, DIV);
 
     push(e->stack, val);
 }
@@ -201,7 +201,7 @@ void _MOD(Expression *e)
 void _LOG(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number res = un_op(l1, "log");
+    Number res = un_op(l1, LOG);
     push(e->stack, res);
 }
 
@@ -209,49 +209,49 @@ void _POW(Expression *e)
 {
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
-    Number res = bin_op(l1, l2, '^');
+    Number res = bin_op(l1, l2, POW);
     push(e->stack, res);
 }
 
 void _SQRT(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, "sqrt");
+    Number val = un_op(l1, SQRT);
     push(e->stack, val);
 }
 
 void _EXP(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, "exp");
+    Number val = un_op(l1, EXP);
     push(e->stack, val);
 }
 
 void _CEIL(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, "ceil");
+    Number val = un_op(l1, CEIL);
     push(e->stack, val);
 }
 
 void _FLOOR(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, "floor");
+    Number val = un_op(l1, FLOOR);
     push(e->stack, val);
 }
 
 void _ROUND(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, "round");
+    Number val = un_op(l1, ROUND);
     push(e->stack, val);
 }
 
 void _ABS(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, "abs");
+    Number val = un_op(l1, ABS);
     push(e->stack, val);
 }
 

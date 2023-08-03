@@ -10,7 +10,6 @@
 // };
 
 
-
 typedef struct _Stack
 {
     int top;
@@ -25,7 +24,7 @@ typedef struct _Env
     Stack *stack;
 } Env;
 
-typedef enum _ExpressionInstruction {
+typedef enum {
   CONST = 0,
   VAR = 1,
   AND = 2,
@@ -142,5 +141,8 @@ typedef struct _OutputMessage
   QueryResponse* responses;
   int amount;
 } OutputMessage;
+
+Number bin_op(Number n1, Number n2, ExpressionInstruction op);
+Number un_op(Number n1, ExpressionInstruction op);
 
 #endif
