@@ -77,17 +77,8 @@ void _LT(Expression *e)
 {
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
-    
-    Number val;
-    val.unionCase = 2; // int
 
-    int res = compare(l1, l2);
-    
-    if (res == -1) {
-        val.type._int = 1;
-    } else {
-        val.type._int = 0;
-    }
+    Number val = bin_op(l1, l2, LT);
 
     push(e->stack, val);
 }
@@ -97,17 +88,7 @@ void _GT(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
     
-    Number val;
-    val.unionCase = 2;
-
-    int res = compare(l1, l2);
-
-    if (res == 1) {
-        val.type._int = 1;
-    } else {
-        val.type._int = 0;
-    }
-
+    Number val = bin_op(l1, l2, GT);
     push(e->stack, val);
 }
 
@@ -116,16 +97,8 @@ void _EQ(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
     
-    Number val;
-    val.unionCase = 2;
 
-    int res = compare(l1, l2);
-
-    if (res == 0) {
-        val.type._int = 1;
-    } else {
-        val.type._int = 0;
-    }
+    Number val = bin_op(l1, l2, EQ);
     
     push(e->stack, val);
 }
@@ -183,18 +156,8 @@ void _MOD(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    //TODO: allow for uint32 to be modded
-    if(l1.unionCase != 2 || l2.unionCase != 2){
-        return; //TODO: Throw error (not int)
-    }
-    
-    Number val;
+    Number val = bin_op(l1, l2, MOD);
 
-    int res = l1.type._int % l2.type._int;
-
-    val.type._int = res;
-    val.unionCase = 2;
-    
     push(e->stack, val);
 }
 
@@ -260,19 +223,7 @@ void _LTEQ(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
     
-    Number val;
-    val.unionCase = 2;
-
-    int res = compare(l1, l2);
-
-    // if compare returns 1 we know that l1 is greater than l2,
-    // otherwise it is less than or equal to l2.
-    if (res == 1) {
-        val.type._int = 0;
-    } else {
-        val.type._int = 1;
-    }
-
+    Number val = bin_op(l1, l2, LTEQ);
 
     push(e->stack, val);
 }
@@ -282,21 +233,7 @@ void _GTEQ(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    Number val;
-    val.unionCase = 2;
-
-    int res = compare(l1, l2);
-
-    // if compare returns -1 we know that l1 is less than l2,
-    // otherwise it is greater than or equal to l2.
-    if (res == -1)
-    {
-        val.type._int = 0;
-    }
-    else
-    {
-        val.type._int = 1;
-    }
+    Number val = bin_op(l1, l2, GTEQ);
 
     push(e->stack, val);
 }

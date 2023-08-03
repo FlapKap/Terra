@@ -86,7 +86,16 @@ static int compare_uint32_with_double(uint32_t n1, double n2) {
 }
 
 
-
+/*
+* Compare two numbers.
+*
+* Args:
+*     n1 (Number): The first number.
+*     n2 (Number): The second number.
+*
+* Returns:
+*     int: -1 if n1 < n2, 0 if n1 == n2, 1 if n1 > n2.
+*/
 int compare(Number n1, Number n2){
     switch(n1.unionCase){
         case 1:

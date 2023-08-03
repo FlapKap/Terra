@@ -22,7 +22,8 @@
 			"protocol_tests.h": "c",
 			"power_sync.h": "c",
 			"debug.h": "c",
-			"*.inc": "c"
+			"*.inc": "c",
+			"number.h": "c"
 		}
 	}
 }
