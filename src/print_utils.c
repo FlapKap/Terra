@@ -1,5 +1,6 @@
 #include "print_utils.h"
 #include <stdio.h>
+#include <inttypes.h>
 
 // #lizard forgives
 void printExpressionInstruction(ExpressionInstruction instr)
@@ -90,7 +91,7 @@ void printInstruction(const Instruction *instruction)
         printf(" (ExpressionInstruction)");
         break;
     case 1:
-        printf("%lu (uint32_t)", instruction->data._uint32);
+        printf("%" PRIu32 " (uint32_t)", instruction->data._uint32);
         break;
     case 2:
         printf("%d (int)", instruction->data._int);
@@ -123,11 +124,8 @@ void printNumberValue(Number val)
     switch (val.unionCase)
     {
     case 1:
-#ifdef BOARD_NATIVE
-        printf("%u", val.type._uint32);
-#else
-        printf("%lu", val.type._uint32);
-#endif
+
+        printf("%" PRIu32, val.type._uint32);
         break;
     case 2:
         printf("%d", val.type._int);
@@ -139,7 +137,7 @@ void printNumberValue(Number val)
         printf("%lf", val.type._double);
         break;
     default:
-        printf("Error: Invalid unionCase");
+        printf("Error: Invalid unionCase: %" PRIu8, val.unionCase);
         break;
     }
 }
@@ -149,7 +147,7 @@ void printNumberValueAndUcase(Number number)
     switch (number.unionCase)
     {
     case 1:
-        printf("%lu (uint)", number.type._uint32);
+        printf("%" PRIu32 " (uint)", number.type._uint32);
         break;
     case 2:
         printf("%d (int)", number.type._int);
@@ -161,7 +159,7 @@ void printNumberValueAndUcase(Number number)
         printf("%lf (double)", number.type._double);
         break;
     default:
-        printf("Error: Invalid unionCase: %d", number.unionCase);
+        printf("Error: Invalid unionCase: %" PRIu8, number.unionCase);
         break;
     }
 }
