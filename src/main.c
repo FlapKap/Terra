@@ -75,7 +75,7 @@ static bool receive_and_decode(Message *msg)
 
 int main(void)
 {
-  run_sync();
+  run_barker11();
   puts("NebulaStream End Device Runtime");
   puts("=====================================");
   puts("initializing lorawan");
@@ -89,8 +89,6 @@ int main(void)
   fputs("\n  Application Key: ", stdout);
   print_bytes_hex(loramac.appkey, LORAMAC_APPKEY_LEN);
   puts("\n");
-
-  // Run Tests (Only on native)
 
   // Connect lorawan and receive first message
   connect_lorawan();
@@ -107,7 +105,7 @@ int main(void)
   {
     puts("Main loop iteration");
     ztimer_now_t start_time = ztimer_now(ZTIMER_SEC);
-
+    run_barker11();
     if (!valid_msg)
     {
       printf("no valid message\n");
