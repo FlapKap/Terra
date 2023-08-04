@@ -18,7 +18,7 @@ void clear_env(Env *env)
     {
         Number number;
         number.type._int = 0;
-        number.unionCase = 1;
+        number.unionCase = NUMBER_UINT32;
         env->memory[i] = number;
     }
 }

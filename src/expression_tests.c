@@ -31,7 +31,7 @@ static void tearDown(void)
 static void testPushToStack(void)
 {
   // Arrange
-  Instruction p[2] = {{{CONST}, 0}, {.data._int = 3, 2}};
+  Instruction p[2] = {{{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}};
   expres.program = p;
   expres.p_size = 2;
   // Act
@@ -45,7 +45,7 @@ static void testPushToStack(void)
 static void testPushVarToStack(void)
 {
   // Arrange
-  Instruction p[2] = {{{VAR}, 0}, {.data._int = 0, 2}};
+  Instruction p[2] = {{{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}};
 
   expres.program = p;
   expres.p_size = 2;
@@ -64,7 +64,7 @@ static void testPushVarToStack(void)
 static void testAnd1(void)
 {
   // Arrange
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 1, 2}, {{CONST}, 0}, {.data._int = 1, 2}, {{AND}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{AND}, 0}};
   expres.program = p;
   expres.p_size = 5;
   // Act
@@ -78,7 +78,7 @@ static void testAnd2(void)
 {
   // Arrange
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 1, 2}, {{CONST}, 0}, {.data._int = 0, 2}, {{AND}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{AND}, 0}};
   expres.program = p;
   expres.p_size = 5;
   // Act
@@ -92,7 +92,7 @@ static void testAnd3(void)
 {
   // Arrange
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 0, 2}, {{CONST}, 0}, {.data._int = 0, 2}, {{AND}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{AND}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -107,7 +107,7 @@ static void testOr1(void)
 {
   // Arrange
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 1, 2}, {{CONST}, 0}, {.data._int = 0, 2}, {{OR}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{OR}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -122,7 +122,7 @@ static void testOr2(void)
 {
   // Arrange
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 0, 2}, {{CONST}, 0}, {.data._int = 0, 2}, {{OR}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{OR}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -137,7 +137,7 @@ static void testNot1(void)
 {
   // Arrange
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = 0, 2}, {{NOT}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{NOT}, 0}};
 
   expres.program = p;
   expres.p_size = 3;
@@ -182,7 +182,7 @@ static void testNot4(void)
 {
   // Arrange
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = 1, 2}, {{NOT}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{NOT}, 0}};
 
   expres.program = p;
   expres.p_size = 3;
@@ -197,7 +197,7 @@ static void testLT1(void)
 {
   // Arrange
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._double = 1.0, 4}, {{CONST}, 0}, {.data._int = 5, 2}, {{LT}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._double = 1.0, INSTRUCTION_DOUBLE}, {{CONST}, 0}, {.data._int = 5, INSTRUCTION_INT}, {{LT}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -211,8 +211,7 @@ static void testLT1(void)
 static void testLT2(void)
 {
   // Arrange
-
-  Instruction p[5] = {{{CONST}, 0}, {.data._uint32 = 7, 1}, {{CONST}, 0}, {.data._float = 3.4f, 3}, {{LT}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._uint32 = 7, INSTRUCTION_UINT32}, {{CONST}, 0}, {.data._float = 3.4f, INSTRUCTION_FLOAT}, {{LT}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -226,8 +225,7 @@ static void testLT2(void)
 static void testGT1(void)
 {
   // Arrange
-
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = -3, 2}, {{CONST}, 0}, {.data._uint32 = 5, 1}, {{GT}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = -3, INSTRUCTION_INT}, {{CONST}, 0}, {.data._uint32 = 5, INSTRUCTION_UINT32}, {{GT}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -242,12 +240,11 @@ static void testGT2(void)
 {
   // Arrange
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._double = 3.14, 4}, {{CONST}, 0}, {.data._int = 0, 2}, {{GT}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._double = 3.14, INSTRUCTION_DOUBLE}, {{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{GT}, 0}};
   expres.program = p;
   expres.p_size = 5;
   // Act
   int actual = call(&expres).type._int;
-
   // Assert
   TEST_ASSERT(actual);
 }
@@ -255,7 +252,7 @@ static void testGT2(void)
 static void testEqual(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, 2}, {{CONST}, 0}, {.data._int = 10, 2}, {{EQ}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{EQ}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -269,7 +266,7 @@ static void testEqual(void)
 static void testAdd(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, 2}, {{CONST}, 0}, {.data._int = 3, 2}, {{ADD}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{ADD}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -284,7 +281,7 @@ static void testAdd(void)
 static void testSub(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, 2}, {{CONST}, 0}, {.data._int = 3, 2}, {{SUB}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{SUB}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -299,7 +296,7 @@ static void testSub(void)
 static void testMul(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, 2}, {{CONST}, 0}, {.data._int = 3, 2}, {{MUL}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{MUL}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -308,14 +305,14 @@ static void testMul(void)
   int expected = 30;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void testDiv(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, 2}, {{CONST}, 0}, {.data._int = 3, 2}, {{DIV}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{DIV}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -324,14 +321,14 @@ static void testDiv(void)
   int expected = 3;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void testMod(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, 2}, {{CONST}, 0}, {.data._int = 3, 2}, {{MOD}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{MOD}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -340,14 +337,14 @@ static void testMod(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 void testLog(void)
 {
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 10, 4}, {{LOG}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._double = 10, INSTRUCTION_DOUBLE}, {{LOG}, 0}};
   expres.program = p;
   expres.p_size = 3;
   // Action
@@ -355,14 +352,14 @@ void testLog(void)
   double expected = log(10);
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(4, actual.unionCase);
+  TEST_ASSERT(NUMBER_DOUBLE == actual.unionCase);
   TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
 }
 
 static void testPow(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{CONST}, 0}, {.data._int = 3, 2}, {{POW}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{POW}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -371,14 +368,14 @@ static void testPow(void)
   double expected = pow(2, 3);
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(4, actual.unionCase);
+  TEST_ASSERT(NUMBER_DOUBLE == actual.unionCase);
   TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
 }
 
 static void testSqrt(void)
 {
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = 4, 2}, {{SQRT}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._int = 4, INSTRUCTION_INT}, {{SQRT}, 0}};
 
   expres.program = p;
   expres.p_size = 3;
@@ -387,14 +384,14 @@ static void testSqrt(void)
   double expected = sqrt(4);
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(4, actual.unionCase);
+  TEST_ASSERT(NUMBER_DOUBLE == actual.unionCase);
   TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
 }
 
 static void expValue(void)
 {
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = 1, 2}, {{EXP}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{EXP}, 0}};
 
   expres.program = p;
   expres.p_size = 3;
@@ -403,14 +400,14 @@ static void expValue(void)
   double expected = exp(1);
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(4, actual.unionCase);
+  TEST_ASSERT(NUMBER_DOUBLE == actual.unionCase);
   TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
 }
 
 static void ceilValue(void)
 {
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.4, 4}, {{CEIL}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.4, INSTRUCTION_DOUBLE}, {{CEIL}, 0}};
   expres.p_size = 3;
   expres.program = p;
 
@@ -419,14 +416,14 @@ static void ceilValue(void)
   int expected = 2;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void ceilValueBig(void)
 {
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.9, 4}, {{CEIL}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.9, INSTRUCTION_DOUBLE}, {{CEIL}, 0}};
   expres.p_size = 3;
   expres.program = p;
 
@@ -435,14 +432,14 @@ static void ceilValueBig(void)
   int expected = 2;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void floorValue(void)
 {
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.4, 4}, {{FLOOR}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.4, INSTRUCTION_DOUBLE}, {{FLOOR}, 0}};
   expres.p_size = 3;
   expres.program = p;
 
@@ -451,14 +448,14 @@ static void floorValue(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void floorValueBig(void)
 {
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.9, 4}, {{FLOOR}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.9, INSTRUCTION_DOUBLE}, {{FLOOR}, 0}};
   expres.p_size = 3;
   expres.program = p;
 
@@ -467,14 +464,14 @@ static void floorValueBig(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void roundUnderHalf(void)
 {
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.4, 4}, {{ROUND}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.4, INSTRUCTION_DOUBLE}, {{ROUND}, 0}};
   expres.p_size = 3;
   expres.program = p;
 
@@ -483,14 +480,14 @@ static void roundUnderHalf(void)
   int expected = 1;
   
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void roundOverHalf(void)
 {
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.6, 4}, {{ROUND}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.6, INSTRUCTION_DOUBLE}, {{ROUND}, 0}};
   expres.p_size = 3;
   expres.program = p;
 
@@ -498,14 +495,14 @@ static void roundOverHalf(void)
   Number actual = call(&expres);
   int expected = 2;
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void absoluteValue1(void)
 {
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = 5, 2}, {{ABS}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._int = 5, INSTRUCTION_INT}, {{ABS}, 0}};
   expres.p_size = 3;
   expres.program = p;
 
@@ -514,14 +511,14 @@ static void absoluteValue1(void)
   double expected = 5;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(4, actual.unionCase);
+  TEST_ASSERT(NUMBER_DOUBLE == actual.unionCase);
   TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
 }
 
 static void absoluteValue2(void)
 {
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = -5, 2}, {{ABS}, 0}};
+  Instruction p[3] = {{{CONST}, 0}, {.data._int = -5, INSTRUCTION_INT}, {{ABS}, 0}};
   expres.p_size = 3;
   expres.program = p;
 
@@ -530,14 +527,14 @@ static void absoluteValue2(void)
   double expected = 5;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(4, actual.unionCase);
+  TEST_ASSERT(NUMBER_DOUBLE == actual.unionCase);
   TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
 }
 
 static void lessThanEqual1(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{CONST}, 0}, {.data._int = 3, 2}, {{LTEQ}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{LTEQ}, 0}};
 
   expres.program = p;
   expres.p_size = 5;
@@ -546,14 +543,14 @@ static void lessThanEqual1(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void lessThanEqual2(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 3, 2}, {{CONST}, 0}, {.data._int = 3, 2}, {{LTEQ}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{LTEQ}, 0}};
   expres.program = p;
   expres.p_size = 5;
   // Action
@@ -561,14 +558,14 @@ static void lessThanEqual2(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void greaterThanEqual1(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 4, 2}, {{CONST}, 0}, {.data._int = 3, 2}, {{GTEQ}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 4, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{GTEQ}, 0}};
   expres.program = p;
   expres.p_size = 5;
   // Action
@@ -576,14 +573,14 @@ static void greaterThanEqual1(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void greaterThanEqual2(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 3, 2}, {{CONST}, 0}, {.data._int = 3, 2}, {{GTEQ}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{GTEQ}, 0}};
   expres.program = p;
   expres.p_size = 5;
   // Action
@@ -591,18 +588,18 @@ static void greaterThanEqual2(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, actual.unionCase);
+  TEST_ASSERT(NUMBER_INT == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
 static void og_test_execute_query_with_result(void)
 {
   //[CONST, 2, VAR, 0, MUL]
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{VAR}, 0}, {.data._int = 0, 2}, {{MUL}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{MUL}, 0}};
 
   Number envVal;
   envVal.type._int = 4;
-  envVal.unionCase = 2;
+  envVal.unionCase = NUMBER_INT;
 
   expres.program = p;
   expres.p_size = 5;
@@ -625,7 +622,7 @@ static void og_test_execute_query_with_result(void)
   executeQuery(query, &queryRes, expres.env);
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, expres.env->stack->stack[0].unionCase);
+  TEST_ASSERT(NUMBER_INT == expres.env->stack->stack[0].unionCase);
   TEST_ASSERT_EQUAL_INT(8, expres.env->stack->stack[0].type._int);
 
   TEST_ASSERT_EQUAL_INT(-1, expres.env->stack->top); // stack should be empty
@@ -634,12 +631,12 @@ static void og_test_execute_query_with_result(void)
 static void og_test_execute_query_without_result(void)
 {
 
-  Instruction mapPro[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{VAR}, 0}, {.data._int = 0, 2}, {{MUL}, 0}};
-  Instruction filterPro[5] = {{{VAR}, 0}, {.data._int = 1, 2}, {{CONST}, 0}, {.data._int = 2, 2}, {{LT}, 0}};
+  Instruction mapPro[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{MUL}, 0}};
+  Instruction filterPro[5] = {{{VAR}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{LT}, 0}};
 
   Number envVal;
   envVal.type._int = 4;
-  envVal.unionCase = 2;
+  envVal.unionCase = NUMBER_INT;
 
   Env *env = init_env();
   set_value(env, 0, envVal);
@@ -680,18 +677,18 @@ static void og_test_execute_query_without_result(void)
   executeQuery(query, &output, env);
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, env->stack->stack[0].unionCase);
+  TEST_ASSERT(NUMBER_INT == env->stack->stack[0].unionCase);
   TEST_ASSERT_EQUAL_INT(0, env->stack->stack[0].type._int);
 }
 
 static void og_test_execute_quries_single_result(void)
 {
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{VAR}, 0}, {.data._int = 0, 2}, {{MUL}, 0}};
+  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{MUL}, 0}};
 
   Number envVal;
   envVal.type._int = 4;
-  envVal.unionCase = 2;
+  envVal.unionCase = NUMBER_INT;
 
   expres.program = p;
   expres.p_size = 5;
@@ -718,22 +715,22 @@ static void og_test_execute_quries_single_result(void)
   executeQueries(msg, &output, expres.env);
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, expres.env->stack->stack[0].unionCase);
+  TEST_ASSERT(NUMBER_INT == expres.env->stack->stack[0].unionCase);
   TEST_ASSERT_EQUAL_INT(8, expres.env->stack->stack[0].type._int);
 
-  TEST_ASSERT_EQUAL_INT(2, expres.env->stack->stack[1].unionCase);
+  TEST_ASSERT_EQUAL_INT(NUMBER_INT, expres.env->stack->stack[1].unionCase);
   TEST_ASSERT_EQUAL_INT(4, expres.env->stack->stack[1].type._int);
 }
 
 static void og_test_execute_quries_multiple_results(void)
 {
 
-  Instruction mapPro[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{VAR}, 0}, {.data._int = 0, 2}, {{MUL}, 0}};
-  Instruction filterPro[5] = {{{VAR}, 0}, {.data._int = 1, 2}, {{CONST}, 0}, {.data._int = 2, 2}, {{LT}, 0}};
+  Instruction mapPro[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{MUL}, 0}};
+  Instruction filterPro[5] = {{{VAR}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{LT}, 0}};
 
   Number envVal;
   envVal.type._int = 4;
-  envVal.unionCase = 2;
+  envVal.unionCase = NUMBER_INT;
 
   Env *env = init_env();
   set_value(env, 0, envVal);
@@ -769,7 +766,7 @@ static void og_test_execute_quries_multiple_results(void)
   query1.operations = ops;
   query1.amount = 2;
 
-  Instruction mapPro2[5] = {{{CONST}, 0}, {.data._int = 2, 2}, {{VAR}, 0}, {.data._int = 0, 2}, {{MUL}, 0}};
+  Instruction mapPro2[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{MUL}, 0}};
 
   Expression mapExp2;
   mapExp2.program = mapPro2;

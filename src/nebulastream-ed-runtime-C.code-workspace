@@ -23,7 +23,8 @@
 			"power_sync.h": "c",
 			"debug.h": "c",
 			"*.inc": "c",
-			"number.h": "c"
+			"number.h": "c",
+			"__locale": "c"
 		}
 	}
 }

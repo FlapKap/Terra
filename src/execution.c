@@ -24,48 +24,26 @@ void executeQuery(Query query, QueryResponse *out, Env * env){
     if(query.operations[i].unionCase == 0){
       // map
       query.operations[i].operation.map->expression->stack = env->stack;
-      Number num = call(query.operations[i].operation.map->expression);
+      Number number = call(query.operations[i].operation.map->expression);
 
       // Set env value
-      set_value(env, query.operations[i].operation.map->attribute, num);
+      set_value(env, query.operations[i].operation.map->attribute, number);
 
-      Instruction *instr = (Instruction *) malloc(sizeof(Instruction));
+      Instruction *instruction = (Instruction *) calloc(sizeof(Instruction), 1);
 
-      instr->unionCase = num.unionCase;
-      if (num.unionCase == 1){
-        instr->data._uint32 = num.type._uint32;
-      } else if (num.unionCase == 2){
-        instr->data._int = num.type._int;
-      } else if (num.unionCase == 3){
-        instr->data._float = num.type._float;
-      } else if (num.unionCase == 4){
-        instr->data._double = num.type._double;
-      } else {
-        printf("Unknown unioncase execute map!\n");
-      }
-      
-      out->response = instr;
+      copy_number_to_instruction(&number, instruction);
+      out->response = instruction;
       out->amount = 1;
     } else if(query.operations[i].unionCase == 1){
       // filter
       query.operations[i].operation.filter->predicate->stack = env->stack;
 
-      Number num = call(query.operations[i].operation.filter->predicate);
+      Number number = call(query.operations[i].operation.filter->predicate);
 
-      Instruction *instr = (Instruction *) malloc(sizeof(Instruction));
-      instr->unionCase = num.unionCase;
-      if (num.unionCase == 1){
-        instr->data._uint32 = num.type._uint32;
-      } else if (num.unionCase == 2){
-        instr->data._int = num.type._int;
-      } else if (num.unionCase == 3){
-        instr->data._float = num.type._float;
-      } else if (num.unionCase == 4){
-        instr->data._double = num.type._double;
-      } else {
-        printf("Unknown unioncase execute filter!\n");
-      }
-      out->response = instr;
+      Instruction *instruction = (Instruction *) calloc(sizeof(Instruction), 1);
+
+      copy_number_to_instruction(&number, instruction);
+      out->response = instruction;
       out->amount = 1;
     } else if(query.operations[i].unionCase == 2){
       // window

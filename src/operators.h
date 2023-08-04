@@ -50,6 +50,14 @@ typedef enum {
   GTEQ = 22,
 } ExpressionInstruction;
 
+typedef enum _instruction_union_case_t {
+  INSTRUCTION_INSTRUCTION,
+  INSTRUCTION_UINT32,
+  INSTRUCTION_INT,
+  INSTRUCTION_FLOAT,
+  INSTRUCTION_DOUBLE
+} instruction_union_case_t;
+
 typedef struct _Instruction
 {
   union {
@@ -59,7 +67,7 @@ typedef struct _Instruction
     float _float;                      // case 3
     double _double;                    // case 4
   } data;
-  int unionCase;
+  instruction_union_case_t unionCase;
 } Instruction;
 
 typedef struct _Expression
@@ -144,5 +152,8 @@ typedef struct _OutputMessage
 
 Number bin_op(Number n1, Number n2, ExpressionInstruction op);
 Number un_op(Number n1, ExpressionInstruction op);
+
+void copy_number_to_instruction(Number* src, Instruction* dest);
+void copy_instruction_to_number(Instruction* src, Number* dest);
 
 #endif

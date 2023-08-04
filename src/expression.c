@@ -6,33 +6,41 @@
 #include "operators.h"
 #include "environment.h"
 #include "number.h"
-
+#include "print_utils.h"
 #define ENABLE_DEBUG  0
 #include "debug.h"
-// TODO: How do we handle functions that return doubles?
-// TODO: Fix linker errors with math.h functions.
+// TODO: add debug statements to the code
 
 void _CONST(Expression *e)
 {
     // push the next value from program as data to the stack
     Number val;
-    Instruction currentInstruction = e->program[++e->pc];
+    Instruction currentInstruction = e->program[++(e->pc)];
 
     //TODO: check if 1 can be replaced with enum for instance?
-    if(currentInstruction.unionCase == 1){
+    switch (currentInstruction.unionCase)
+    {
+        // for instructions 0 is the instruction and above is data types
+    case 1:
+        val.unionCase = NUMBER_UINT32;
         val.type._uint32 = currentInstruction.data._uint32;
-    }
-    else if (currentInstruction.unionCase == 2){
+        break;
+    case 2:
+        val.unionCase = NUMBER_INT;
         val.type._int = currentInstruction.data._int;
-    }
-    else if (currentInstruction.unionCase == 3) {
+        break;
+    case 3:
+        val.unionCase = NUMBER_FLOAT;
         val.type._float = currentInstruction.data._float;
-    }
-    else if (currentInstruction.unionCase == 4) {
+        break;
+    case 4:
+        val.unionCase = NUMBER_DOUBLE;
         val.type._double = currentInstruction.data._double;
+        break;
+    default:
+        DEBUG("Error: Invalid unionCase: %" PRIu8, currentInstruction.unionCase);
+        exit(1);
     }
-
-    val.unionCase = currentInstruction.unionCase;
 
 
     push(e->stack, val);
@@ -240,7 +248,10 @@ void _GTEQ(Expression *e)
 
 void execute_next(Expression *e)
 {
-    //DEBUG("execute_next\n");
+    if (ENABLE_DEBUG) {
+        printInstruction(&e->program[e->pc]);
+        puts("\n");
+    }
     switch (e->program[e->pc].data._instruction)
     {
     case 0:
@@ -317,11 +328,14 @@ void execute_next(Expression *e)
 
 Number call(Expression *e)
 {
+    if (ENABLE_DEBUG) {
+        printExpression(e);
+    }
     e->pc = 0;
     while (e->pc < e->p_size)
     {
         execute_next(e);
-        e->pc++;
+        ++e->pc;
     }
 
     Number val = pop(e->stack);

@@ -123,17 +123,17 @@ void printNumberValue(Number val)
 {
     switch (val.unionCase)
     {
-    case 1:
+    case NUMBER_UINT32:
 
         printf("%" PRIu32, val.type._uint32);
         break;
-    case 2:
+    case NUMBER_INT:
         printf("%d", val.type._int);
         break;
-    case 3:
+    case NUMBER_FLOAT:
         printf("%f", val.type._float);
         break;
-    case 4:
+    case NUMBER_DOUBLE:
         printf("%lf", val.type._double);
         break;
     default:
@@ -146,16 +146,16 @@ void printNumberValueAndUcase(Number number)
 {
     switch (number.unionCase)
     {
-    case 1:
+    case NUMBER_UINT32:
         printf("%" PRIu32 " (uint)", number.type._uint32);
         break;
-    case 2:
+    case NUMBER_INT:
         printf("%d (int)", number.type._int);
         break;
-    case 3:
+    case NUMBER_FLOAT:
         printf("%f (float)", number.type._float);
         break;
-    case 4:
+    case NUMBER_DOUBLE:
         printf("%lf (double)", number.type._double);
         break;
     default:
