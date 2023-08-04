@@ -361,26 +361,35 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             switch (n2.unionCase)
             {
             case NUMBER_UINT32:
-                if (n2.type._uint32 == 0)
+                if (n2.type._uint32 == 0){
                     printf("Error: Division by zero");
+                    break;
+                }
+
                 result.unionCase = NUMBER_UINT32;
                 result.type._uint32 = n1.type._uint32 / n2.type._uint32;
                 break;
             case NUMBER_INT:
-                if (n2.type._int == 0)
+                if (n2.type._int == 0) {
                     printf("Error: Division by zero");
+                    break;
+                }
                 result.unionCase = NUMBER_INT;
                 result.type._int = n1.type._uint32 / n2.type._int;
                 break;
             case NUMBER_FLOAT:
-                if (n2.type._float == 0.0f)
+                if (n2.type._float == 0.0f){
                     printf("Error: Division by zero");
+                    break;
+                }
                 result.unionCase = NUMBER_FLOAT;
                 result.type._float = n1.type._uint32 / n2.type._float;
                 break;
             case NUMBER_DOUBLE:
-                if (n2.type._double == 0.0)
+                if (n2.type._double == 0.0){
                     printf("Error: Division by zero");
+                    break;
+                }
                 result.unionCase = NUMBER_DOUBLE;
                 result.type._double = n1.type._uint32 / n2.type._double;
                 break;
