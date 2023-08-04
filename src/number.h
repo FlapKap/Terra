@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-typedef enum _number_union_case_t {
+typedef enum __attribute__((packed)) _number_union_case_t {
     NUMBER_UINT32,
     NUMBER_INT,
     NUMBER_FLOAT,

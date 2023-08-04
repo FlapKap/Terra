@@ -24,7 +24,7 @@ typedef struct _Env
     Stack *stack;
 } Env;
 
-typedef enum {
+typedef enum __attribute__((packed)) _expression_instruction {
   CONST = 0,
   VAR = 1,
   AND = 2,
@@ -50,7 +50,7 @@ typedef enum {
   GTEQ = 22,
 } ExpressionInstruction;
 
-typedef enum _instruction_union_case_t {
+typedef enum __attribute__((packed)) _instruction_union_case_t {
   INSTRUCTION_INSTRUCTION,
   INSTRUCTION_UINT32,
   INSTRUCTION_INT,
@@ -91,7 +91,7 @@ typedef struct _Filter
   Expression *predicate;
 } Filter;
 
-typedef enum _WindowAggregationType {
+typedef enum __attribute__((packed)) _WindowAggregationType {
   MIN,
   MAX,
   SUM,
@@ -99,7 +99,7 @@ typedef enum _WindowAggregationType {
   COUNT
 } WindowAggregationType;
 
-typedef enum _WindowSizeType {
+typedef enum __attribute__((packed)) _WindowSizeType {
   TIMEBASED,
   COUNTBASED
 } WindowSizeType;
