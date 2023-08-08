@@ -23,8 +23,9 @@ APPLICATION_BUILD_OPTIMIZED ?= 0
 # Application run tests instead of the normal "main" function
 APPLICATION_RUN_TEST ?= 0
 
+
 # for native builds we want to disable lora
-DISABLE_LORA ?= 0
+DEFAULT_QUERY ?= {.amount=1,.queries={{{CONST},0},{.data._int=2,INSTRUCTION_INT},{{VAR},0},{.data._int=0,INSTRUCTION_INT},{{MUL},0}}}
 
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
@@ -58,17 +59,13 @@ USEMODULE += ztimer_msec
 # features
 FEATURES_OPTIONAL += periph_uart
 
-
-
-
-ifeq (1, $(APPLICATION_BUILD_OPTIMIZED))
+ifeq (1,$(APPLICATION_BUILD_OPTIMIZED))
 CFLAGS += -O3
 DEVELHELP ?= 0
 CREATE_STACKTEST ?= 0
 else
 # Debug stuff. We also want debug stuff to run when testing
-## bonus info: the way the ifneq works is that it filters application build for development or test and returns one or the other if present.
-## this is then checked against an empty string which evaluates to false. If its not development or test then the filter is an empty string and evaluates to true
+
 CFLAGS += -g3 -O0 # unoptimized and with debug symbols
 CFLAGS += -Wall -Werror -Wextra -Wformat -Wformat-nonliteral -Werror=format-security -Werror=array-bounds -Wpedantic # extra warnings
 DEVELHELP ?= 1 # development helpers
@@ -81,9 +78,21 @@ CFLAGS += -DAPPLICATION_RUN_TEST
 USEMODULE += embunit
 endif
 
+## handle native builds and builds without lora
+ifeq ($(strip $(BOARD)),native)
+DISABLE_LORA ?= 1
+else
+DISABLE_LORA ?= 0
+endif
+
+ifeq (1,$(DISABLE_LORA))
+CFLAGS += -DDISABLE_LORA
+CFLAGS += -DDEFAULT_QUERY=$(DEFAULT_QUERY)
+endif
+
 # Different board configurations. Native and hardware
 ## if board is not native we can load the LoRa Stack
-ifneq ($(BOARD), native)
+ifeq ($(DISABLE_LORA),0)
 
 # Include the Semtech-loramac package
 #USEMODULE += netdev_default

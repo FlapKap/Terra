@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <time.h>
 #ifndef BOARD_NATIVE
 
-#include "lora.h"
+#include "lorawan.h"
 
 #include "thread.h"
 #include "msg.h"
@@ -26,15 +27,16 @@ static uint8_t deveui[LORAMAC_DEVEUI_LEN];
 static uint8_t appeui[LORAMAC_APPEUI_LEN];
 static uint8_t appkey[LORAMAC_APPKEY_LEN];
 
-uint8_t send_message(uint8_t* serializedData, uint8_t len)
+bool lorawan_send_message(uint8_t* serializedData, uint8_t len)
 {
     DEBUG("Sending: %s\n", serializedData);
     /* Try to send the message */
     uint8_t ret = semtech_loramac_send(&loramac,serializedData, len);
     if (ret != SEMTECH_LORAMAC_TX_DONE) {
-        printf("Cannot send message, ret code: %d\n", ret);
+        DEBUG("Cannot send message, ret code: %d\n", ret);
+        return false;
     }
-    return ret;
+    return true;
 }
 
 static void *_recv(void *arg)
@@ -54,7 +56,7 @@ static void *_recv(void *arg)
     return NULL;
 }
 
-int init_lorawan(void) {
+int lorawan_initialize_lorawan(void) {
     /* Convert identifiers and keys strings to byte arrays */
     size_t deveui_size = fmt_hex_bytes(deveui, CONFIG_LORAMAC_DEV_EUI_DEFAULT);
     size_t appeui_size = fmt_hex_bytes(appeui, CONFIG_LORAMAC_APP_EUI_DEFAULT);
@@ -75,24 +77,24 @@ int init_lorawan(void) {
 }
 
 
-int connect_lorawan(void)
+int lorawan_connect_lorawan(void)
 {
-    puts("trying to join network\n");
+    DEBUG("trying to join network\n");
     /* Join the network if not already joined */
     while (!semtech_loramac_is_mac_joined(&loramac)) {
         /* Start the Over-The-Air Activation (OTAA) procedure to retrieve the
          * generated device address and to get the network and application session
          * keys.
          */
-        printf("Starting join procedure\n");
+        DEBUG("Starting join procedure\n");
         if (semtech_loramac_join(&loramac, LORAMAC_JOIN_OTAA) != SEMTECH_LORAMAC_JOIN_SUCCEEDED) {
-            printf("Join procedure failed. Trying again\n");
+            DEBUG("Join procedure failed. Trying again\n");
             
         }
     }
-    puts("Join procedure succeeded");
+    DEBUG("Join procedure succeeded");
     //semtech_loramac_save();
-    puts("creating recv thread");
+    DEBUG("creating recv thread");
     thread_create(_recv_stack, sizeof(_recv_stack),
               THREAD_PRIORITY_MAIN - 1, 0, _recv, NULL, "recv thread");
     //printf("ret: %d\n", ret);

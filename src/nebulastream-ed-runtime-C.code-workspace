@@ -24,7 +24,9 @@
 			"debug.h": "c",
 			"*.inc": "c",
 			"number.h": "c",
-			"__locale": "c"
+			"__locale": "c",
+			"semtech_loramac.h": "c",
+			"stack.h": "c"
 		}
 	}
 }
