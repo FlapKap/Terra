@@ -249,7 +249,7 @@ void _GTEQ(Expression *e)
 void execute_next(Expression *e)
 {
     if (ENABLE_DEBUG) {
-        printInstruction(&e->program[e->pc]);
+        print_instruction(&e->program[e->pc]);
         puts("\n");
     }
     switch (e->program[e->pc].data._instruction)
@@ -329,7 +329,7 @@ void execute_next(Expression *e)
 Number call(Expression *e)
 {
     if (ENABLE_DEBUG) {
-        printExpression(e);
+        print_expression(e);
     }
     e->pc = 0;
     while (e->pc < e->p_size)

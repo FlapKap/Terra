@@ -3,7 +3,7 @@
 #include <inttypes.h>
 
 // #lizard forgives
-void printExpressionInstruction(ExpressionInstruction instr)
+void print_expression_instruction(ExpressionInstruction instr)
 {
     switch (instr)
     {
@@ -82,12 +82,12 @@ void printExpressionInstruction(ExpressionInstruction instr)
     }
 }
 
-void printInstruction(const Instruction *instruction)
+void print_instruction(const Instruction *instruction)
 {
     switch (instruction->unionCase)
     {
     case 0:
-        printExpressionInstruction(instruction->data._instruction);
+        print_expression_instruction(instruction->data._instruction);
         printf(" (ExpressionInstruction)");
         break;
     case 1:
@@ -108,18 +108,18 @@ void printInstruction(const Instruction *instruction)
     }
 }
 
-void printInstructionArray(const Instruction *instruction, size_t size)
+void print_instruction_array(const Instruction *instruction, size_t size)
 {
     printf("[");
     for (size_t i = 0; i < size; i++)
     {
-        printInstruction(&instruction[i]);
+        print_instruction(&instruction[i]);
         printf(", ");
     }
     printf("]");
 }
 
-void printNumberValue(Number val)
+void print_number_value(Number val)
 {
     switch (val.unionCase)
     {
@@ -142,7 +142,7 @@ void printNumberValue(Number val)
     }
 }
 
-void printNumberValueAndUcase(Number number)
+void print_number_value_and_ucase(Number number)
 {
     switch (number.unionCase)
     {
@@ -159,66 +159,66 @@ void printNumberValueAndUcase(Number number)
         printf("%lf (double)", number.type._double);
         break;
     default:
-        printf("Error: Invalid unionCase: %" PRIu8, number.unionCase);
+        printf("Error: Invalid unionCase: %" PRIu8 "", number.unionCase);
         break;
     }
 }
 
-void printStack(const Stack *stack)
+void print_stack(const Stack *stack)
 {
     printf("Stack (top: %d, size: %d):\n", stack->top, stack->size);
     printf("Elements:\n");
     for (int i = stack->top; i >= 0; i--)
     {
         printf("  %d. ", stack->top - i + 1);
-        printNumberValueAndUcase(stack->stack[i]);
+        print_number_value_and_ucase(stack->stack[i]);
         printf("\n");
     }
 }
 
-void printEnv(const Env *env)
+void print_env(const Env *env)
 {
     printf("Env (size: %d):\n", env->size);
     printf("Array:\n");
     for (int i = 0; i < env->size; i++)
     {
         printf("  %d. ", i + 1);
-        printNumberValueAndUcase(env->memory[i]);
+        print_number_value_and_ucase(env->memory[i]);
         printf("\n");
     }
 
     printf("Stack:\n");
-    printStack(env->stack);
+    print_stack(env->stack);
 }
 
-void printExpression(const Expression *expression)
+void print_expression(const Expression *expression)
 {
     printf("Expression (p_size: %d, pc: %d):\n", expression->p_size, expression->pc);
     printf("Program:\n");
-    printInstructionArray(expression->program, expression->p_size);
+    print_instruction_array(expression->program, expression->p_size);
     printf("\n");
     printf("Environment:\n");
-    printEnv(expression->env);
+    print_env(expression->env);
 
     printf("Stack:\n");
-    printStack(expression->stack);
+    print_stack(expression->stack);
 }
 
-void printMap(const Map *map)
+void print_map(const Map *map)
 {
     printf("Map (attribute: %d):\n", map->attribute);
     printf("Expression:\n");
-    printExpression(map->expression);
+    print_expression(map->expression);
 }
 
-void printFilter(const Filter *filter)
+void print_filter(const Filter *filter)
 {
     printf("Filter:\n");
     printf("Predicate:\n");
-    printExpression(filter->predicate);
+    print_expression(filter->predicate);
 }
 
-void printWindowAggregationType(WindowAggregationType type)
+void print_window_aggregation_type(WindowAggregationType type)
 {
     switch (type)
     {
@@ -243,7 +243,7 @@ void printWindowAggregationType(WindowAggregationType type)
     }
 }
 
-void printWindowSizeType(WindowSizeType type)
+void print_window_size_type(WindowSizeType type)
 {
     switch (type)
     {
@@ -259,16 +259,16 @@ void printWindowSizeType(WindowSizeType type)
     }
 }
 
-void printWindow(Window *window)
+void print_window(Window *window)
 {
     printf("Window:\n");
     printf("size: %d\n", window->size);
 
     printf("sizeType: ");
-    printWindowSizeType(window->sizeType);
+    print_window_size_type(window->sizeType);
     printf("\n");
     printf("aggregationType: ");
-    printWindowAggregationType(window->aggregationType);
+    print_window_aggregation_type(window->aggregationType);
     printf("\n");
 
     printf("startAttribute: %d\n", window->startAttribute);
@@ -277,21 +277,21 @@ void printWindow(Window *window)
     printf("readAttribute: %d\n", window->readAttribute);
 }
 
-void printOperation(const Operation *operation)
+void print_operation(const Operation *operation)
 {
     switch (operation->unionCase)
     {
     case 1:
         printf("Map operation:\n");
-        printMap(operation->operation.map);
+        print_map(operation->operation.map);
         break;
     case 2:
         printf("Filter operation:\n");
-        printFilter(operation->operation.filter);
+        print_filter(operation->operation.filter);
         break;
     case 3:
         printf("Window operation:\n");
-        printWindow(operation->operation.window);
+        print_window(operation->operation.window);
         break;
     default:
         printf("Unknown operation\n");
@@ -299,42 +299,42 @@ void printOperation(const Operation *operation)
     }
 }
 
-void printQuery(const Query *query)
+void print_query(const Query *query)
 {
     printf("Query (amount: %d):\n", query->amount);
     for (int i = 0; i < query->amount; i++)
     {
         printf("Operation %d:\n", i + 1);
-        printOperation(&query->operations[i]);
+        print_operation(&query->operations[i]);
     }
 }
 
-void printMessage(const Message *message)
+void print_message(const Message *message)
 {
     printf("Message (amount of queries: %d):\n", message->amount);
     for (int i = 0; i < message->amount; i++)
     {
         printf("Query %d:\n", i + 1);
-        printQuery(&message->queries[i]);
+        print_query(&message->queries[i]);
     }
 }
 
-void printQueryResponse(const QueryResponse *response)
+void print_query_response(const QueryResponse *response)
 {
     printf("Query Response (id: %d, amount of instructions: %d):\n", response->id, response->amount);
     for (int i = 0; i < response->amount; i++)
     {
         printf("Instruction %d:\n", i + 1);
-        printInstruction(&response->response[i]);
+        print_instruction(&response->response[i]);
     }
 }
 
-void printOutputMessage(const OutputMessage *message)
+void print_output_message(const OutputMessage *message)
 {
     printf("Output Message (amount of responses: %d):\n", message->amount);
     for (int i = 0; i < message->amount; i++)
     {
         printf("Response %d:\n", i + 1);
-        printQueryResponse(&message->responses[i]);
+        print_query_response(&message->responses[i]);
     }
 }
