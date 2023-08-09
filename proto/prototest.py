@@ -1,14 +1,30 @@
 from EndDeviceProtocol import *
 from EndDeviceProtocol import ExpressionInstructions as Einstr
-
+import base64
+import shlex
 # This file is used to generate the binary protobuf messages that are used for testing
 # the protocol implementation in ../src/protocol.py
 
+def byte_string_as_c_char_array(bs: bytes) -> str:
+    output = "["
+    for b in bs:
+        output += str(hex(b))
+        output +=","
+    output += "]"
+    return output
+
+def print_protobuf_message(message: Message, name: str) -> None:
+    print(f"Message:{name}")
+    print(f"Serialized String:{message.SerializeToString()}")
+    print(f"Serialized As C Array:{byte_string_as_c_char_array(message.SerializeToString())}")
+    print(f"Serialized as dict:{message.to_dict()}")
 if __name__ == "__main__":
     # generate messages
-    empty_msg = Message(queries=[])
+    messages = {}
 
-    map_msg = Message(queries=[
+    messages['empty_msg'] = Message(queries=[])
+
+    messages['map_msg'] = Message(queries=[
         Query(operations=[Operation(MapOperation(
             [
                 Data(Einstr.CONST),
@@ -18,22 +34,22 @@ if __name__ == "__main__":
             attribute=1))])
     ])
 
-    filter_msg = Message(queries=[Query([Operation(filter=FilterOperation(
+    messages['filter_msg'] = Message(queries=[Query([Operation(filter=FilterOperation(
         predicate=[Data(Einstr.CONST),
                               Data(_uint8=8),
                               Data(Einstr.LT)]
                              ))])])
 
-    map_filter_msg = Message(queries=[Query([
+    messages['map_filter_msg'] = Message(queries=[Query([
         Operation(map=MapOperation(
             [Data(Einstr.CONST),
                         Data(_uint8=8), Data(Einstr.MUL)])),
         Operation(filter=FilterOperation(predicate=[Data(Einstr.CONST), Data(_int8=50), Data(Einstr.GT)]))])])
 
-    window_msg = Message(queries=[Query([
+    messages['window_msg'] = Message(queries=[Query([
         Operation(window=WindowOperation(3, WindowSizeType.COUNTBASED, WindowAggregationType.COUNT, 0, 1, 2, 3))])])
 
-    multiple_msg = Message(
+    messages['multiple_msg'] = Message(
         queries=[
             Query(
                 operations=[Operation(
@@ -50,10 +66,10 @@ if __name__ == "__main__":
         ]
     )
 
-    output_single_msg = Output([OutputQueryResponse(
+    messages['output_single_msg'] = Output([OutputQueryResponse(
         1, [Data(_uint8=ord('H')), Data(_uint8=ord('E')), Data(_uint8=ord('L')), Data(_uint8=ord('L')), Data(_uint8=ord('O'))])])
 
-    output_multiple_msg = Output([
+    messages['output_multiple_msg'] = Output([
         OutputQueryResponse(1, [Data(_uint8=ord('H'))]),
         OutputQueryResponse(2, [Data(_uint8=ord('E'))]),
         OutputQueryResponse(3, [Data(_uint8=ord('L'))]),
@@ -61,33 +77,6 @@ if __name__ == "__main__":
         OutputQueryResponse(5, [Data(_uint8=ord('O'))]),
     ])
 
-    print("empty_msg")
-    print(empty_msg.SerializeToString())
-    print(empty_msg.to_dict())
-    print()
-    print("map_msg")
-    print(map_msg.SerializeToString())
-    print(map_msg.to_dict())
-    print("filter_msg")
-    print(filter_msg.SerializeToString())
-    print(filter_msg.to_dict())
-    print()
-    print("map_filter_msg")
-    print(map_filter_msg.SerializeToString())
-    print(map_filter_msg.to_dict())
-    print()
-    print("window_msg")
-    print(window_msg.SerializeToString())
-    print(window_msg.to_dict())
-    print()
-    print("multiple_msg")
-    print(multiple_msg.SerializeToString())
-    print(multiple_msg.to_dict())
-    print()
-    print("output_msg_single")
-    print(output_single_msg.SerializeToString())
-    print(output_single_msg.to_dict())
-    print()
-    print("output_msg_multiple")
-    print(output_multiple_msg.SerializeToString())
-    print(output_multiple_msg.to_dict())
+    for name, message in messages.items():
+        print_protobuf_message(message, name)
+        print()
