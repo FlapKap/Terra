@@ -26,7 +26,8 @@
 			"number.h": "c",
 			"__locale": "c",
 			"semtech_loramac.h": "c",
-			"stack.h": "c"
+			"stack.h": "c",
+			"fmt.h": "c"
 		}
 	}
 }

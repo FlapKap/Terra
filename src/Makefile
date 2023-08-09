@@ -2,12 +2,13 @@
 APPLICATION = NSED_Runtime
 PROJECTBASE = $(CURDIR)
 BOARD ?= b-l072z-lrwan1
-
+RIOTBASE ?= $(CURDIR)/../../RIOT
 
 # APPLICATION SPECIFIC CONFIGURATION ENTRIES
 ## EXECUTE INTERVAL
 EXECUTION_INTERVAL_S ?= 20
 ## LORA
+DISABLE_LORA ?= 1
 ACTIVATION_MODE ?= otaa # only otaa is supported
 LORA_REGION ?= EU868
 APPEUI ?= 0000000000000000
@@ -24,8 +25,8 @@ APPLICATION_BUILD_OPTIMIZED ?= 0
 APPLICATION_RUN_TEST ?= 0
 
 
-# for native builds we want to disable lora
-DEFAULT_QUERY ?= {.amount=1,.queries={{{CONST},0},{.data._int=2,INSTRUCTION_INT},{{VAR},0},{.data._int=0,INSTRUCTION_INT},{{MUL},0}}}
+# Default query to run if network is disabled
+DEFAULT_QUERY_AS_PB_CHAR_ARRAY ?={0xa,0x12,0xa,0x10,0xa,0xe,0xa,0x2,0x8,0x0,0xa,0x2,0x10,0x8,0xa,0x2,0x8,0xa,0x10,0x1,}
 
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
@@ -36,9 +37,6 @@ CFLAGS += -DTHREAD_STACKSIZE_MAIN=$(MAIN_STACKSIZE)
 
 
 ## RIOT CONFIGURATION
-## We assume riot is placed next to this repo
-RIOTBASE ?= $(CURDIR)/../../RIOT
-
 # Set the compile_commands.json file to a known location
 COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
 
@@ -87,7 +85,7 @@ endif
 
 ifeq (1,$(DISABLE_LORA))
 CFLAGS += -DDISABLE_LORA
-CFLAGS += -DDEFAULT_QUERY=$(DEFAULT_QUERY)
+CFLAGS += -DDEFAULT_QUERY_AS_PB_CHAR_ARRAY=$(DEFAULT_QUERY_AS_PB_CHAR_ARRAY)
 endif
 
 # Different board configurations. Native and hardware

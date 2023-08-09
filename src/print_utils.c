@@ -198,10 +198,23 @@ void print_expression(const Expression *expression)
     print_instruction_array(expression->program, expression->p_size);
     printf("\n");
     printf("Environment:\n");
-    print_env(expression->env);
-
+    if (expression->env != NULL)
+    {
+        print_env(expression->env);
+    } else
+    {
+        printf("NULL\n");
+    }
+    
     printf("Stack:\n");
-    print_stack(expression->stack);
+    if (expression->stack != NULL)
+    {
+        print_stack(expression->stack);
+    } else
+    {
+        printf("NULL\n");
+    }
+    printf("\n");
 }
 
 void print_map(const Map *map)
@@ -281,15 +294,15 @@ void print_operation(const Operation *operation)
 {
     switch (operation->unionCase)
     {
-    case 1:
+    case 0:
         printf("Map operation:\n");
         print_map(operation->operation.map);
         break;
-    case 2:
+    case 1:
         printf("Filter operation:\n");
         print_filter(operation->operation.filter);
         break;
-    case 3:
+    case 2:
         printf("Window operation:\n");
         print_window(operation->operation.window);
         break;

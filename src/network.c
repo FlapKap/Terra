@@ -1,4 +1,5 @@
 #include <fmt.h>
+#include <base64.h>
 #include "network.h"
 
 #include "operators.h"
@@ -22,44 +23,30 @@ extern semtech_loramac_t loramac;
 #define ENABLE_DEBUG 1
 #include "debug.h"
 
+static Message message;
+
 // we provide two implementations: one for lora, and one with a default message defined
 #if DISABLE_LORA
-//TODO: FIX THIS
-//it might be easier to just include the binary pb message
-// in any case it needs to be possible to define this on cli or makefile. 
-static Message message = {
-  .amount=1,
-  .queries=
-      &(Query){
-        .amount=1,
-        .operations=
-          &(Operation){
-            .operation={
-              &(Map){
-                .attribute=0,
-                .expression=&(Expression){
-                  .program= (Instruction[]) {{{CONST}, INSTRUCTION_INSTRUCTION}, {.data._int = 2, INSTRUCTION_INT}, {{VAR}, INSTRUCTION_INSTRUCTION}, {.data._int = 0, INSTRUCTION_INT}, {{MUL}, INSTRUCTION_INSTRUCTION}},
-                  .p_size=5
-              },
-            }
-          },
-          .unionCase=1
-        },
-    } 
-};
+static const pb_byte_t raw_message[] = DEFAULT_QUERY_AS_PB_CHAR_ARRAY;
+
+
+
 
 bool network_initialize_network(void){
-  DEBUG("network_initialize_network: DISABLE_LORA enabled so no network is actually initialized");
-  return true;
+  DEBUG("network_initialize_network: DISABLE_LORA enabled so no network is actually initialized\n");
+  pb_istream_t stream = pb_istream_from_buffer(raw_message, sizeof(raw_message));
+  bool res = decode_input_message(&stream, &message);
+  print_message(&message);
+  return res;
 }
 
 bool network_is_connected(void){
-  DEBUG("network_is_connected: DISABLE_LORA enabled so no network is actually connected");
+  DEBUG("network_is_connected: DISABLE_LORA enabled so no network is actually connected\n");
   return true;
 }
 
 bool network_has_valid_message(void){
-  DEBUG("network_has_valid_message: DISABLE_LORA enabled so using predefined message");
+  DEBUG("network_has_valid_message: DISABLE_LORA enabled so using predefined message\n");
   return true;
 }
 
@@ -67,13 +54,12 @@ Message network_get_message(void){
   return message;
 }
 bool network_send_message(OutputMessage msg){
-  DEBUG("network_send_message: DISABLE_LORA enabled so no message is actually sent. Just logged.");
+  DEBUG("network_send_message: DISABLE_LORA enabled so no message is actually sent. Just logged.\n");
   print_output_message(&msg);
   return true;
 }
 
 #else
-static Message message;
 static bool receive_and_decode(void)
 {
   // Check for received messages
