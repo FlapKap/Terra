@@ -25,7 +25,7 @@ void executeQuery(Query query, QueryResponse *out, Env * env){
       // map
       query.operations[i].operation.map->expression->stack = env->stack;
       Number number = call(query.operations[i].operation.map->expression);
-
+ 
       // Set env value
       set_value(env, query.operations[i].operation.map->attribute, number);
 
@@ -41,7 +41,7 @@ void executeQuery(Query query, QueryResponse *out, Env * env){
       Number number = call(query.operations[i].operation.filter->predicate);
 
       Instruction *instruction = (Instruction *) calloc(sizeof(Instruction), 1);
-
+      //TODO: this seems like a bug. Shouldnt filter stop execution?
       copy_number_to_instruction(&number, instruction);
       out->response = instruction;
       out->amount = 1;

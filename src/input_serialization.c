@@ -11,20 +11,20 @@ void init_map_operation(Map map, EndDeviceProtocol_MapOperation *out){
   for(int i = 0; i < map.expression->p_size; i++){
     EndDeviceProtocol_Data current = EndDeviceProtocol_Data_init_zero;
     init_data(&map.expression->program[i], &current);
-    out->function[i] = current;
+    out->function.instructions[i] = current;
   }
   
   out->attribute = map.attribute;
-  out->function_count = map.expression->p_size;
+  out->function.instructions_count = map.expression->p_size;
 }
 
 void init_filter_operation(Filter filter, EndDeviceProtocol_FilterOperation *out) {
   for (int i = 0; i < filter.predicate->p_size; i++) {
     EndDeviceProtocol_Data current = EndDeviceProtocol_Data_init_zero;
     init_data(&filter.predicate->program[i], &current);
-    out->predicate[i] = current;
+    out->predicate.instructions[i] = current;
   }
-  out->predicate_count = filter.predicate->p_size;
+  out->predicate.instructions_count = filter.predicate->p_size;
 }
 
 void init_window_operation(Window window, EndDeviceProtocol_WindowOperation *out){
@@ -240,13 +240,13 @@ void decoded_input_to_window_operation(EndDeviceProtocol_WindowOperation input, 
 
 void decoded_input_to_filter_operation(EndDeviceProtocol_FilterOperation decoded, Filter *out){
   Expression *submessage = (Expression *)malloc(sizeof(Expression));
-  submessage->p_size = decoded.predicate_count;
+  submessage->p_size = decoded.predicate.instructions_count;
   
-  Instruction *instructions = (Instruction *)malloc(sizeof(Instruction) * decoded.predicate_count);
+  Instruction *instructions = (Instruction *)malloc(sizeof(Instruction) * decoded.predicate.instructions_count);
 
-  for(int i = 0; i < decoded.predicate_count; i++){
+  for(int i = 0; i < decoded.predicate.instructions_count; i++){
     Instruction *current = (Instruction *)malloc(sizeof(Instruction));
-    decoded_input_to_instruction(decoded.predicate[i], current);
+    decoded_input_to_instruction(decoded.predicate.instructions[i], current);
     instructions[i] = *current;
   }
 
@@ -259,13 +259,13 @@ void decoded_input_to_map_operation(EndDeviceProtocol_MapOperation decoded, Map 
   out->attribute = decoded.attribute;
 
   Expression *submessage = (Expression *)malloc(sizeof(Expression));
-  submessage->p_size = decoded.function_count;
+  submessage->p_size = decoded.function.instructions_count;
   
-  Instruction *instructions = (Instruction *)malloc(sizeof(Instruction) * decoded.function_count);
+  Instruction *instructions = (Instruction *)malloc(sizeof(Instruction) * decoded.function.instructions_count);
   
-  for(int i = 0; i < decoded.function_count; i++){
+  for(int i = 0; i < decoded.function.instructions_count; i++){
     Instruction *current = (Instruction *)malloc(sizeof(Instruction));
-    decoded_input_to_instruction(decoded.function[i], current);
+    decoded_input_to_instruction(decoded.function.instructions[i], current);
     instructions[i] = *current;
   }
 

@@ -238,12 +238,12 @@ static void filter_operation_is_initialised(void)
     init_filter_operation(filter, &filterOperation);
 
     // Check it has the correct values
-    TEST_ASSERT_EQUAL_INT(5, filterOperation.predicate_count);
-    TEST_ASSERT(filterOperation.predicate[0].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
-    TEST_ASSERT_EQUAL_INT(1, filterOperation.predicate[1].data._int32);
-    TEST_ASSERT(filterOperation.predicate[2].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
-    TEST_ASSERT_EQUAL_INT(1, filterOperation.predicate[3].data._int32);
-    TEST_ASSERT(filterOperation.predicate[4].data.instruction == EndDeviceProtocol_ExpressionInstructions_ADD);
+    TEST_ASSERT_EQUAL_INT(5, filterOperation.predicate.instructions_count);
+    TEST_ASSERT(filterOperation.predicate.instructions[0].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
+    TEST_ASSERT_EQUAL_INT(1, filterOperation.predicate.instructions[1].data._int32);
+    TEST_ASSERT(filterOperation.predicate.instructions[2].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
+    TEST_ASSERT_EQUAL_INT(1, filterOperation.predicate.instructions[3].data._int32);
+    TEST_ASSERT(filterOperation.predicate.instructions[4].data.instruction == EndDeviceProtocol_ExpressionInstructions_ADD);
 }
 
 static void map_operation_is_initialised(void){
@@ -265,13 +265,13 @@ static void map_operation_is_initialised(void){
   init_map_operation(map, &mapOperation);
 
   // Check it has the correct values
-  TEST_ASSERT_EQUAL_INT(5, mapOperation.function_count);
+  TEST_ASSERT_EQUAL_INT(5, mapOperation.function.instructions_count);
 
-  TEST_ASSERT(mapOperation.function[0].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
-  TEST_ASSERT_EQUAL_INT(mapOperation.function[1].data._int32, 1);
-  TEST_ASSERT(mapOperation.function[2].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
-  TEST_ASSERT_EQUAL_INT(mapOperation.function[3].data._int32, 1);
-  TEST_ASSERT(mapOperation.function[4].data.instruction == EndDeviceProtocol_ExpressionInstructions_ADD);
+  TEST_ASSERT(mapOperation.function.instructions[0].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
+  TEST_ASSERT_EQUAL_INT(mapOperation.function.instructions[1].data._int32, 1);
+  TEST_ASSERT(mapOperation.function.instructions[2].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
+  TEST_ASSERT_EQUAL_INT(mapOperation.function.instructions[3].data._int32, 1);
+  TEST_ASSERT(mapOperation.function.instructions[4].data.instruction == EndDeviceProtocol_ExpressionInstructions_ADD);
 }
 
 void operation_is_initialised(void){
@@ -300,12 +300,12 @@ void operation_is_initialised(void){
 
   // Check it has the correct values
   TEST_ASSERT(operationOperation.which_operation == EndDeviceProtocol_Operation_map_tag);
-  TEST_ASSERT_EQUAL_INT(5, operationOperation.operation.map.function_count);
-  TEST_ASSERT(operationOperation.operation.map.function[0].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
-  TEST_ASSERT_EQUAL_INT(1,operationOperation.operation.map.function[1].data._int32);
-  TEST_ASSERT(operationOperation.operation.map.function[2].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
-  TEST_ASSERT_EQUAL_INT(1, operationOperation.operation.map.function[3].data._int32);
-  TEST_ASSERT(operationOperation.operation.map.function[4].data.instruction == EndDeviceProtocol_ExpressionInstructions_ADD);
+  TEST_ASSERT_EQUAL_INT(5, operationOperation.operation.map.function.instructions_count);
+  TEST_ASSERT(operationOperation.operation.map.function.instructions[0].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
+  TEST_ASSERT_EQUAL_INT(1,operationOperation.operation.map.function.instructions[1].data._int32);
+  TEST_ASSERT(operationOperation.operation.map.function.instructions[2].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
+  TEST_ASSERT_EQUAL_INT(1, operationOperation.operation.map.function.instructions[3].data._int32);
+  TEST_ASSERT(operationOperation.operation.map.function.instructions[4].data.instruction == EndDeviceProtocol_ExpressionInstructions_ADD);
 }
 
 void input_query_is_initialised(void){
@@ -339,14 +339,14 @@ void input_query_is_initialised(void){
   // Check it has the correct values
   TEST_ASSERT_EQUAL_INT(1,preparedQuery.operations_count);
   TEST_ASSERT(preparedQuery.operations[0].which_operation == EndDeviceProtocol_Operation_map_tag);
-  TEST_ASSERT_EQUAL_INT(5,preparedQuery.operations[0].operation.map.function_count);
-  TEST_ASSERT(preparedQuery.operations[0].operation.map.function[0].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
+  TEST_ASSERT_EQUAL_INT(5,preparedQuery.operations[0].operation.map.function.instructions_count);
+  TEST_ASSERT(preparedQuery.operations[0].operation.map.function.instructions[0].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
 
-  TEST_ASSERT_EQUAL_INT(1,preparedQuery.operations[0].operation.map.function[1].data._int32);
+  TEST_ASSERT_EQUAL_INT(1,preparedQuery.operations[0].operation.map.function.instructions[1].data._int32);
 
-  TEST_ASSERT(preparedQuery.operations[0].operation.map.function[2].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
-  TEST_ASSERT_EQUAL_INT(1, preparedQuery.operations[0].operation.map.function[3].data._int32);
-  TEST_ASSERT(preparedQuery.operations[0].operation.map.function[4].data.instruction == EndDeviceProtocol_ExpressionInstructions_ADD);
+  TEST_ASSERT(preparedQuery.operations[0].operation.map.function.instructions[2].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
+  TEST_ASSERT_EQUAL_INT(1, preparedQuery.operations[0].operation.map.function.instructions[3].data._int32);
+  TEST_ASSERT(preparedQuery.operations[0].operation.map.function.instructions[4].data.instruction == EndDeviceProtocol_ExpressionInstructions_ADD);
 }
 
 // Encode and decode input message tests
@@ -387,12 +387,12 @@ void message_is_initialised(void){
   TEST_ASSERT_EQUAL_INT(1,preparedMessage.queries_count);
   TEST_ASSERT_EQUAL_INT(1,preparedMessage.queries[0].operations_count);
   TEST_ASSERT(preparedMessage.queries[0].operations[0].which_operation == EndDeviceProtocol_Operation_map_tag);
-  TEST_ASSERT_EQUAL_INT(5,preparedMessage.queries[0].operations[0].operation.map.function_count);
-  TEST_ASSERT(preparedMessage.queries[0].operations[0].operation.map.function[0].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
-  TEST_ASSERT_EQUAL_INT(1, preparedMessage.queries[0].operations[0].operation.map.function[1].data._int32);
-  TEST_ASSERT(preparedMessage.queries[0].operations[0].operation.map.function[2].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
-  TEST_ASSERT_EQUAL_INT(1,preparedMessage.queries[0].operations[0].operation.map.function[3].data._int32);
-  TEST_ASSERT(preparedMessage.queries[0].operations[0].operation.map.function[4].data.instruction == EndDeviceProtocol_ExpressionInstructions_ADD);
+  TEST_ASSERT_EQUAL_INT(5,preparedMessage.queries[0].operations[0].operation.map.function.instructions_count);
+  TEST_ASSERT(preparedMessage.queries[0].operations[0].operation.map.function.instructions[0].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
+  TEST_ASSERT_EQUAL_INT(1, preparedMessage.queries[0].operations[0].operation.map.function.instructions[1].data._int32);
+  TEST_ASSERT(preparedMessage.queries[0].operations[0].operation.map.function.instructions[2].data.instruction == EndDeviceProtocol_ExpressionInstructions_CONST);
+  TEST_ASSERT_EQUAL_INT(1,preparedMessage.queries[0].operations[0].operation.map.function.instructions[3].data._int32);
+  TEST_ASSERT(preparedMessage.queries[0].operations[0].operation.map.function.instructions[4].data.instruction == EndDeviceProtocol_ExpressionInstructions_ADD);
 }
 
 void message_gets_encoded(void){
