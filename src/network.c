@@ -59,6 +59,11 @@ bool network_send_message(OutputMessage msg){
   return true;
 }
 
+bool network_send_heartbeat(void){
+  DEBUG("network_send_heartbeat: DISABLE_LORA enabled so no message is actually sent. Just logged.\n");
+  return true;
+}
+
 #else
 static bool receive_and_decode(void)
 {
@@ -72,7 +77,6 @@ static bool receive_and_decode(void)
   }
     return res;
 }
-
 
 
 bool network_initialize_network(void){
@@ -112,4 +116,10 @@ bool network_send_message(OutputMessage msg){
   //send
   return lorawan_send_message(buffer, (uint8_t)256);
 }
+
+bool network_send_heartbeat(void){
+  lorawan_send_message((uint8_t[]){'<','3'}, 2);
+  return true;
+}
+
 #endif

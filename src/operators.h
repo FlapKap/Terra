@@ -62,10 +62,10 @@ typedef struct _Instruction
 {
   union {
     ExpressionInstruction _instruction; // case 0
-    uint32_t _uint32;                  // case 1
-    int _int;                          // case 2
-    float _float;                      // case 3
-    double _double;                    // case 4
+    uint32_t _uint32;                   // case 1
+    int _int;                           // case 2
+    float _float;                       // case 3
+    double _double;                     // case 4
   } data;
   instruction_union_case_t unionCase;
 } Instruction;

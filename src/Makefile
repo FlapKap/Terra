@@ -8,7 +8,7 @@ RIOTBASE ?= $(CURDIR)/../../RIOT
 ## EXECUTE INTERVAL
 EXECUTION_INTERVAL_S ?= 20
 ## LORA
-DISABLE_LORA ?= 1
+DISABLE_LORA ?= 0
 ACTIVATION_MODE ?= otaa # only otaa is supported
 LORA_REGION ?= EU868
 APPEUI ?= 0000000000000000
@@ -18,7 +18,7 @@ APPKEY ?= 385794DDE70CE2EAB5B5B12A4807822C
 MAIN_STACKSIZE ?= 10480
 
 
-# Different build configurations. Optimized builds run without any debug symbols and o3 optimizations
+# Different build configurations. Optimized builds run without any debug symbols and with o3 optimizations
 APPLICATION_BUILD_OPTIMIZED ?= 0
 
 # Application run tests instead of the normal "main" function

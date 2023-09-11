@@ -70,11 +70,11 @@ int main(void)
   run_barker11();
   puts("NebulaStream End Device Runtime");
   puts("=====================================");
-  network_initialize_network();
-
-  msg = network_get_message();
-  // Initialize global variable environment
   Env *global_env = init_env();
+  network_initialize_network();
+  network_send_heartbeat();
+  // Initialize global variable environment
+
 
   // main loop
   const uint32_t timeout_s = EXECUTION_INTERVAL_S;
@@ -83,7 +83,7 @@ int main(void)
     puts("Main loop iteration");
     ztimer_now_t start_time = ztimer_now(ZTIMER_SEC);
     run_barker11();
-
+    msg = network_get_message();
 
     // Execute queries
     OutputMessage out;
@@ -92,6 +92,8 @@ int main(void)
     if (out.amount > 0)
     {
       network_send_message(out);
+    } else {
+      network_send_heartbeat();
     }
     
     // figure out how long the iteration took and sleep for the remaining time
