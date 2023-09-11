@@ -256,10 +256,13 @@ DB_PATH = EXPERIMENT_FOLDER / f"{EXPERIMENT}.duckdb"
 print(f"Create DuckDB for experiment data at {str(DB_PATH)}")
 # Check if file already exists
 if DB_PATH.exists():
-    answer = input(f"Database already exists at {str(DB_PATH)}. Do you want us to delete it? [y/n] ")
+    answer = input(
+        f"Database already exists at {str(DB_PATH)}. Do you want us to delete it? [y/n] "
+    )
     if answer == "y":
         DB_PATH.unlink()
-    else: exit()
+    else:
+        exit()
 # Create DB for results
 create_sql_script = open("./experiment.db.sql").read()
 db_con = duckdb.connect(f"{str(DB_PATH)}")
@@ -345,7 +348,11 @@ if not args.dont_upload:
             exit()
 
         # upload
-        print(f"uploading binary file {str(flash_file)} to node_string {node_string}...", end="",flush=True)
+        print(
+            f"uploading binary file {str(flash_file)} to node_string {node_string}...",
+            end="",
+            flush=True,
+        )
         p = subprocess.run(
             [
                 "iotlab",
@@ -377,7 +384,7 @@ nodes_by_oml_name = {node.oml_name: node for node in nodes}
 
 
 async def serial_aggregation_coroutine(site_url):
-    p = None # initialize p to None so we in finally can check and terminate if it has been set
+    p = None  # initialize p to None so we in finally can check and terminate if it has been set
     try:
         global serial_count
         print("Starting serial aggregation collection")
@@ -414,7 +421,7 @@ power_consumption_count = 0
 
 
 async def power_consumption_coroutine(site_url, oml_files):
-    p = None # initialize p to None so we in finally can check and terminate if it has been set
+    p = None  # initialize p to None so we in finally can check and terminate if it has been set
     try:
         global power_consumption_count
         print("starting power consumption collection")
@@ -458,7 +465,9 @@ async def power_consumption_coroutine(site_url, oml_files):
             record = matcher.match(line)
             if record is None:
                 continue
-            timestamp = int(int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"]))
+            timestamp = int(
+                int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
+            )
             db_con.execute(
                 "INSERT INTO Power_Consumption (node_id, timestamp, voltage, current, power) VALUES (?, ?, ?, ?, ?)",
                 (
@@ -480,7 +489,7 @@ radio_count = 0
 
 
 async def radio_coroutine(site_url, oml_files):
-    p = None # initialize p to None so we in finally can check and terminate if it has been set
+    p = None  # initialize p to None so we in finally can check and terminate if it has been set
     try:
         global radio_count
         await asyncio.sleep(60)
@@ -523,7 +532,9 @@ async def radio_coroutine(site_url, oml_files):
             record = matcher.match(line.decode("utf-8"))
             if record is None:
                 continue
-            timestamp = int(int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"]))
+            timestamp = int(
+                int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
+            )
             db_con.execute(
                 "INSERT INTO Radio (node_id, timestamp, channel, rssi) VALUES (?, ?, ?, ?)",
                 (
@@ -545,13 +556,13 @@ MQTT_CONFIG = EXPERIMENT_CONFIG["MQTT"]
 
 async def mqtt_coroutine():
     print("starting mqtt collection")
+
     def from_str_to_datetime(s):
         ## annoyingly fromisoformat does not support arbitrary iso 8601 formatted strings
         ## so we have to manually strip some information and convert Z into +00:00
         ## this is fixed in python 3.11 but we use 3.10
 
         return datetime.fromisoformat(s[:26] + "+00:00")
-    
 
     async with aiomqtt.Client(
         hostname=MQTT_CONFIG["ADDRESS"],
@@ -559,9 +570,8 @@ async def mqtt_coroutine():
         username=MQTT_CONFIG["USERNAME"],
         password=MQTT_CONFIG["PASSWORD"],
         clean_session=False,
-        client_id=str(EXPERIMENT)
+        client_id=str(EXPERIMENT),
     ) as client:
-        
         async with client.messages() as messages:
             await client.subscribe(MQTT_CONFIG["TOPIC"], qos=2)
             print("subscribed to topic", MQTT_CONFIG["TOPIC"])
@@ -582,7 +592,8 @@ async def mqtt_coroutine():
                 parsed_msg = json.loads(msg.payload.decode("utf-8"))
                 msg_topic = msg.topic.value
                 ## skip if simulated
-                if parsed_msg.get("simulated"): continue
+                if parsed_msg.get("simulated"):
+                    continue
                 # formats taken from https://www.thethingsindustries.com/docs/the-things-stack/concepts/data-formats/
                 ## insert the message into the database. we wrap with a transaction
                 db_con.begin()
@@ -610,17 +621,21 @@ async def mqtt_coroutine():
 
                         ## extract relevant info from mqtt payload
                         dev_eui = parsed_msg["end_device_ids"]["dev_eui"]
-                        app_recieved_at = from_str_to_datetime(parsed_msg["received_at"])
-                        network_recieved_at = from_str_to_datetime(parsed_msg["join_accept"]["received_at"])
+                        app_received_at = from_str_to_datetime(
+                            parsed_msg["received_at"]
+                        )
+                        network_received_at = from_str_to_datetime(
+                            parsed_msg["join_accept"]["received_at"]
+                        )
 
                         db_con.execute(
-                            "INSERT INTO Message (related_node, network_recieved_at) VALUES (?,?) RETURNING message_id",
-                            (dev_eui, network_recieved_at),
+                            "INSERT INTO Message (related_node, network_received_at) VALUES (?,?) RETURNING message_id",
+                            (dev_eui, network_received_at),
                         )
                         message_id = db_con.fetchone()[0]
                         db_con.execute(
                             "INSERT INTO Join_Message (join_message_id, app_received_at) VALUES (?,?)",
-                            (message_id, app_recieved_at),
+                            (message_id, app_received_at),
                         )
 
                     case ["up"]:
@@ -703,17 +718,29 @@ async def mqtt_coroutine():
                         # endregion
                         ## extract needed info from mqtt payload
                         dev_eui = parsed_msg["end_device_ids"]["dev_eui"]
-                        app_recieved_at = from_str_to_datetime(parsed_msg["received_at"])
-                        gateway_recieved_at = from_str_to_datetime(parsed_msg["uplink_message"]["time"])
-                        network_recieved_at = from_str_to_datetime(parsed_msg["uplink_message"]["received_at"])
-                        frame_counter = parsed_msg["uplink_message"]["f_cnt"]
+                        app_recieved_at = from_str_to_datetime(
+                            parsed_msg["received_at"]
+                        )
+                        gateway_recieved_at = from_str_to_datetime(
+                            parsed_msg["uplink_message"]["rx_metadata"][0]["time"]
+                        )
+                        network_recieved_at = from_str_to_datetime(
+                            parsed_msg["uplink_message"]["rx_metadata"][0][
+                                "received_at"
+                            ]
+                        )
+                        frame_counter = (
+                            parsed_msg["uplink_message"]["f_cnt"]
+                            if parsed_msg["uplink_message"].get("f_cnt")
+                            else 0
+                        )
                         frame_port = parsed_msg["uplink_message"]["f_port"]
                         frame_payload = parsed_msg["uplink_message"]["frm_payload"]
-                        gateway_deveui = parsed_msg["uplink_message"]["gateway_ids"][
-                            "eui"
-                        ]
-                        rssi = parsed_msg["uplink_message"]["rssi"]
-                        snr = parsed_msg["uplink_message"]["snr"]
+                        rx_metadata = parsed_msg["uplink_message"]["rx_metadata"][0]
+                        gateway_deveui = rx_metadata["gateway_ids"]["gateway_id"]
+                        rssi = rx_metadata["rssi"]
+                        snr = rx_metadata["snr"]
+
                         bandwidth = parsed_msg["uplink_message"]["data_rate"]["lora"][
                             "bandwidth"
                         ]
@@ -811,10 +838,9 @@ async def mqtt_coroutine():
                                 error_namespace,
                                 error_id,
                                 error_message,
-                                error_code
+                                error_code,
                             ),
                         )
-
                     case ["down", down_type]:
                         # region example
                         # {
@@ -842,22 +868,34 @@ async def mqtt_coroutine():
 
                         # endregion
 
+                        ## example is wrong? at least api seems to not provide dev_eui, join_eui, dev_addr and received_at.
+                        ## we will work around it so far, but this is far from ideal
+                        ## TTN is notified and a fix is coming in next release
+
                         ## get needed info from mqtt payload
-                        dev_eui = parsed_msg["end_device_ids"]["dev_eui"]
-                        network_recieved_at = from_str_to_datetime(parsed_msg["received_at"])
+                        dev_eui = (
+                            parsed_msg["end_device_ids"]["device_id"]
+                            .split("-")[1]
+                            .upper()
+                        )
+                        network_received_at = datetime.now()
                         downlink_key = f"downlink_{down_type}"
                         frame_port: int = parsed_msg[downlink_key]["f_port"]
-                        frame_counter: int = parsed_msg[downlink_key]["f_cnt"]
+                        frame_counter: int = (
+                            -1
+                        )  ## TODO: fix. right now f_cnt is missing from the api response
+                        # frame_counter: int = parsed_msg[downlink_key]["f_cnt"]
                         frame_payload: str = parsed_msg[downlink_key]["frm_payload"]
                         confirmed: bool = parsed_msg[downlink_key]["confirmed"]
-                        priority: str = parsed_msg[downlink_key]["priority"]
+                        priority: str = "NORMAL"  # TODO: as soon as priority is provided by API fix this
+                        # priority: str = parsed_msg[downlink_key]["priority"]
                         correlation_ids: list[str] = parsed_msg["correlation_ids"]
 
                         # add to db
                         ## add message
                         db_con.execute(
-                            "INSERT INTO Message (related_node, network_recieved_at) VALUES (?,?) RETURNING message_id",
-                            (dev_eui, network_recieved_at),
+                            "INSERT INTO Message (related_node, network_received_at) VALUES (?,?) RETURNING message_id",
+                            (dev_eui, network_received_at),
                         )
                         message_id = db_con.fetchone()[0]
 
@@ -890,11 +928,13 @@ async def mqtt_coroutine():
 
 async def print_progress():
     while True:
-        #print("\n" * 3, end="")
+        # print("\n" * 3, end="")
         ## fetch stats from db
         nodes_count = db_con.execute("SELECT COUNT(*) FROM Node").fetchone()
         serial_count = db_con.execute("SELECT COUNT(*) FROM Trace").fetchone()
-        power_consumption_count = db_con.execute("SELECT COUNT(*) FROM Power_Consumption").fetchone()
+        power_consumption_count = db_con.execute(
+            "SELECT COUNT(*) FROM Power_Consumption"
+        ).fetchone()
         radio_count = db_con.execute("SELECT COUNT(*) FROM Radio").fetchone()
         sites = db_con.execute("SELECT * from Site").fetchall()
         mqtt_messages_count = db_con.execute("SELECT COUNT(*) FROM Message").fetchone()
@@ -908,21 +948,16 @@ async def print_progress():
             f"Radio: {radio_count}",
             f"Gateway: {gateways_count}",
             f"Messages: {mqtt_messages_count}",
-            ]
+        ]
         print(*output_strings)
         await asyncio.sleep(1)
     #    print("\033[F\033[K" * len(output_strings), end="")
 
 
-
-
 async def commit():
     while True:
         await asyncio.sleep(5)
-        db_con.execute("CHECKPOINT") # for some reason this is needed
-
-
-
+        db_con.execute("CHECKPOINT")  # for some reason this is needed
 
 
 # run all data collection tasks and await their completion
@@ -943,8 +978,10 @@ async def main():
         tasks.append(radio_coroutine(site_to_site_urls[site], [n.oml_name for n in ns]))
         tasks.append(mqtt_coroutine())
     tasks.append(print_progress())
-    #tasks.append(commit())
-    group = asyncio.gather(*tasks,)
+    # tasks.append(commit())
+    group = asyncio.gather(
+        *tasks,
+    )
     ## reset all boards
     await asyncio.sleep(5)
     subprocess.run(["iotlab", "node", "--reset"], check=True)
@@ -954,7 +991,6 @@ async def main():
         print(e)
         for task in group:
             task.cancel()
-        
 
 
 asyncio.run(main())
