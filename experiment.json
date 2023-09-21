@@ -1,0 +1,138 @@
+{
+    "USER": "berthels",
+    "DURATION": "20",
+    "MQTT": {
+        "ADDRESS": "eu1.cloud.thethings.network",
+        "PORT": 1883,
+        "USERNAME": "nes-test-application@ttn",
+        "PASSWORD": "NNSXS.QW3XBWWNAGDILLNQLA5HPCUKKYSLZFKS6CPL52Q.E2I52NDBCG7FOLR6ZEGWQQ5VMOJAX7ZL6CZ44OLJWETDVOV6I5WA",
+        "TOPIC": "v3/nes-test-application@ttn/devices/#"
+    },
+    "NODES": [
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD_ID": "st-lrwan1",
+            "IOT-LAB_RADIO_CHIPSET": "sx1276",
+            "DEVEUI": "70B3D57ED005E88A",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000",
+            "SITE": "saclay",
+            "SENSORS": [
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_TEMP"
+
+                },
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_HUM"
+                },
+                {
+                    "NAME": "lps22hb",
+                    "TYPE": "SAUL_SENSE_PRESS"
+                }
+            ]
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD_ID": "st-lrwan1",
+            "IOT-LAB_RADIO_CHIPSET": "sx1276",
+            "DEVEUI": "70B3D57ED005EA55",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000",
+            "SITE": "saclay",
+            "SENSORS": [
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_TEMP"
+
+                },
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_HUM"
+                },
+                {
+                    "NAME": "lps22hb",
+                    "TYPE": "SAUL_SENSE_PRESS"
+                }
+            ]
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD_ID": "st-lrwan1",
+            "IOT-LAB_RADIO_CHIPSET": "sx1276",
+            "DEVEUI": "70B3D57ED005EA56",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000",
+            "SITE": "saclay",
+            "SENSORS": [
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_TEMP"
+
+                },
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_HUM"
+                },
+                {
+                    "NAME": "lps22hb",
+                    "TYPE": "SAUL_SENSE_PRESS"
+                }
+            ]
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD_ID": "st-lrwan1",
+            "IOT-LAB_RADIO_CHIPSET": "sx1276",
+            "DEVEUI": "70B3D57ED005EA57",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000",
+            "SITE": "saclay",
+            "SENSORS": [
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_TEMP"
+
+                },
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_HUM"
+                },
+                {
+                    "NAME": "lps22hb",
+                    "TYPE": "SAUL_SENSE_PRESS"
+                }
+            ]
+        },
+        {
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD_ID": "st-lrwan1",
+            "IOT-LAB_RADIO_CHIPSET": "sx1276",
+            "DEVEUI": "70B3D57ED005EA59",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000",
+            "SITE": "saclay",
+            "SENSORS": [
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_TEMP"
+
+                },
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_HUM"
+                },
+                {
+                    "NAME": "lps22hb",
+                    "TYPE": "SAUL_SENSE_PRESS"
+                }
+            ]
+        }
+    ]
+}

@@ -13,145 +13,34 @@ from shutil import which, copy
 import argparse
 from datetime import datetime
 import aiomqtt
+from importlib import resources as impressources
+CREATE_SQL = impressources.open_text("experiment_runner", "experiment.db.sql").readlines()
+from . import configuration_parser
 
 parser = argparse.ArgumentParser(description="Experiment test runner")
 parser.add_argument("--attach", action="store_true", help="attach to the experiment")
 parser.add_argument("--dont-make", action="store_true", help="dont make binaries")
 parser.add_argument("--dont-upload", action="store_true", help="dont upload binaries")
 parser.add_argument("--dont-run", action="store_true", help="don't run the experiment")
+parser.add_argument("-c", "--config", type=Path, default=Path.cwd() / "experiment.json", help="Path to configuration file. Default: experiment.json")
 parser.add_argument(
     "experiment_folder",
     type=Path,
-    help="folder containing the binaries and metadata to run the experiment",
+    help="folder containing to contain binaries and database files",
 )
 args = parser.parse_args()
 
-# Experiment info
-EXPERIMENT_CONFIG_DEFAULT = {
-    "USER": "berthels",
-    "DURATION": "20",
-    "NODES": [
-        {
-            "PROFILE": "stm32Profile",
-            "RIOT_BOARD": "b-l072z-lrwan1",
-            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
-            "DEVEUI": "70B3D57ED005E88A",
-            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
-            "APPEUI": "0000000000000000",
-            "SITE": "saclay",
-        },
-        {
-            "PROFILE": "stm32Profile",
-            "RIOT_BOARD": "b-l072z-lrwan1",
-            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
-            "DEVEUI": "70B3D57ED005EA55",
-            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
-            "APPEUI": "0000000000000000",
-            "SITE": "saclay",
-        },
-        {
-            "PROFILE": "stm32Profile",
-            "RIOT_BOARD": "b-l072z-lrwan1",
-            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
-            "DEVEUI": "70B3D57ED005EA56",
-            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
-            "APPEUI": "0000000000000000",
-            "SITE": "saclay",
-        },
-        {
-            "PROFILE": "stm32Profile",
-            "RIOT_BOARD": "b-l072z-lrwan1",
-            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
-            "DEVEUI": "70B3D57ED005EA57",
-            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
-            "APPEUI": "0000000000000000",
-            "SITE": "saclay",
-        },
-        {
-            "PROFILE": "stm32Profile",
-            "RIOT_BOARD": "b-l072z-lrwan1",
-            "IOT-LAB_BOARD": "st-lrwan1:sx1276",
-            "DEVEUI": "70B3D57ED005EA59",
-            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
-            "APPEUI": "0000000000000000",
-            "SITE": "saclay",
-        },
-    ],
-}
+
 
 EXPERIMENT_FOLDER: Path = args.experiment_folder
-EXPERIMENT_CONFIG_PATH = EXPERIMENT_FOLDER / "experiment.json"
-## if no experiment.json exists in EXPERIMENT_FOLDER, create default one
-if not EXPERIMENT_FOLDER.exists():
-    EXPERIMENT_FOLDER.mkdir(parents=True)
-if not EXPERIMENT_CONFIG_PATH.exists():
-    json.dump(EXPERIMENT_CONFIG_DEFAULT, open(EXPERIMENT_CONFIG_PATH, "w"), indent=4)
+EXPERIMENT_CONFIG_PATH = args.config
+CONFIG = configuration_parser.configuration_from_json(
+    EXPERIMENT_CONFIG_PATH.read_text()
+)
 
-EXPERIMENT_CONFIG = json.load(open(EXPERIMENT_FOLDER / "experiment.json"))
-
-
-@dataclass(init=False)
-class Node:
-    """
-    Class for all relevant node info. To be populated as information becomes available
-    """
-
-    # IoT-lab info
-    node_id: Optional[str] = None
-    board_id: Optional[str] = None
-    radio_chipset: Optional[str] = None
-    site: Optional[str] = None
-    profile: Optional[str] = None
-
-    # RIOT info
-    riot_board: Optional[str] = None
-    deveui: Optional[str] = None
-    appeui: Optional[str] = None
-    appkey: Optional[str] = None
-
-    @property
-    def network_address(self):
-        return f"{self.node_id}.{self.site}.iot-lab.info"
-
-    @network_address.setter
-    def network_address(self, value):
-        self.node_id, self.site, *_ = value.split(".")
-
-    @property
-    def archi(self):
-        return f"{self.board_id}:{self.radio_chipset}"
-
-    @archi.setter
-    def archi(self, value):
-        self.board_id, self.radio_chipset = value.split(":")
-
-    @property
-    def oml_name(self):
-        return f"{self.node_id.replace('-', '_')}.oml"
-
-    @property
-    def node_id_number(self):
-        return self.node_id.split("-")[-1]
-
-
-# IoT-lab info
-## load nodes. at this point we dont know their ids yet
-nodes: List[Node] = []
-for node in EXPERIMENT_CONFIG["NODES"]:
-    no = Node()
-    no.profile = node["PROFILE"]
-    no.riot_board = node["RIOT_BOARD"]
-    no.archi = node["IOT-LAB_BOARD"]
-    no.deveui = node["DEVEUI"]
-    no.appeui = node["APPEUI"]
-    no.appkey = node["APPKEY"]
-    no.site = node["SITE"]
-    nodes.append(no)
-
-assert all([node.site for node in nodes])  # make sure all nodes have a site
-sites: set[str] = {node.site for node in nodes}  # type: ignore[misc] # we know after this that all nodes have a site
-site_to_site_urls = {site: f"{site}.iot-lab.info" for site in sites}
-USER = EXPERIMENT_CONFIG["USER"]
+assert all([node.site for node in CONFIG.nodes])  # make sure all nodes have a site
+sites: set[str] = {node.site for node in CONFIG.nodes}  # type: ignore[misc] # we know after this that all nodes have a site
+USER = CONFIG.user
 
 # RIOT info
 SRC_PATH = Path.cwd() / "src"
@@ -163,14 +52,16 @@ SRC_PATH = Path.cwd() / "src"
 # make and upload binaries
 if not args.dont_make:
     print("make firmware")
-    for device in EXPERIMENT_CONFIG["NODES"]:
+    for node in CONFIG.nodes:
         # first make binary
-        print(f"make binary for device: {device['DEVEUI']}")
+        print(f"make binary for device: {node.deveui}")
         env = os.environ.copy()
-        env["BOARD"] = device["RIOT_BOARD"]
-        env["DEVEUI"] = device["DEVEUI"]
-        env["APPEUI"] = device["APPEUI"]
-        env["APPKEY"] = device["APPKEY"]
+        env["BOARD"] = node.riot_board
+        env["DEVEUI"] = node.deveui
+        env["APPEUI"] = node.appeui
+        env["APPKEY"] = node.appkey
+        env["SENSOR_NAMES"] = " ".join([sensor.name for sensor in node.sensors])
+        env["SENSOR_TYPES"] = " ".join([sensor.type for sensor in node.sensors])
 
         # make
         p = subprocess.run(["make", "all"], cwd=SRC_PATH, env=env)
@@ -181,7 +72,7 @@ if not args.dont_make:
         )
         build_info = json.loads(p.stdout)
         flash_file = Path(build_info["FLASHFILE"])
-        copy(flash_file, EXPERIMENT_FOLDER / f"{device['DEVEUI']}{flash_file.suffix}")
+        copy(flash_file, EXPERIMENT_FOLDER / f"{node.deveui}{flash_file.suffix}")
 
 # we run the experiment below, so if we dont want to do that: early exit
 if args.dont_run:
@@ -215,11 +106,11 @@ if not args.attach:
     # create experiment
     ## create arguments for nodes
     node_strings = []
-    for device in EXPERIMENT_CONFIG["NODES"]:
+    for node in CONFIG.nodes:
         node_strings.extend(
             [
                 "-l",
-                f"1,archi={device['IOT-LAB_BOARD']}+site={device['SITE']},,{device['PROFILE']}",
+                f"1,archi={node.archi}+site={node.site},,{node.profile}",
             ]
         )
     p = subprocess.run(
@@ -228,7 +119,7 @@ if not args.attach:
             "experiment",
             "submit",
             "-d",
-            EXPERIMENT_CONFIG["DURATION"],
+            CONFIG.duration,
             *node_strings,
         ],
         capture_output=True,
@@ -264,6 +155,7 @@ if DB_PATH.exists():
     else:
         exit()
 # Create DB for results
+
 create_sql_script = open("./experiment.db.sql").read()
 db_con = duckdb.connect(f"{str(DB_PATH)}")
 
@@ -301,7 +193,7 @@ p = subprocess.run(
 for node in json.loads(p.stdout)["items"]:
     try:
         next(
-            filter(lambda n: n.archi == node["archi"] and n.node_id is None, nodes)
+            filter(lambda n: n.archi == node["archi"] and n.node_id is None, CONFIG.nodes)
         ).network_address = node["network_address"]
     except StopIteration:
         print("Node not found while populating internal node table")
@@ -309,7 +201,7 @@ for node in json.loads(p.stdout)["items"]:
 
 
 db_con.begin()
-for node in nodes:
+for node in CONFIG.nodes:
     db_con.execute(
         "INSERT INTO Node (node_deveui,node_appeui,node_appkey,board_id,radio_chipset,node_site,profile,riot_board) VALUES (?,?,?,?,?,?,?,?)",
         (
@@ -331,8 +223,8 @@ if not args.dont_upload:
 
     ## sanity check that number of files correspond with number of nodes in config and number of created nodes in iot-lab
     assert (
-        len(flash_files) == len(nodes) == len(EXPERIMENT_CONFIG["NODES"])
-    ), f"Number of flash file ({len(flash_files)}) does not match number of nodes in config ({len(EXPERIMENT_CONFIG['NODES'])}) or number of created nodes in iot-lab ({len(nodes)})"
+        len(flash_files)  == len(CONFIG.nodes)
+    ), f"Number of flash file ({len(flash_files)}) does not match number of nodes in config ({len(CONFIG.nodes)}) or number of created nodes in iot-lab ({len(nodes)})"
 
     for flash_file, node in zip(flash_files, nodes):
         # construct nodelist for single node
@@ -379,8 +271,8 @@ if not args.dont_upload:
 # serial aggregation
 serial_count = 0
 
-nodes_by_id = {node.node_id: node for node in nodes}
-nodes_by_oml_name = {node.oml_name: node for node in nodes}
+nodes_by_id = {node.node_id: node for node in CONFIG.nodes}
+nodes_by_oml_name = {node.oml_name: node for node in CONFIG.nodes}
 
 
 async def serial_aggregation_coroutine(site_url):
@@ -551,8 +443,6 @@ async def radio_coroutine(site_url, oml_files):
             p.terminate()
 
 
-MQTT_CONFIG = EXPERIMENT_CONFIG["MQTT"]
-
 
 async def mqtt_coroutine():
     print("starting mqtt collection")
@@ -565,16 +455,16 @@ async def mqtt_coroutine():
         return datetime.fromisoformat(s[:26] + "+00:00")
 
     async with aiomqtt.Client(
-        hostname=MQTT_CONFIG["ADDRESS"],
-        port=int(MQTT_CONFIG["PORT"]),
-        username=MQTT_CONFIG["USERNAME"],
-        password=MQTT_CONFIG["PASSWORD"],
+        hostname=CONFIG.mqtt.address,
+        port=CONFIG.mqtt.port,
+        username=CONFIG.mqtt.username,
+        password=CONFIG.mqtt.password,
         clean_session=False,
         client_id=str(EXPERIMENT),
     ) as client:
         async with client.messages() as messages:
-            await client.subscribe(MQTT_CONFIG["TOPIC"], qos=2)
-            print("subscribed to topic", MQTT_CONFIG["TOPIC"])
+            await client.subscribe(CONFIG.mqtt.topic, qos=2)
+            print("subscribed to topic", CONFIG.mqtt.topic)
 
             async for msg in messages:
                 print(msg.topic, msg.payload.decode("utf-8"))
@@ -966,16 +856,17 @@ async def main():
     # build list of tasks
     tasks = []
     nodes_by_site = {
-        site: list(filter(lambda n: n.site == site, nodes)) for site in sites
+        site: list(filter(lambda n: n.site == site, CONFIG.nodes)) for site in sites
     }
-    for site, ns in nodes_by_site.items():
-        tasks.append(serial_aggregation_coroutine(site_to_site_urls[site]))
+    for nodelist in nodes_by_site.values():
+        site_url = nodelist[0].site_url
+        tasks.append(serial_aggregation_coroutine(site_url))
         tasks.append(
             power_consumption_coroutine(
-                site_to_site_urls[site], [n.oml_name for n in ns]
+                site_url, [n.oml_name for n in nodelist]
             )
         )
-        tasks.append(radio_coroutine(site_to_site_urls[site], [n.oml_name for n in ns]))
+        tasks.append(radio_coroutine(site_url, [n.oml_name for n in nodelist]))
         tasks.append(mqtt_coroutine())
     tasks.append(print_progress())
     # tasks.append(commit())
