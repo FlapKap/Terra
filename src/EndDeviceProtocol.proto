@@ -53,7 +53,7 @@ message Output {
         int32 id = 1;
         repeated Data response = 2 [(nanopb).max_count = 20];
     }
-    repeated QueryResponse responses = 1 [(nanopb).max_count = 5];
+    repeated QueryResponse responses = 1 [(nanopb).max_count = 2];
 }
 
 message Expression {

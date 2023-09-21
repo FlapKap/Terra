@@ -5,6 +5,16 @@ BOARD ?= b-l072z-lrwan1
 RIOTBASE ?= $(CURDIR)/../../RIOT
 
 # APPLICATION SPECIFIC CONFIGURATION ENTRIES
+##SENSORS (ONLY APPLIED FOR NON-NATIVE BUILDS)
+## to handle sensor boards with multiple sensors, we need both name and type, as they are defined in RIOT
+## The easiest way to find this is to search for the sensor at https://doc.riot-os.org/. The first part of the header files is the module name
+## for the sensor driver, and if you enter the <sensor_name>_saul.c file in the source code, you can see which types are defined
+SENSOR_NAMES ?= hts221 hts221 lps22hb 
+SENSOR_TYPES ?= SAUL_SENSE_TEMP SAUL_SENSE_HUM SAUL_SENSE_PRESS
+ifneq ($(words SENSOR_NAMES),$(words SENSOR_TYPES))
+$(error "Number of SENSOR_NAMES and SENSOR_TYPES must be the same")
+endif
+
 ## EXECUTE INTERVAL
 EXECUTION_INTERVAL_S ?= 20
 ## LORA
@@ -28,10 +38,18 @@ APPLICATION_RUN_TEST ?= 0
 # Default query to run if network is disabled
 DEFAULT_QUERY_AS_PB_CHAR_ARRAY ?={0xa,0x12,0xa,0x10,0xa,0xe,0xa,0x2,0x8,0x0,0xa,0x2,0x10,0x8,0xa,0x2,0x8,0xa,0x10,0x1,}
 
+#build C array of sensors
+comma:= ,
+empty:=
+space:= $(empty) $(empty) # this is so stupid... https://www.gnu.org/software/make/manual/html_node/Syntax-of-Functions.html
+SENSORS_ARRAY ?=  {$(subst $(space),$(comma),$(patsubst %,\"%\",$(SENSOR_NAMES)))} # first we quote each word, then we replace space with comma, and lastly we wrap in {}
+SENSORS_ARRAY_LENGTH := $(words $(SENSOR_NAMES))
+SENSORS_TYPES_ARRAY ?= {$(subst $(space),$(comma),$(SENSOR_TYPES))}
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
 
 ## Apply configuration
+
 CFLAGS += -DEXECUTION_INTERVAL_S=$(EXECUTION_INTERVAL_S)
 CFLAGS += -DTHREAD_STACKSIZE_MAIN=$(MAIN_STACKSIZE)
 
@@ -41,8 +59,9 @@ CFLAGS += -DTHREAD_STACKSIZE_MAIN=$(MAIN_STACKSIZE)
 COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
 
 
+
 # PACKAGES
-#USEMODULE += saul_default
+USEMODULE += saul_default
 USEMODULE += fmt
 
 ## Nanopb stuff
@@ -80,6 +99,8 @@ endif
 ifeq ($(strip $(BOARD)),native)
 DISABLE_LORA ?= 1
 else
+USEMODULE += $(sort $(SENSOR_NAMES))
+CFLAGS += -DSENSORS_ARRAY=$(SENSORS_ARRAY) -DSENSORS_ARRAY_LENGTH=$(SENSORS_ARRAY_LENGTH) -DSENSORS_TYPES_ARRAY=$(SENSORS_TYPES_ARRAY)
 DISABLE_LORA ?= 0
 endif
 
@@ -118,7 +139,7 @@ include $(RIOTBASE)/Makefile.include
 ## add IOT_LAB Support
 IOTLAB_NODES ?= 1
 IOTLAB_DURATION ?= 5 # minutes
-IOTLAB_SITE ?= grenoble
-IOTLAB_TYPE ?= nucleo-wl55jc:stm32wl
+IOTLAB_SITE ?= saclay
+IOTLAB_TYPE ?= st-lrwan1:sx1276
 IOTLAB_PROFILE ?= stm32Profile
 include $(RIOTBASE)/dist/testbed-support/Makefile.iotlab

@@ -18,7 +18,9 @@
 #include "operators.h"
 #include "number.h"
 #include "network.h"
-
+#ifndef BOARD_NATIVE
+#include "sensors.h"
+#endif
 #include "print_utils.h"
 
 
@@ -68,9 +70,17 @@ bool valid_msg = false;
 int main(void)
 {
   run_barker11();
-  puts("NebulaStream End Device Runtime");
+  printf("NebulaStream End Device Runtime (Build Date: %s, Time of Build: %s)\n", __DATE__, __TIME__);
   puts("=====================================");
+  puts("available sensors:");
+  sensors_print_available();
+  sensors_initialize_enabled();
+  puts("enabled sensors");
+  sensors_print_enabled();
   Env *global_env = init_env();
+  puts("Environment initialized. collecting measurements...");
+  sensors_collect_into_env(global_env);
+  exit(0);
   network_initialize_network();
   network_send_heartbeat();
   // Initialize global variable environment

@@ -690,29 +690,29 @@ void og_output_multiple_response(void){
   response2.response[0] = data[1];
   response2.id = 2;
   response2.response_count = 1;
+  // limited response_count to 2
+  // EndDeviceProtocol_Output_QueryResponse response3;
+  // response3.response[0] = data[2];
+  // response3.id = 3;
+  // response3.response_count = 1;
 
-  EndDeviceProtocol_Output_QueryResponse response3;
-  response3.response[0] = data[2];
-  response3.id = 3;
-  response3.response_count = 1;
+  // EndDeviceProtocol_Output_QueryResponse response4;
+  // response4.response[0] = data[3];
+  // response4.id = 4;
+  // response4.response_count = 1;
 
-  EndDeviceProtocol_Output_QueryResponse response4;
-  response4.response[0] = data[3];
-  response4.id = 4;
-  response4.response_count = 1;
+  // EndDeviceProtocol_Output_QueryResponse response5;
+  // response5.response[0] = data[4];
+  // response5.id = 5;
+  // response5.response_count = 1;
 
-  EndDeviceProtocol_Output_QueryResponse response5;
-  response5.response[0] = data[4];
-  response5.id = 5;
-  response5.response_count = 1;
-
-  const EndDeviceProtocol_Output_QueryResponse responses[] = {response1, response2, response3, response4, response5};
-
-  EndDeviceProtocol_Output output;
-  for(int i = 0; i < 5; i++){
+  //const EndDeviceProtocol_Output_QueryResponse responses[] = {response1, response2, response3, response4, response5};
+  const EndDeviceProtocol_Output_QueryResponse responses[] = {response1, response2};
+  EndDeviceProtocol_Output output = EndDeviceProtocol_Output_init_default;
+  for(int i = 0; i < 2; i++){
     output.responses[i] = responses[i];
   }
-  output.responses_count = 5;
+  output.responses_count = 2;
 
   // Encode Message
   uint8_t buffer[1024];
