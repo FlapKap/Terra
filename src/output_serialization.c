@@ -6,6 +6,8 @@
 #include "EndDeviceProtocol.pb.h"
 #include "operators.h"
 
+#include "log.h"
+
 void init_data(Instruction *instr, EndDeviceProtocol_Data *out)
 {
   switch (instr->unionCase)
@@ -86,7 +88,7 @@ void init_data(Instruction *instr, EndDeviceProtocol_Data *out)
     //   break;
     default:
       // Handle unknown instruction type
-      printf("Unknown instruction type!\n");
+      LOG_ERROR("Unknown instruction type: %d\n", instr->data._instruction);
       break;
     }
     break;
@@ -159,7 +161,7 @@ bool encode_output_message(pb_ostream_t *stream, OutputMessage *msg)
 
   if (!status)
   {
-    printf("Encoding failed: %s\n", PB_GET_ERROR(stream));
+    LOG_ERROR("Encoding failed: %s\n", PB_GET_ERROR(stream));
   }
 
   return status;

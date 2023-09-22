@@ -16,6 +16,7 @@
 #define ENABLE_DEBUG 1
 #include "debug.h"
 
+#include "log.h"
 #define RECV_MSG_QUEUE (4U)
 
 static msg_t _recv_queue[RECV_MSG_QUEUE];
@@ -29,11 +30,11 @@ static uint8_t appkey[LORAMAC_APPKEY_LEN];
 
 bool lorawan_send_message(uint8_t* serializedData, uint8_t len)
 {
-    DEBUG("Sending: %s\n", serializedData);
+    LOG_INFO("Sending: %s\n", serializedData);
     /* Try to send the message */
     uint8_t ret = semtech_loramac_send(&loramac,serializedData, len);
     if (ret != SEMTECH_LORAMAC_TX_DONE) {
-        DEBUG("Cannot send message, ret code: %d\n", ret);
+        LOG_ERROR("Cannot send message, ret code: %d\n", ret);
         return false;
     }
     return true;

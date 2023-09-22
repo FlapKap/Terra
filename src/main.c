@@ -44,6 +44,8 @@
 #define ENABLE_DEBUG 1
 #include "debug.h"
 
+#include "log.h"
+
 #ifdef APPLICATION_RUN_TEST
 void test_encode_input(void);
 void test_encode_output(void);
@@ -70,27 +72,25 @@ bool valid_msg = false;
 int main(void)
 {
   run_barker11();
-  printf("NebulaStream End Device Runtime (Build Date: %s, Time of Build: %s)\n", __DATE__, __TIME__);
-  puts("=====================================");
-  puts("available sensors:");
-  sensors_print_available();
+  LOG_INFO("NebulaStream End Device Runtime (Build Date: %s, Time of Build: %s)\n", __DATE__, __TIME__);
+  LOG_INFO("=====================================\n");
   sensors_initialize_enabled();
-  puts("enabled sensors");
+  LOG_INFO("enabled sensors\n");
   sensors_print_enabled();
   Env *global_env = init_env();
-  puts("Environment initialized. collecting measurements...");
+  LOG_INFO("Environment initialized. collecting measurements...\n");
   sensors_collect_into_env(global_env);
-  exit(0);
+
   network_initialize_network();
   network_send_heartbeat();
   // Initialize global variable environment
 
 
   // main loop
-  const uint32_t timeout_s = EXECUTION_INTERVAL_S;
+  const uint32_t timeout_s = EXECUTION_EPOCH_S;
   while (1)
   {
-    puts("Main loop iteration");
+    LOG_INFO("Main loop iteration\n");
     ztimer_now_t start_time = ztimer_now(ZTIMER_SEC);
     run_barker11();
     msg = network_get_message();

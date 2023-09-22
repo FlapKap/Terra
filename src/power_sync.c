@@ -1,7 +1,7 @@
 
 #include "ztimer.h"
 #include "led.h"
-
+#include "log.h"
 static int BIT_SPEED_MS = 200;
 
 static bool BARKER11[] = {true, true, true, false, false, false, true, false, false, true, false};
@@ -40,6 +40,7 @@ static inline void toggle_all_leds(void){
 }
 
 void run_barker11(void){
+    LOG_INFO("Running Barker 11...");
     for (size_t i = 0; i < (sizeof(BARKER11) / sizeof(BARKER11[0])); i++)
     {
         if (BARKER11[i])
@@ -50,5 +51,5 @@ void run_barker11(void){
         }
         ztimer_sleep(ZTIMER_MSEC, BIT_SPEED_MS);
     }
-    
+    LOG_INFO("Done\n");
 }

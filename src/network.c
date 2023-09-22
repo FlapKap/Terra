@@ -16,6 +16,7 @@
 #include "semtech_loramac.h"
 extern semtech_loramac_t loramac;
 
+#include "log.h"
 
 #endif
 
@@ -80,21 +81,29 @@ static bool receive_and_decode(void)
 
 
 bool network_initialize_network(void){
-  DEBUG("Initializing network");
+  LOG_INFO("Initializing network\n");
   int ret_init = lorawan_initialize_lorawan();
   int ret_connect = lorawan_connect_lorawan();
-#if ENABLE_DEBUG
-  // fputs to avoid newlines in the end
-  fputs("  Device EUI: ", stdout);
-  print_bytes_hex(loramac.deveui, LORAMAC_DEVEUI_LEN);
-  fputs("\n  Application EUI: ", stdout);
-  print_bytes_hex(loramac.appeui, LORAMAC_APPEUI_LEN);
-  fputs("\n  Application Key: ", stdout);
-  print_bytes_hex(loramac.appkey, LORAMAC_APPKEY_LEN);
-  puts("\n");
-#endif
-  
-  return ret_init == 0 && ret_connect == 0;
+
+
+  char deveui[17] = "";
+  char appeui[17] = "";
+  char appkey[33] = "";
+  fmt_bytes_hex(deveui, loramac.deveui, LORAMAC_DEVEUI_LEN);
+  fmt_bytes_hex(appeui, loramac.appeui, LORAMAC_APPEUI_LEN);
+  fmt_bytes_hex(appkey, loramac.appkey, LORAMAC_APPKEY_LEN);
+
+  LOG_INFO("  Device EUI: %s\n",deveui);
+  LOG_INFO("  Application EUI: %s\n",appeui);
+  LOG_INFO("  Application Key: %s\n",appkey);
+
+  // check if init and connect were successful
+  if (ret_init == 0 && ret_connect == 0){
+    return true;
+  } else {
+    LOG_ERROR("Failed to initialize network\n");
+    return false;
+  }
 }
 
 bool network_has_valid_message(void){
@@ -114,12 +123,12 @@ bool network_send_message(OutputMessage msg){
   encode_output_message(&ostream, &msg);
 
   //send
+    LOG_INFO("Sending message with length %d\n", ostream.bytes_written);
   return lorawan_send_message(buffer, (uint8_t)256);
 }
 
 bool network_send_heartbeat(void){
-  lorawan_send_message((uint8_t[]){'<','3'}, 2);
-  return true;
+  return lorawan_send_message((uint8_t[]){'<','3'}, 2);
 }
 
 #endif

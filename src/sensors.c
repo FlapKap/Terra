@@ -2,6 +2,7 @@
 #include "environment.h"
 #include "stdio.h"
 #include "math.h"
+#include "log.h"
 #define ENABLE_DEBUG 0
 #include "debug.h"
 
@@ -36,10 +37,12 @@ void sensors_print_enabled(void)
 
 bool sensors_initialize_enabled(void)
 {
+    LOG_INFO("Initializing enabled sensors...");
     for (size_t i = 0; i < SENSORS_ARRAY_LENGTH; i++)
     {
         sensors[i] = saul_reg_find_type_and_name(sensor_types[i], sensor_names[i]);
         assert(sensors[i] != NULL);
+        LOG_INFO("Sensor: %s, type: %d initialised", sensors[i]->name, sensors[i]->driver->type);
     }
 
     return true;
@@ -49,12 +52,11 @@ bool sensors_collect_into_env(Env *env)
 {
     for (size_t i = 0; i < SENSORS_ARRAY_LENGTH; i++)
     {
-        DEBUG("collecting data from sensor %s\n", sensors[i]->name);
+        LOG_INFO("collecting data from sensor %s\n", sensors[i]->name);
         phydat_t data;
         Number num;
         //DEBUG("is the function pointer null: %d", sensors[i]->driver->read == NULL);
         sensors[i]->driver->read(sensors[i]->dev, &data);
-        DEBUG("yo");
         double val = data.val[0] * 1 / pow(10, data.scale);
         if (ceil(val) == val)
         {

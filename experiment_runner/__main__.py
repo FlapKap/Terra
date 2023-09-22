@@ -226,7 +226,7 @@ if not args.dont_upload:
         len(flash_files)  == len(CONFIG.nodes)
     ), f"Number of flash file ({len(flash_files)}) does not match number of nodes in config ({len(CONFIG.nodes)}) or number of created nodes in iot-lab ({len(nodes)})"
 
-    for flash_file, node in zip(flash_files, nodes):
+    for flash_file, node in zip(flash_files, CONFIG.nodes):
         # construct nodelist for single node
         node_string = f"{node.site},{node.board_id},{node.node_id_number}"
 
