@@ -1,24 +1,27 @@
 #!/usr/bin/python3
-from dataclasses import dataclass
+import sys
 from pathlib import Path
 import subprocess
 import json
 import os
-from typing import List, Optional
-import regex
-import sys
-import duckdb
 import asyncio
 from shutil import which, copy
 import argparse
 from datetime import datetime
-import aiomqtt
 from importlib import resources as impressources
+
+import regex
+import duckdb
+import aiomqtt
+
+from experiment_runner import configuration_parser, nes_rest
+
+
 CREATE_SQL = impressources.open_text("experiment_runner", "experiment.db.sql").readlines()
-from . import configuration_parser
+
 
 parser = argparse.ArgumentParser(description="Experiment test runner")
-parser.add_argument("--attach", action="store_true", help="attach to the experiment")
+parser.add_argument("--attach", nargs="?", const=0,default=None, help="attach to an already running experiment")
 parser.add_argument("--dont-make", action="store_true", help="dont make binaries")
 parser.add_argument("--dont-upload", action="store_true", help="dont upload binaries")
 parser.add_argument("--dont-run", action="store_true", help="don't run the experiment")
@@ -31,7 +34,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-
+EXPERIMENT_ID = args.attach # None if we shouldnt attach, 0 if we should, but don't know the id, and anything else if we do know the id
 EXPERIMENT_FOLDER: Path = args.experiment_folder
 EXPERIMENT_CONFIG_PATH = args.config
 CONFIG = configuration_parser.configuration_from_json(
@@ -64,8 +67,12 @@ if not args.dont_make:
         env["SENSOR_TYPES"] = " ".join([sensor.type for sensor in node.sensors])
 
         # make
+        # if which("ccache"): # couldnt get this to work
+        #     print("using ccache")
+        #     env["CCACHE_DEBUG"] = "1"
+        #     p = subprocess.run(["ccache", "make", "all"], cwd=SRC_PATH, env=env)
+        # else:
         p = subprocess.run(["make", "all"], cwd=SRC_PATH, env=env)
-
         ## find flash file
         p = subprocess.run(
             ["make", "info-build-json"], cwd=SRC_PATH, env=env, capture_output=True
@@ -101,7 +108,7 @@ if (
     )
     exit()
 
-if not args.attach:
+if EXPERIMENT_ID == None:
     print("Registering experiment... ", end="")
     # create experiment
     ## create arguments for nodes
@@ -119,7 +126,7 @@ if not args.attach:
             "experiment",
             "submit",
             "-d",
-            CONFIG.duration,
+            str(CONFIG.duration),
             *node_strings,
         ],
         capture_output=True,
@@ -129,9 +136,15 @@ if not args.attach:
     exp_id = json.loads(output).get("id")
     if exp_id != None:
         print(f"Sucess! Got id {exp_id}")
+        EXPERIMENT_ID = int(exp_id)
     else:
-        print(output)
-
+        print(f"Failed to create experiment. Error: {output}")
+        exit()
+elif EXPERIMENT_ID == 0:
+    print("Attaching to latest experiment...")
+    #TODO: implement thisˇ
+    # attach to latest experiment
+    exit()
 print("Waiting for experiment to start")
 # find experiment
 subprocess.run(["iotlab", "experiment", "wait"])  # wait for experiment to start
@@ -156,10 +169,10 @@ if DB_PATH.exists():
         exit()
 # Create DB for results
 
-create_sql_script = open("./experiment.db.sql").read()
+#create_sql_script = open("./experiment.db.sql").read()
 db_con = duckdb.connect(f"{str(DB_PATH)}")
 
-db_con.execute(create_sql_script)
+db_con.execute("".join(CREATE_SQL))
 
 print("Populating sites table")
 db_con.executemany("INSERT INTO Site (name) VALUES (?)", [sites])
@@ -190,14 +203,14 @@ p = subprocess.run(
 )
 
 # go through nodes returned and populate internal node list with proper addresses
-for node in json.loads(p.stdout)["items"]:
+for n in json.loads(p.stdout)["items"]:
     try:
         next(
-            filter(lambda n: n.archi == node["archi"] and n.node_id is None, CONFIG.nodes)
-        ).network_address = node["network_address"]
+            filter(lambda nod: nod.archi == n["archi"] and nod.node_id is None, CONFIG.nodes)
+        ).network_address = n["network_address"]
     except StopIteration:
         print("Node not found while populating internal node table")
-        exit()
+        sys.exit()
 
 
 db_con.begin()
@@ -208,8 +221,8 @@ for node in CONFIG.nodes:
             node.deveui,
             node.appeui,
             node.appkey,
-            node.board_id,
-            node.radio_chipset,
+            node.iot_lab_board_id,
+            node.iot_lab_radio_chipset,
             node.site,
             node.profile,
             node.riot_board,
@@ -224,11 +237,11 @@ if not args.dont_upload:
     ## sanity check that number of files correspond with number of nodes in config and number of created nodes in iot-lab
     assert (
         len(flash_files)  == len(CONFIG.nodes)
-    ), f"Number of flash file ({len(flash_files)}) does not match number of nodes in config ({len(CONFIG.nodes)}) or number of created nodes in iot-lab ({len(nodes)})"
+    ), f"Number of flash file ({len(flash_files)}) does not match number of nodes in config ({len(CONFIG.nodes)})"
 
     for flash_file, node in zip(flash_files, CONFIG.nodes):
         # construct nodelist for single node
-        node_string = f"{node.site},{node.board_id},{node.node_id_number}"
+        node_string = f"{node.site},{node.iot_lab_board_id},{node.node_id_number}"
 
         # find correct flash file
         try:
@@ -265,7 +278,7 @@ if not args.dont_upload:
                 print("success")
         except:
             print("failed")
-            exit()
+            sys.exit()
 
 
 # serial aggregation
@@ -444,7 +457,7 @@ async def radio_coroutine(site_url, oml_files):
 
 
 
-async def mqtt_coroutine():
+async def mqtt_collect_coroutine():
     print("starting mqtt collection")
 
     def from_str_to_datetime(s):
@@ -614,7 +627,7 @@ async def mqtt_coroutine():
                         gateway_recieved_at = from_str_to_datetime(
                             parsed_msg["uplink_message"]["rx_metadata"][0]["time"]
                         )
-                        network_recieved_at = from_str_to_datetime(
+                        network_received_at = from_str_to_datetime(
                             parsed_msg["uplink_message"]["rx_metadata"][0][
                                 "received_at"
                             ]
@@ -631,22 +644,28 @@ async def mqtt_coroutine():
                         rssi = rx_metadata["rssi"]
                         snr = rx_metadata["snr"]
 
-                        bandwidth = parsed_msg["uplink_message"]["data_rate"]["lora"][
+                        bandwidth = parsed_msg["uplink_message"]["settings"]["data_rate"]["lora"][
                             "bandwidth"
                         ]
-                        spreading_factor = f'SF{parsed_msg["uplink_message"]["data_rate"]["lora"]["spreading_factor"]}'
-                        frequency = parsed_msg["uplink_message"]["frequency"]
-                        coding_rate = parsed_msg["uplink_message"]["coding_rate"]
+                        spreading_factor = f'SF{parsed_msg["uplink_message"]["settings"]["data_rate"]["lora"]["spreading_factor"]}'
+                        frequency = parsed_msg["uplink_message"]["settings"]["frequency"]
+                        coding_rate = parsed_msg["uplink_message"]["settings"]["data_rate"]["lora"]["coding_rate"]
                         consumed_airtime_s = parsed_msg["uplink_message"][
                             "consumed_airtime"
-                        ]
+                        ][:-1] # remove s from number
 
                         # add to db
-                        db_con.begin()
+                        ## check if gateway exists and if not, create it
+                        db_con.execute("SELECT * FROM Gateway WHERE gateway_id = ?", (gateway_deveui,))
+                        if db_con.fetchone() is None:
+                            db_con.execute(
+                                "INSERT INTO Gateway (gateway_id) VALUES (?)",
+                                (gateway_deveui,),
+                            )
                         ## create message
                         db_con.execute(
-                            "INSERT INTO Message (related_node, network_recieved_at) VALUES (?,?) RETURNING message_id",
-                            (dev_eui, network_recieved_at),
+                            "INSERT INTO Message (related_node, network_received_at) VALUES (?,?) RETURNING message_id",
+                            (dev_eui, network_received_at),
                         )
                         message_id = db_con.fetchone()[0]
                         ## create content_message
@@ -672,7 +691,6 @@ async def mqtt_coroutine():
                                 coding_rate,
                             ),
                         )
-                        db_con.commit()
                     case ["down", "failed"]:
                         # region example
                         # {
@@ -815,27 +833,41 @@ async def mqtt_coroutine():
                 db_con.commit()
             print("this shouldnt print")
 
+async def mqtt_submit_coroutine():
+    async with aiomqtt.Client(
+        hostname=CONFIG.mqtt.address,
+        port=CONFIG.mqtt.port,
+        username=CONFIG.mqtt.username,
+        password=CONFIG.mqtt.password,
+        clean_session=False,
+        client_id=str(EXPERIMENT),
+    ) as client:
+        await asyncio.sleep(10)
+        print("submitting query to mqtt")
+        for node in CONFIG.nodes:
+            topic = CONFIG.mqtt.topic[:-1] + node.ttn_device_id + "/push"
+            await client.publish(topic, "ChoKGAoWCgIIAQoCEAAKAggACgIQCAoCCAoQAQ==")
 
 async def print_progress():
     while True:
         # print("\n" * 3, end="")
         ## fetch stats from db
         nodes_count = db_con.execute("SELECT COUNT(*) FROM Node").fetchone()
-        serial_count = db_con.execute("SELECT COUNT(*) FROM Trace").fetchone()
-        power_consumption_count = db_con.execute(
+        trace_count = db_con.execute("SELECT COUNT(*) FROM Trace").fetchone()
+        power_count = db_con.execute(
             "SELECT COUNT(*) FROM Power_Consumption"
         ).fetchone()
-        radio_count = db_con.execute("SELECT COUNT(*) FROM Radio").fetchone()
-        sites = db_con.execute("SELECT * from Site").fetchall()
+        rad_count = db_con.execute("SELECT COUNT(*) FROM Radio").fetchone()
+        sites_list = db_con.execute("SELECT * from Site").fetchall()
         mqtt_messages_count = db_con.execute("SELECT COUNT(*) FROM Message").fetchone()
         gateways_count = db_con.execute("SELECT COUNT(*) FROM Gateway").fetchone()
         # print stats
         output_strings = [
             f"Nodes: {nodes_count}",
-            f"Sites: {str(sites)}",
-            f"Traces: {serial_count}",
-            f"Power Consumption: {power_consumption_count}",
-            f"Radio: {radio_count}",
+            f"Sites: {str(sites_list)}",
+            f"Traces: {trace_count}",
+            f"Power Consumption: {power_count}",
+            f"Radio: {rad_count}",
             f"Gateway: {gateways_count}",
             f"Messages: {mqtt_messages_count}",
         ]
@@ -867,7 +899,8 @@ async def main():
             )
         )
         tasks.append(radio_coroutine(site_url, [n.oml_name for n in nodelist]))
-        tasks.append(mqtt_coroutine())
+        tasks.append(mqtt_collect_coroutine())
+        tasks.append(mqtt_submit_coroutine())
     tasks.append(print_progress())
     # tasks.append(commit())
     group = asyncio.gather(

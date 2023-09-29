@@ -63,14 +63,14 @@ class Mqtt:
         topic = from_str(obj.get("TOPIC"))
         return Mqtt(address, port, username, password, topic)
 
-def to_dict(self) -> dict:
-    return {
-        "address": from_str(self.address),
-        "port": from_int(self.port),
-        "username": from_str(self.username),
-        "password": from_str(self.password),
-        "topic": from_str(self.topic)
-    }
+    def to_dict(self) -> dict:
+        return {
+            "address": from_str(self.address),
+            "port": from_int(self.port),
+            "username": from_str(self.username),
+            "password": from_str(self.password),
+            "topic": from_str(self.topic)
+        }
 
 
 @dataclass
@@ -94,6 +94,7 @@ class Sensor:
 
 @dataclass
 class Node:
+    ttn_device_id: str
     riot_board: str
     iot_lab_board_id: str
     iot_lab_radio_chipset: str
@@ -101,12 +102,14 @@ class Node:
     appkey: str
     appeui: str
     site: str
+    node_id: Optional[str] = None
     profile: Optional[str] = None
     sensors: Optional[List[Sensor]] = None
 
     @staticmethod
     def from_dict(obj: Any) -> 'Node':
         assert isinstance(obj, dict)
+        ttn_device_id = from_str(obj.get("TTN_DEVICE_ID"))
         profile = from_union([from_str, from_none], obj.get("PROFILE"))
         riot_board = from_str(obj.get("RIOT_BOARD"))
         iot_lab_board_id = from_str(obj.get("IOT-LAB_BOARD_ID"))
@@ -116,10 +119,12 @@ class Node:
         appeui = from_str(obj.get("APPEUI"))
         site = from_str(obj.get("SITE"))
         sensors = from_list(Sensor.from_dict,obj.get("SENSORS"))
-        return Node(riot_board, iot_lab_board_id, iot_lab_radio_chipset, deveui, appkey, appeui, site, profile, sensors)
+        node_id = from_union([from_str, from_none], obj.get("NODE_ID"))
+        return Node(ttn_device_id,riot_board, iot_lab_board_id, iot_lab_radio_chipset, deveui, appkey, appeui, site, node_id, profile, sensors)
 
     def to_dict(self) -> dict:
         return {
+        "TTN_DEVICE_ID": self.ttn_device_id,
         "PROFILE": from_union([from_str, from_none], self.profile) if self.profile is not None else None,
         "RIOT_BOARD": self.riot_board,
         "IOT-LAB_BOARD_ID": self.iot_lab_board_id,
@@ -129,17 +134,20 @@ class Node:
         "APPEUI": self.appeui,
         "SITE": self.site,
         "SENSORS": from_list(lambda x: to_class(Sensor, x), self.sensors),
-        "BOARD_ID": from_union([from_str, from_none], self.board_id)
+        "NODE_ID": from_union([from_str, from_none], self.node_id)
         }
 
     @property
-    def site_url(self):
+    def network_address(self):
         return f"{self.node_id}.{self.site}.iot-lab.info"
 
-    @site_url.setter
+    @network_address.setter
     def network_address(self, value):
         self.node_id, self.site, *_ = value.split(".")
 
+    @property
+    def site_url(self):
+        return f"{self.site}.iot-lab.info"
     @property
     def archi(self):
         return f"{self.iot_lab_board_id}:{self.iot_lab_radio_chipset}"
@@ -173,14 +181,14 @@ class Configuration:
         nodes = from_list(Node.from_dict, obj.get("NODES"))
         return Configuration(user, duration, mqtt, nodes)
 
-def to_dict(self) -> dict:
-    result = {
-        "USER": from_str(self.user),
-        "DURATION": from_str(str(self.duration)),
-        "MQTT": to_class(Mqtt, self.mqtt),
-        "NODES": from_list(lambda x: to_class(Node, x), self.nodes)
-    }
-    return result
+    def to_dict(self) -> dict:
+        result = {
+            "USER": from_str(self.user),
+            "DURATION": from_str(str(self.duration)),
+            "MQTT": to_class(Mqtt, self.mqtt),
+            "NODES": from_list(lambda x: to_class(Node, x), self.nodes)
+        }
+        return result
 
 def configuration_from_dict(s: Any) -> Configuration:
     return Configuration.from_dict(s)
