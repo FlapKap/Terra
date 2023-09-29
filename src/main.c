@@ -78,8 +78,7 @@ int main(void)
   LOG_INFO("enabled sensors\n");
   sensors_print_enabled();
   Env *global_env = init_env();
-  LOG_INFO("Environment initialized. collecting measurements...\n");
-  sensors_collect_into_env(global_env);
+
 
   network_initialize_network();
   network_send_heartbeat();
@@ -94,9 +93,13 @@ int main(void)
     ztimer_now_t start_time = ztimer_now(ZTIMER_SEC);
     run_barker11();
     msg = network_get_message();
-
+    run_barker11();
+    //Collect measurements
+    LOG_INFO("collecting measurements...\n");
+    sensors_collect_into_env(global_env);
     // Execute queries
     OutputMessage out;
+    LOG_INFO("Execute Queries...\n");
     executeQueries(msg, &out, global_env);
 
     if (out.amount > 0)
