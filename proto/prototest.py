@@ -18,6 +18,7 @@ def print_protobuf_message(message: Message, name: str) -> None:
     print(f"Serialized String:{message.SerializeToString()}")
     print(f"Serialized As C Array:{byte_string_as_c_char_array(message.SerializeToString())}")
     print(f"Serialized as dict:{message.to_dict()}")
+    print(f"Serialized as base64:{base64.b64encode(message.SerializeToString())}")
 if __name__ == "__main__":
     # generate messages
     messages = {}
