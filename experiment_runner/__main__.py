@@ -63,8 +63,9 @@ if not args.dont_make:
         env["DEVEUI"] = node.deveui
         env["APPEUI"] = node.appeui
         env["APPKEY"] = node.appkey
-        env["SENSOR_NAMES"] = " ".join([sensor.name for sensor in node.sensors])
-        env["SENSOR_TYPES"] = " ".join([sensor.type for sensor in node.sensors])
+        if node.sensors is not None:
+            env["SENSOR_NAMES"] = " ".join([sensor.name for sensor in node.sensors])
+            env["SENSOR_TYPES"] = " ".join([sensor.type for sensor in node.sensors])
 
         # make
         # if which("ccache"): # couldnt get this to work
@@ -135,28 +136,29 @@ if EXPERIMENT_ID == None:
     output = p.stdout.decode("utf-8")
     exp_id = json.loads(output).get("id")
     if exp_id != None:
-        print(f"Sucess! Got id {exp_id}")
+        print(f"Success! Got id {exp_id}")
         EXPERIMENT_ID = int(exp_id)
     else:
         print(f"Failed to create experiment. Error: {output}")
         exit()
 elif EXPERIMENT_ID == 0:
-    print("Attaching to latest experiment...")
+    print("Attaching to latest running experiment...")
+    out = subprocess.run(
+        ["iotlab", "experiment", "get", "-e"], capture_output=True, check=True
+    ).stdout.decode("utf-8")
+
+    running_experiments = json.loads(out)["Running"]
+    print(f"Found {len(running_experiments)} running experiments: {running_experiments}")
+    EXPERIMENT_ID = sorted(running_experiments)[-1]
     #TODO: implement thisˇ
     # attach to latest experiment
     exit()
-print("Waiting for experiment to start")
+print(f"Waiting for experiment {EXPERIMENT_ID} to start")
 # find experiment
-subprocess.run(["iotlab", "experiment", "wait"])  # wait for experiment to start
+subprocess.run(["iotlab", "experiment", "wait", "-i", str(EXPERIMENT_ID)])  # wait for experiment to start
 
-# gets active experiments
-p = subprocess.run(
-    ["iotlab", "experiment", "get", "-e"], capture_output=True, check=True
-)
-EXPERIMENT = json.loads(p.stdout)["Running"][
-    0
-]  # TODO: work with more than 1 experiment?
-DB_PATH = EXPERIMENT_FOLDER / f"{EXPERIMENT}.duckdb"
+
+DB_PATH = EXPERIMENT_FOLDER / f"{EXPERIMENT_ID}.duckdb"
 print(f"Create DuckDB for experiment data at {str(DB_PATH)}")
 # Check if file already exists
 if DB_PATH.exists():
@@ -175,7 +177,7 @@ db_con = duckdb.connect(f"{str(DB_PATH)}")
 db_con.execute("".join(CREATE_SQL))
 
 print("Populating sites table")
-db_con.executemany("INSERT INTO Site (name) VALUES (?)", [sites])
+db_con.executemany("INSERT INTO Site (name) VALUES (?)", [list(sites)])
 
 # NODES is a list of dictionaries with following info
 # {
@@ -197,7 +199,7 @@ db_con.executemany("INSERT INTO Site (name) VALUES (?)", [sites])
 # }
 print("Fetching nodes in experiment...")
 p = subprocess.run(
-    ["iotlab", "experiment", "get", "-i", str(EXPERIMENT), "-n"],
+    ["iotlab", "experiment", "get", "-i", str(EXPERIMENT_ID), "-n"],
     capture_output=True,
     check=True,
 )
@@ -263,7 +265,7 @@ if not args.dont_upload:
                 "iotlab",
                 "node",
                 "-i",
-                str(EXPERIMENT),
+                str(EXPERIMENT_ID),
                 "-l",
                 node_string,
                 "-fl",
@@ -298,7 +300,7 @@ async def serial_aggregation_coroutine(site_url):
             f"{USER}@{site_url}",
             "serial_aggregator",
             "-i",
-            str(EXPERIMENT),
+            str(EXPERIMENT_ID),
             stdout=asyncio.subprocess.PIPE,
         )
         while True:
@@ -315,11 +317,11 @@ async def serial_aggregation_coroutine(site_url):
                 (node.deveui, datetime.fromtimestamp(time_unix_s), msg),
             )
             serial_count += 1
-    finally:
+    except asyncio.CancelledError:
         print("Stopping serial aggregation collection")
         if p:
             p.terminate()
-
+        raise
 
 ## power consumption metrics
 power_consumption_count = 0
@@ -343,7 +345,7 @@ async def power_consumption_coroutine(site_url, oml_files):
             "-S",
             f"{USER}@{site_url}",
             "--workdir",
-            f"/senslab/users/berthels/.iot-lab/{EXPERIMENT}/consumption",
+            f"/senslab/users/berthels/.iot-lab/{EXPERIMENT_ID}/consumption",
             "tail -F",
             ":::",
             *oml_files,
@@ -384,10 +386,11 @@ async def power_consumption_coroutine(site_url, oml_files):
                 ),
             )
             power_consumption_count += 1
-    finally:
+    except asyncio.CancelledError:
         print("Stopping power consumption collection")
         if p:
             p.terminate()
+        raise
 
 
 radio_count = 0
@@ -410,7 +413,7 @@ async def radio_coroutine(site_url, oml_files):
             "-S",
             f"{USER}@{site_url}",
             "--workdir",
-            f"/senslab/users/berthels/.iot-lab/{EXPERIMENT}/radio",
+            f"/senslab/users/berthels/.iot-lab/{EXPERIMENT_ID}/radio",
             "tail -F",
             ":::",
             *oml_files,
@@ -450,10 +453,12 @@ async def radio_coroutine(site_url, oml_files):
                 ),
             )
             radio_count += 1
-    finally:
+    except asyncio.CancelledError:
+        # stop collection when task is cancelled
         print("Stopping radio collection")
         if p:
             p.terminate()
+        raise
 
 
 
@@ -473,7 +478,7 @@ async def mqtt_collect_coroutine():
         username=CONFIG.mqtt.username,
         password=CONFIG.mqtt.password,
         clean_session=False,
-        client_id=str(EXPERIMENT),
+        client_id=str(EXPERIMENT_ID),
     ) as client:
         async with client.messages() as messages:
             await client.subscribe(CONFIG.mqtt.topic, qos=2)
@@ -840,7 +845,7 @@ async def mqtt_submit_coroutine():
         username=CONFIG.mqtt.username,
         password=CONFIG.mqtt.password,
         clean_session=False,
-        client_id=str(EXPERIMENT),
+        client_id=str(EXPERIMENT_ID),
     ) as client:
         await asyncio.sleep(10)
         print("submitting query to mqtt")
@@ -849,72 +854,92 @@ async def mqtt_submit_coroutine():
             await client.publish(topic, "ChoKGAoWCgIIAQoCEAAKAggACgIQCAoCCAoQAQ==")
 
 async def print_progress():
-    while True:
-        # print("\n" * 3, end="")
-        ## fetch stats from db
-        nodes_count = db_con.execute("SELECT COUNT(*) FROM Node").fetchone()
-        trace_count = db_con.execute("SELECT COUNT(*) FROM Trace").fetchone()
-        power_count = db_con.execute(
-            "SELECT COUNT(*) FROM Power_Consumption"
-        ).fetchone()
-        rad_count = db_con.execute("SELECT COUNT(*) FROM Radio").fetchone()
-        sites_list = db_con.execute("SELECT * from Site").fetchall()
-        mqtt_messages_count = db_con.execute("SELECT COUNT(*) FROM Message").fetchone()
-        gateways_count = db_con.execute("SELECT COUNT(*) FROM Gateway").fetchone()
-        # print stats
-        output_strings = [
-            f"Nodes: {nodes_count}",
-            f"Sites: {str(sites_list)}",
-            f"Traces: {trace_count}",
-            f"Power Consumption: {power_count}",
-            f"Radio: {rad_count}",
-            f"Gateway: {gateways_count}",
-            f"Messages: {mqtt_messages_count}",
-        ]
-        print(*output_strings)
-        await asyncio.sleep(1)
-    #    print("\033[F\033[K" * len(output_strings), end="")
+    try:
+        while True:
+            # print("\n" * 3, end="")
+            ## fetch stats from db
+            nodes_count = db_con.execute("SELECT COUNT(*) FROM Node").fetchone()
+            trace_count = db_con.execute("SELECT COUNT(*) FROM Trace").fetchone()
+            power_count = db_con.execute(
+                "SELECT COUNT(*) FROM Power_Consumption"
+            ).fetchone()
+            rad_count = db_con.execute("SELECT COUNT(*) FROM Radio").fetchone()
+            sites_list = db_con.execute("SELECT * from Site").fetchall()
+            mqtt_messages_count = db_con.execute("SELECT COUNT(*) FROM Message").fetchone()
+            gateways_count = db_con.execute("SELECT COUNT(*) FROM Gateway").fetchone()
+            # print stats
+            output_strings = [
+                f"Nodes: {nodes_count}",
+                f"Sites: {str(sites_list)}",
+                f"Traces: {trace_count}",
+                f"Power Consumption: {power_count}",
+                f"Radio: {rad_count}",
+                f"Gateway: {gateways_count}",
+                f"Messages: {mqtt_messages_count}",
+            ]
+            print(*output_strings)
+            await asyncio.sleep(1)
+        #    print("\033[F\033[K" * len(output_strings), end="")
+    except asyncio.CancelledError:
+        print("Stopping print_progress")
+        raise
 
 
 async def commit():
-    while True:
-        await asyncio.sleep(5)
-        db_con.execute("CHECKPOINT")  # for some reason this is needed
+    try:
+        while True:
+            await asyncio.sleep(5)
+            db_con.execute("CHECKPOINT")  # for some reason this is needed
+    except asyncio.CancelledError:
+        print("Stopping commit")
+        raise
 
 
-# run all data collection tasks and await their completion
-async def main():
-    print("starting data collection")
-    # build list of tasks
+async def data_collection_tasks():
     tasks = []
     nodes_by_site = {
         site: list(filter(lambda n: n.site == site, CONFIG.nodes)) for site in sites
     }
     for nodelist in nodes_by_site.values():
         site_url = nodelist[0].site_url
-        tasks.append(serial_aggregation_coroutine(site_url))
-        tasks.append(
+        tasks.extend(
+            [
+            serial_aggregation_coroutine(site_url),
             power_consumption_coroutine(
                 site_url, [n.oml_name for n in nodelist]
-            )
+            ),
+            radio_coroutine(site_url, [n.oml_name for n in nodelist]),
+            mqtt_collect_coroutine(),
+            mqtt_submit_coroutine()
+            ]
         )
-        tasks.append(radio_coroutine(site_url, [n.oml_name for n in nodelist]))
-        tasks.append(mqtt_collect_coroutine())
-        tasks.append(mqtt_submit_coroutine())
-    tasks.append(print_progress())
     # tasks.append(commit())
-    group = asyncio.gather(
-        *tasks,
+    return await asyncio.gather(
+        *tasks, return_exceptions=True
     )
+
+# run all data collection tasks and await their completion
+async def main():
+    print("starting data collection")
+    # build list of tasks
+    
     ## reset all boards
     await asyncio.sleep(5)
     subprocess.run(["iotlab", "node", "--reset"], check=True)
-    try:
-        await group
-    except Exception as e:
-        print(e)
-        for task in group:
-            task.cancel()
+
+    collection_task = asyncio.create_task(data_collection_tasks())
+
+    while not collection_task.done():
+        await asyncio.sleep(20)
+        # ensure experiment is running
+        p = subprocess.run(["iotlab", "experiment", "get", "-p", "-i", str(EXPERIMENT_ID)], check=True, capture_output=True)
+        state = json.loads(p.stdout)["state"]
+        if state != "Running":
+            # if not running cancel all tasks
+            print(f"experiment status no longer running but {state}. Cancelling all tasks")
+            collection_task.cancel()
+            await asyncio.sleep(5)
+            break
 
 
 asyncio.run(main())
