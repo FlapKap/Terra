@@ -1,1 +1,1 @@
-void run_barker11(void);
+void play_syncword(void);

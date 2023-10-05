@@ -4,7 +4,8 @@
 #include "log.h"
 static int BIT_SPEED_MS = 200;
 
-static bool BARKER11[] = {true, true, true, false, false, false, true, false, false, true, false};
+//static bool BARKER11[] = {true, true, true, false, false, false, true, false, false, true, false};
+static bool BLINK[] = {true, false, true, false, true, false, true, false, true, false, true, false};
 
 static inline void turn_all_leds_on(void){
     LED0_ON;
@@ -39,11 +40,11 @@ static inline void toggle_all_leds(void){
     LED7_TOGGLE;
 }
 
-void run_barker11(void){
-    LOG_INFO("Running Barker 11...");
-    for (size_t i = 0; i < (sizeof(BARKER11) / sizeof(BARKER11[0])); i++)
+void play_syncword(void){
+    LOG_INFO("Running sync word...");
+    for (size_t i = 0; i < (sizeof(BLINK) / sizeof(BLINK[0])); i++)
     {
-        if (BARKER11[i])
+        if (BLINK[i])
         {
             turn_all_leds_on();
         } else {
