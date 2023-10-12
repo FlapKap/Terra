@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 import json
+from pathlib import Path
 from typing import Optional, Any, List, TypeVar, Callable, Type, cast
-
+import logging
 
 T = TypeVar("T")
 
@@ -105,6 +106,7 @@ class Node:
     node_id: Optional[str] = None
     profile: Optional[str] = None
     sensors: Optional[List[Sensor]] = None
+    firmware_path: Optional[Path] = None
 
     @staticmethod
     def from_dict(obj: Any) -> 'Node':
@@ -158,12 +160,21 @@ class Node:
 
     @property
     def oml_name(self):
+        if self.node_id is None:
+            logging.debug(f"oml_name called when Node {self.deveui} has no node id")
+            return None
         return f"{self.node_id.replace('-', '_')}.oml"
 
     @property
     def node_id_number(self):
+        if self.node_id is None:
+            logging.debug(f"node_id_number called when Node {self.deveui} has no node id")
+            return None
         return self.node_id.split("-")[-1]
 
+    @property
+    def node_string_by_id(self):
+        return f"{self.site},{self.iot_lab_board_id},{self.node_id_number}"
 
 @dataclass
 class Configuration:
