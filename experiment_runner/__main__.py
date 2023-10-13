@@ -1005,10 +1005,12 @@ def populate_traces_table_from_file(db_con, nodes, file_path: Path):
         "INSERT INTO Trace (node_id, timestamp, message) VALUES (?,?,?)", traces
     )
 
-def populate_power_consumption_table_from_file(db_con, nodes, file_path):
+def populate_power_consumption_table_from_file(db_con, nodes: List[configuration.Node], file_path: Path):
     rows = []
-    nodes_by_oml_name = {node.oml_name: node for node in nodes}
-
+    node = next(filter(lambda node: node.oml_name == file_path.name, nodes))
+    if node is None:
+        logging.error(f"Could not find node for {file_path.name}")
+        return
     matcher = regex.compile(
             r"^(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$"
         )
@@ -1022,7 +1024,7 @@ def populate_power_consumption_table_from_file(db_con, nodes, file_path):
                 int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
             )
             row = (
-                nodes_by_oml_name[record["node_name"]].deveui,
+                node.deveui,
                 datetime.fromtimestamp(timestamp / 1e6),
                 float(record["current"]),
                 float(record["voltage"]),
