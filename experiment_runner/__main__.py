@@ -54,14 +54,17 @@ parser.add_argument(
 parser.add_argument(
     "experiment_folder",
     type=Path,
-    help="folder containing to contain binaries and database files",
+    help="folder containing to contain binaries, data and database files",
 )
 args = parser.parse_args()
 
 
-EXPERIMENT_ID = args.attach  # None if we shouldnt attach, 0 if we should, but don't know the id, and anything else if we do know the id
+EXPERIMENT_ID = (
+    args.attach
+)  # None if we shouldnt attach, 0 if we should, but don't know the id, and anything else if we do know the id
 
 EXPERIMENT_FOLDER: Path = args.experiment_folder
+DATA_FOLDER = EXPERIMENT_FOLDER / "data"
 EXPERIMENT_CONFIG_PATH = args.config
 CONFIG = configuration.configuration_from_json(EXPERIMENT_CONFIG_PATH.read_text())
 
@@ -73,7 +76,6 @@ NODES_BY_SITE = {
 }
 # RIOT info
 SRC_PATH = Path.cwd() / "src"
-
 
 
 # make firmwares
@@ -198,8 +200,13 @@ async def upload_firmware(node: configuration.Node):
         str(EXPERIMENT_ID),
         "-l",
         node.node_string_by_id,
+        stdout=asyncio.subprocess.PIPE,
     )
-    await p.wait()
+    stdout, _ = await p.communicate()
+    if not json.loads(stdout.decode("utf-8"))["0"][0] == node.network_address:
+        logging.error(f"Stop failed for node {node.deveui}")
+        exit()
+
 
 async def serial_aggregation_coroutine(
     site_url: str, db_con: duckdb.DuckDBPyConnection
@@ -239,7 +246,6 @@ async def serial_aggregation_coroutine(
         if p:
             p.terminate()
         raise
-
 
 
 async def radio_coroutine(
@@ -353,7 +359,6 @@ async def mqtt_collect_coroutine(db_con: duckdb.DuckDBPyConnection):
                         continue
                     # formats taken from https://www.thethingsindustries.com/docs/the-things-stack/concepts/data-formats/
                     ## insert the message into the database. we wrap with a transaction
-                    db_con.begin()
                     match msg_topic.split("/")[4:]:
                         case ["join"]:
                             # region example
@@ -394,7 +399,6 @@ async def mqtt_collect_coroutine(db_con: duckdb.DuckDBPyConnection):
                                 "INSERT INTO Join_Message (join_message_id, app_received_at) VALUES (?,?)",
                                 (message_id, app_received_at),
                             )
-
                         case ["up"]:
                             # region example
                             # {
@@ -693,9 +697,12 @@ async def mqtt_collect_coroutine(db_con: duckdb.DuckDBPyConnection):
                         case ["location", "solved"]:
                             pass
 
-                    db_con.commit()
+                logging.error("This should never be reached")
     except asyncio.CancelledError:
         logging.info("Stopping mqtt_submit_coroutine")
+        raise
+    except Exception as e:
+        logging.error(e)
         raise
 
 
@@ -717,6 +724,9 @@ async def mqtt_submit_coroutine():
                 await client.publish(topic, "ChoKGAoWCgIIAQoCEAAKAggACgIQCAoCCAoQAQ==")
     except asyncio.CancelledError:
         logging.info("canceling mqtt_submit_coroutine")
+        raise
+    except Exception as e:
+        logging.error(e)
         raise
 
 
@@ -778,7 +788,7 @@ async def data_collection_tasks(db_con: duckdb.DuckDBPyConnection):
         )
     # tasks.append(commit())
 
-    return await asyncio.gather(*tasks, return_exceptions=True)
+    return await asyncio.gather(*tasks, return_exceptions=False)
 
 
 async def download_data_folder(
@@ -791,7 +801,7 @@ async def download_data_folder(
     if not local_path_with_site.exists():
         local_path.mkdir(parents=True)
     p = await asyncio.create_subprocess_exec(
-        "scp", "-r", f"{USER}@{site_url}:{remote_path}", local_path_with_site
+        "scp", "-r", f"{user}@{site_url}:{remote_path}", local_path_with_site
     )
     return await p.wait()
 
@@ -881,6 +891,90 @@ async def wait_for_experiment_to_start():
     return await p.wait() == 0
 
 
+def populate_traces_table_from_file(db_con, nodes, file_path: Path):
+    traces = []
+    nodes_by_id = {node.node_id: node for node in nodes}
+    with file_path.open() as f:
+        for line in f:
+            record = line.split(";")
+            if len(record) <= 2:  # probably something like <time>;Aggregator started
+                continue
+            traces.append(
+                (
+                    nodes_by_id[record[1]].deveui,
+                    datetime.fromtimestamp(float(record[0])),
+                    record[2],
+                )
+            )
+    db_con.executemany(
+        "INSERT INTO Trace (node_id, timestamp, message) VALUES (?,?,?)", traces
+    )
+
+
+def populate_power_consumption_table_from_file(
+    db_con, nodes: List[configuration.Node], file_path: Path
+):
+    rows = []
+    node = next(filter(lambda node: node.oml_name == file_path.name, nodes))
+    if node is None:
+        logging.error(f"Could not find node for {file_path.name}")
+        return
+    matcher = regex.compile(
+        r"^(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$"
+    )
+
+    with file_path.open() as f:
+        for line in f:
+            record = matcher.match(line)
+            if record is None:
+                continue
+            timestamp = int(
+                int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
+            )
+            row = (
+                node.deveui,
+                datetime.fromtimestamp(timestamp / 1e6),
+                float(record["current"]),
+                float(record["voltage"]),
+                float(record["power"]),
+            )
+            rows.append(row)
+    db_con.executemany(
+        "INSERT INTO Power_Consumption (node_id, timestamp, current, voltage, power) VALUES (?,?,?,?,?)",
+        rows,
+    )
+
+
+async def is_experiment_running():
+    p = await asyncio.create_subprocess_exec(
+        "iotlab",
+        "experiment",
+        "get",
+        "-p",
+        "-i",
+        str(EXPERIMENT_ID),
+        stdout=asyncio.subprocess.PIPE,
+    )
+    out, _ = await p.communicate()
+    output_decoded = out.decode("utf-8")
+    state = json.loads(output_decoded)["state"]
+    return state == "Running"
+
+
+def populate_nodes_with_addresses_from_iotlab(iotlab_nodes):
+    for n in iotlab_nodes:
+        try:
+            next(
+                filter(
+                    lambda nod: nod.archi == n["archi"] and nod.node_id is None,
+                    CONFIG.nodes,
+                )
+            ).network_address = n["network_address"]
+        except StopIteration:
+            logging.error("Node not found while populating internal node table")
+            sys.exit()
+
+
 # run all data collection tasks and await their completion
 async def main():
     # need access to experiment_id to modify it
@@ -888,13 +982,7 @@ async def main():
 
     if not has_prerequisites():
         logging.error("Prerequisites for this script are not installed")
-        exit()
-
-    if not await has_passwordless_ssh_access(USER, "saclay.iot-lab.info"):
-        logging.error(
-            f"Passwordless SSH access to the ssh front-end is required.\ncant log in to {USER}@saclay.iot-lab.info without password. Check if ssh-agent is running and if not run 'eval $(ssh-agent);ssh-add' to start the agent and add your key"
-        )
-        exit()
+        sys.exit(0)
 
     if not args.dont_make:
         logging.info("making firmware")
@@ -903,7 +991,17 @@ async def main():
         logging.info("skipping making firmware. Finding existing firmware...")
         find_and_assign_all_firmware(CONFIG.nodes)
 
-    if EXPERIMENT_ID == None:
+    if not await has_passwordless_ssh_access(USER, "saclay.iot-lab.info"):
+        logging.error(
+            "Passwordless SSH access to the ssh front-end is required.\ncant log in to %s@saclay.iot-lab.info without password. Check if ssh-agent is running and if not run 'eval $(ssh-agent);ssh-add' to start the agent and add your key", USER
+        )
+        sys.exit(0)
+
+    # we upload and run the experiment below, so if we dont want to do that: early exit
+    if args.dont_run:
+        sys.exit(0)
+
+    if EXPERIMENT_ID is None:
         EXPERIMENT_ID = await register_experiment(CONFIG.nodes)
     elif EXPERIMENT_ID == 0:
         logging.info("Attaching to latest running experiment...")
@@ -923,8 +1021,8 @@ async def main():
         if answer == "y":
             db_path.unlink()
         else:
-            logging.error("Database already exists. Exiting")
-            exit()
+            logging.error("Database already exists and wasnt overwritten. Exiting")
+            sys.exit(0)
 
     db_con = create_and_initialise_db(db_path)
 
@@ -939,31 +1037,31 @@ async def main():
 
     if not args.dont_upload:
         logging.info("uploading firmware")
+        # for n in CONFIG.nodes:
+        #     await upload_firmware(n)
+
         await asyncio.gather(*[upload_firmware(n) for n in CONFIG.nodes])
 
     logging.info("starting data collection")
-
-    # we run the experiment below, so if we dont want to do that: early exit
-    if args.dont_run:
-        exit()
 
     ## start all boards
     subprocess.run(["iotlab", "node", "--start", "-i", str(EXPERIMENT_ID)], check=True)
     await asyncio.sleep(5)
     collection_task = asyncio.create_task(data_collection_tasks(db_con))
-    progress_task = asyncio.create_task(print_progress(db_con))
-
+    # progress_task = asyncio.create_task(print_progress(db_con))
+    await asyncio.sleep(5)
     while not collection_task.done():
         await asyncio.sleep(10)
         # ensure experiment is running
-        if not await is_experiment_running():
+        running = await is_experiment_running()
+        if not running:
             logging.info(
-                f"experiment status no longer running. Cancelling all tasks after 30 seconds..."
+                "experiment status no longer running. Cancelling all tasks after 30 seconds..."
             )
             await asyncio.sleep(30)
             logging.info("Cancelling tasks...")
             collection_task.cancel()
-            progress_task.cancel()
+            #       progress_task.cancel()
             await asyncio.sleep(5)
             logging.info("done")
             break
@@ -971,97 +1069,25 @@ async def main():
     logging.info("download data folders from each site")
     for site, nodes in NODES_BY_SITE.items():
         logging.info(f"downloading data from {site}")
-        await download_data_folder(site, EXPERIMENT_FOLDER / str(EXPERIMENT_ID))
-    
+        await download_data_folder(site, DATA_FOLDER / str(EXPERIMENT_ID))
+
     logging.info("populate traces in db from serial output file from each site")
     for site in SITES:
-        file_path = EXPERIMENT_FOLDER / str(EXPERIMENT_ID) / site / "serial_output"
+        file_path = DATA_FOLDER / str(EXPERIMENT_ID) / site / "serial_output"
         populate_traces_table_from_file(db_con, CONFIG.nodes, file_path)
-    
-    logging.info("populating power consumption measurements from .oml files from each site")
-    for site in SITES:
-        oml_files = list(Path(EXPERIMENT_FOLDER / str(EXPERIMENT_ID) / site / "consumption" ).glob("*.oml"))
-        for oml_file in oml_files:
-            logging.info(f"populating power consumption measurements from {oml_file} from site {site}")
-            populate_power_consumption_table_from_file(db_con, CONFIG.nodes, oml_file)
 
-
-
-
-def populate_traces_table_from_file(db_con, nodes, file_path: Path):
-    traces = []
-    nodes_by_id = {node.node_id: node for node in nodes}
-    with file_path.open() as f:
-        for line in f:
-            record = line.split(";")
-            if len(record) <= 2:  # probably something like <time>;Aggregator started
-                continue
-            traces.append((
-                nodes_by_id[record[1]].deveui,
-                datetime.fromtimestamp(float(record[0])),
-                record[2],
-            ))
-    db_con.executemany(
-        "INSERT INTO Trace (node_id, timestamp, message) VALUES (?,?,?)", traces
+    logging.info(
+        "populating power consumption measurements from .oml files from each site"
     )
-
-def populate_power_consumption_table_from_file(db_con, nodes: List[configuration.Node], file_path: Path):
-    rows = []
-    node = next(filter(lambda node: node.oml_name == file_path.name, nodes))
-    if node is None:
-        logging.error(f"Could not find node for {file_path.name}")
-        return
-    matcher = regex.compile(
-            r"^(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$"
+    for site in SITES:
+        oml_files = list(
+            Path(DATA_FOLDER / str(EXPERIMENT_ID) / site / "consumption").glob("*.oml")
         )
-
-    with file_path.open() as f:
-        for line in f:
-            record = matcher.match(line)
-            if record is None:
-                continue
-            timestamp = int(
-                int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
+        for oml_file in oml_files:
+            logging.info(
+                f"populating power consumption measurements from {oml_file} from site {site}"
             )
-            row = (
-                node.deveui,
-                datetime.fromtimestamp(timestamp / 1e6),
-                float(record["current"]),
-                float(record["voltage"]),
-                float(record["power"]),
-            )
-            rows.append(row)
-    db_con.executemany("INSERT INTO Power_Consumption (node_id, timestamp, current, voltage, power) VALUES (?,?,?,?,?)",rows)
-
-
-
-async def is_experiment_running():
-    p = await asyncio.create_subprocess_exec(
-            "iotlab",
-            "experiment",
-            "get",
-            "-p",
-            "-i",
-            str(EXPERIMENT_ID),
-            stdout=asyncio.subprocess.PIPE,
-        )
-    out, _ = await p.communicate()
-    output_decoded = out.decode("utf-8")
-    state = json.loads(output_decoded)["state"]
-    return state == "Running"
-
-def populate_nodes_with_addresses_from_iotlab(iotlab_nodes):
-    for n in iotlab_nodes:
-        try:
-            next(
-                filter(
-                    lambda nod: nod.archi == n["archi"] and nod.node_id is None,
-                    CONFIG.nodes,
-                )
-            ).network_address = n["network_address"]
-        except StopIteration:
-            logging.error("Node not found while populating internal node table")
-            sys.exit()
+            populate_power_consumption_table_from_file(db_con, CONFIG.nodes, oml_file)
 
 
 asyncio.run(main())
