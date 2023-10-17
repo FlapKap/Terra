@@ -39,6 +39,12 @@ static inline void toggle_all_leds(void){
     LED6_TOGGLE;
     LED7_TOGGLE;
 }
+void play_single_blink(void){
+    LOG_INFO("Running single blink...");
+    turn_all_leds_on();
+    ztimer_sleep(ZTIMER_MSEC, BIT_SPEED_MS);
+    turn_all_leds_off();
+}
 
 void play_syncword(void){
     LOG_INFO("Running sync word...");
