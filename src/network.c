@@ -11,18 +11,15 @@
 #include "input_serialization.h"
 #include "output_serialization.h"
 #include "print_utils.h"
+#include "log.h"
 #ifndef DISABLE_LORA
 #include "lorawan.h"
 #include "semtech_loramac.h"
 extern semtech_loramac_t loramac;
 
-#include "log.h"
+
 
 #endif
-
-// Debug
-#define ENABLE_DEBUG 1
-#include "debug.h"
 
 static Message message;
 
@@ -34,7 +31,7 @@ static const pb_byte_t raw_message[] = DEFAULT_QUERY_AS_PB_CHAR_ARRAY;
 
 
 bool network_initialize_network(void){
-  DEBUG("network_initialize_network: DISABLE_LORA enabled so no network is actually initialized\n");
+  LOG_DEBUG("network_initialize_network: DISABLE_LORA enabled so no network is actually initialized\n");
   pb_istream_t stream = pb_istream_from_buffer(raw_message, sizeof(raw_message));
   bool res = decode_input_message(&stream, &message);
   print_message(&message);
@@ -42,12 +39,12 @@ bool network_initialize_network(void){
 }
 
 bool network_is_connected(void){
-  DEBUG("network_is_connected: DISABLE_LORA enabled so no network is actually connected\n");
+  LOG_DEBUG("network_is_connected: DISABLE_LORA enabled so no network is actually connected\n");
   return true;
 }
 
 bool network_has_valid_message(void){
-  DEBUG("network_has_valid_message: DISABLE_LORA enabled so using predefined message\n");
+  LOG_DEBUG("network_has_valid_message: DISABLE_LORA enabled so using predefined message\n");
   return true;
 }
 
@@ -55,13 +52,13 @@ Message network_get_message(void){
   return message;
 }
 bool network_send_message(OutputMessage msg){
-  DEBUG("network_send_message: DISABLE_LORA enabled so no message is actually sent. Just logged.\n");
+  LOG_DEBUG("network_send_message: DISABLE_LORA enabled so no message is actually sent. Just logged.\n");
   print_output_message(&msg);
   return true;
 }
 
 bool network_send_heartbeat(void){
-  DEBUG("network_send_heartbeat: DISABLE_LORA enabled so no message is actually sent. Just logged.\n");
+  LOG_DEBUG("network_send_heartbeat: DISABLE_LORA enabled so no message is actually sent. Just logged.\n");
   return true;
 }
 
@@ -83,19 +80,8 @@ static bool receive_and_decode(void)
 bool network_initialize_network(void){
   LOG_INFO("Initializing network\n");
   int ret_init = lorawan_initialize_lorawan();
+  lorawan_print_connection_info();
   int ret_connect = lorawan_connect_lorawan();
-
-
-  char deveui[17] = "";
-  char appeui[17] = "";
-  char appkey[33] = "";
-  fmt_bytes_hex(deveui, loramac.deveui, LORAMAC_DEVEUI_LEN);
-  fmt_bytes_hex(appeui, loramac.appeui, LORAMAC_APPEUI_LEN);
-  fmt_bytes_hex(appkey, loramac.appkey, LORAMAC_APPKEY_LEN);
-
-  LOG_INFO("  Device EUI: %s\n",deveui);
-  LOG_INFO("  Application EUI: %s\n",appeui);
-  LOG_INFO("  Application Key: %s\n",appkey);
 
   // check if init and connect were successful
   if (ret_init == 0 && ret_connect == 0){

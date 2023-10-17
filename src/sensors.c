@@ -3,8 +3,7 @@
 #include "stdio.h"
 #include "math.h"
 #include "log.h"
-#define ENABLE_DEBUG 0
-#include "debug.h"
+
 
 
 extern saul_reg_t *saul_reg;
@@ -42,7 +41,7 @@ bool sensors_initialize_enabled(void)
     {
         sensors[i] = saul_reg_find_type_and_name(sensor_types[i], sensor_names[i]);
         assert(sensors[i] != NULL);
-        LOG_INFO("Sensor: %s, type: %d initialised", sensors[i]->name, sensors[i]->driver->type);
+        LOG_INFO("Sensor: %s, type: %d initialised\n", sensors[i]->name, sensors[i]->driver->type);
     }
 
     return true;
@@ -64,13 +63,13 @@ bool sensors_collect_into_env(Env *env)
             {
                 num.type._uint32 = (uint32_t)val;
                 num.unionCase = NUMBER_UINT32;
-                DEBUG("Read value %lu from Sensor %s. Saving in env position %d\n", (uint32_t)val, sensors[i]->name, i);
+                LOG_DEBUG("Read value %lu from Sensor %s. Saving in env position %d\n", (uint32_t)val, sensors[i]->name, i);
             }
             else
             {
                 num.type._int = (int)val;
                 num.unionCase = NUMBER_INT;
-                DEBUG("Read value %d from Sensor %s. Saving in env position %d\n", (int)val, sensors[i]->name, i);
+                LOG_DEBUG("Read value %d from Sensor %s. Saving in env position %d\n", (int)val, sensors[i]->name, i);
             }
         }
         else
@@ -88,7 +87,7 @@ bool sensors_collect_into_env(Env *env)
                 num.type._double = val;
                 num.unionCase = NUMBER_DOUBLE;
             }
-            DEBUG("Read value %f from Sensor %s. Saving in env position %d\n", val, sensors[i]->name, i);
+            LOG_DEBUG("Read value %f from Sensor %s. Saving in env position %d\n", val, sensors[i]->name, i);
         }
 
         set_value(env, i, num);
