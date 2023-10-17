@@ -40,11 +40,8 @@
 // Power tracking
 #include "power_sync.h"
 
-// Debug
-#define ENABLE_DEBUG 1
-#include "debug.h"
-
 #include "log.h"
+
 
 #ifdef APPLICATION_RUN_TEST
 void test_encode_input(void);
@@ -73,10 +70,9 @@ int main(void)
 {
   ztimer_stopwatch_init(ZTIMER_MSEC,&stopwatch);
   ztimer_stopwatch_start(&stopwatch);
-  ztimer_sleep(ZTIMER_SEC, 10); // wait 10 seconds before starting
   //play_syncword();
   uint32_t sync_word_time = ztimer_stopwatch_measure(&stopwatch);
-  LOG_INFO("NebulaStream End Device Runtime (Build Date: %s, Time of Build: %s)\n", __DATE__, __TIME__);
+  LOG_INFO("Terra (Build Date: %s, Time of Build: %s)\n", __DATE__, __TIME__);
   LOG_INFO("=====================================\n");
   
   ztimer_stopwatch_reset(&stopwatch);
@@ -88,9 +84,11 @@ int main(void)
 
   ztimer_stopwatch_reset(&stopwatch); 
   Env *global_env = init_env();
+  LOG_INFO("environment initialized\n");
   uint32_t env_init_time = ztimer_stopwatch_reset(&stopwatch);
 
   network_initialize_network();
+  LOG_INFO("network initialized\n");
   uint32_t net_init_time = ztimer_stopwatch_reset(&stopwatch);
   network_send_heartbeat();
   // Initialize global variable environment
@@ -106,7 +104,7 @@ int main(void)
     LOG_INFO("Main loop iteration\n");
     ztimer_stopwatch_reset(&stopwatch);
     ztimer_stopwatch_reset(&loop_stopwatch);
-    play_syncword();
+    play_single_blink();
     uint32_t sync_word_time = ztimer_stopwatch_reset(&stopwatch);
     msg = network_get_message();
     uint32_t listen_time = ztimer_stopwatch_reset(&stopwatch);
