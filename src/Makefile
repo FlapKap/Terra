@@ -18,7 +18,7 @@ endif
 ## EXECUTE INTERVAL
 EXECUTION_EPOCH_S ?= 20
 ## LORA
-DISABLE_LORA ?= 0
+DISABLE_LORA ?= 1
 ACTIVATION_MODE ?= otaa # only otaa is supported
 LORA_REGION ?= EU868
 APPEUI ?= 0000000000000000
@@ -27,6 +27,7 @@ APPKEY ?= 385794DDE70CE2EAB5B5B12A4807822C
 # change stack size
 MAIN_STACKSIZE ?= 10480
 
+LOG_LEVEL ?= LOG_ALL
 
 # Different build configurations. Optimized builds run without any debug symbols and with o3 optimizations
 APPLICATION_BUILD_OPTIMIZED ?= 0
