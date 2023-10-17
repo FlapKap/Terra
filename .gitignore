@@ -138,4 +138,15 @@ pip-selfcheck.json
 ## python compiled files
 __pycache__
 *.pyc
+
+##duckdb database files
+*.duckdb
+*.duckdb.wal
+
+#experiment data
+experiment/data/*
+
+# compiled binaries
+*.elf
+
 # End of https://www.toptal.com/developers/gitignore/api/c,visualstudiocode,git
