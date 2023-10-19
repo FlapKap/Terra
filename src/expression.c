@@ -1,44 +1,43 @@
 #include <math.h>
 #include <stdio.h>
-
+#include <inttypes.h>
 #include "expression.h"
 #include "stack.h"
 #include "operators.h"
 #include "environment.h"
 #include "number.h"
 #include "print_utils.h"
-#define ENABLE_DEBUG  0
-#include "debug.h"
+#include "log.h"
 // TODO: add debug statements to the code
 
 void _CONST(Expression *e)
 {
     // push the next value from program as data to the stack
-    Number val;
-    Instruction currentInstruction = e->program[++(e->pc)];
+    Number val = { 0 };
+    Instruction nextInstruction = e->program[++(e->pc)];
 
     //TODO: check if 1 can be replaced with enum for instance?
-    switch (currentInstruction.unionCase)
+    switch (nextInstruction.unionCase)
     {
         // for instructions 0 is the instruction and above is data types
     case 1:
         val.unionCase = NUMBER_UINT32;
-        val.type._uint32 = currentInstruction.data._uint32;
+        val.type._uint32 = nextInstruction.data._uint32;
         break;
     case 2:
         val.unionCase = NUMBER_INT;
-        val.type._int = currentInstruction.data._int;
+        val.type._int = nextInstruction.data._int;
         break;
     case 3:
         val.unionCase = NUMBER_FLOAT;
-        val.type._float = currentInstruction.data._float;
+        val.type._float = nextInstruction.data._float;
         break;
     case 4:
         val.unionCase = NUMBER_DOUBLE;
-        val.type._double = currentInstruction.data._double;
+        val.type._double = nextInstruction.data._double;
         break;
     default:
-        DEBUG("Error: Invalid unionCase: %" PRIu8, currentInstruction.unionCase);
+        LOG_DEBUG("Error: Invalid unionCase: %" PRIu8, nextInstruction.unionCase);
         exit(1);
     }
 
@@ -248,7 +247,7 @@ void _GTEQ(Expression *e)
 
 void execute_next(Expression *e)
 {
-    if (ENABLE_DEBUG) {
+    if (LOG_LEVEL >= LOG_DEBUG) {
         print_instruction(&e->program[e->pc]);
         puts("\n");
     }
@@ -328,7 +327,7 @@ void execute_next(Expression *e)
 
 Number call(Expression *e)
 {
-    if (ENABLE_DEBUG) {
+    if (LOG_LEVEL >= LOG_DEBUG) {
         print_expression(e);
     }
     e->pc = 0;

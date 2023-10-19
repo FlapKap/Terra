@@ -18,9 +18,7 @@
 #include "operators.h"
 #include "number.h"
 #include "network.h"
-#ifndef BOARD_NATIVE
 #include "sensors.h"
-#endif
 #include "print_utils.h"
 
 
@@ -84,7 +82,8 @@ int main(void)
 
   ztimer_stopwatch_reset(&stopwatch); 
   Env *global_env = init_env();
-  LOG_INFO("environment initialized\n");
+  LOG_INFO("environment initialized:\n");
+  print_env(global_env);
   uint32_t env_init_time = ztimer_stopwatch_reset(&stopwatch);
 
   network_initialize_network();
@@ -105,7 +104,7 @@ int main(void)
     ztimer_stopwatch_reset(&stopwatch);
     ztimer_stopwatch_reset(&loop_stopwatch);
     play_single_blink();
-    uint32_t sync_word_time = ztimer_stopwatch_reset(&stopwatch);
+    sync_word_time = ztimer_stopwatch_reset(&stopwatch);
     msg = network_get_message();
     uint32_t listen_time = ztimer_stopwatch_reset(&stopwatch);
     //Collect measurements
@@ -115,7 +114,7 @@ int main(void)
     sensors_collect_into_env(global_env);
     uint32_t sensor_collect_time = ztimer_stopwatch_reset(&stopwatch);
     // Execute queries
-    OutputMessage out;
+    OutputMessage out = { 0 };
     LOG_INFO("Execute Queries...\n");
     //play_syncword();
     ztimer_stopwatch_reset(&stopwatch);
@@ -132,9 +131,9 @@ int main(void)
     uint32_t end_time = ztimer_stopwatch_reset(&loop_stopwatch);
 
     LOG_INFO("--Iteration stats--\n");
-    LOG_INFO("Sync word time: %" PRIu32 " ms\n", sync_word_time);
-    LOG_INFO("listen took %" PRIu32 " ms\n", listen_time);
-    LOG_INFO("sensor collect took %" PRIu32 " ms\n", sensor_collect_time);
+    LOG_INFO("⏱️ Sync word time: %" PRIu32 " ms\n", sync_word_time);
+    LOG_INFO("⏱️ listen took %" PRIu32 " ms\n", listen_time);
+    LOG_INFO("⏱️ sensor collect: %" PRIu32 " ms\n", sensor_collect_time);
     LOG_INFO("Execution took %" PRIu32 " ms\n", exec_time);
     LOG_INFO("Send took %" PRIu32 " ms\n", send_time);
     LOG_INFO("Iteration took %" PRIu32 " ms\n", end_time);

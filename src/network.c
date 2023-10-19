@@ -20,8 +20,8 @@ extern semtech_loramac_t loramac;
 
 
 #endif
-
-static Message message;
+//TODO: Message need to be properly initialized
+static Message message = { 0 };
 
 // we provide two implementations: one for lora, and one with a default message defined
 #if DISABLE_LORA
