@@ -150,7 +150,7 @@ bool decode_input_message(pb_istream_t *stream, Message *out) {
 void decoded_input_to_message(EndDeviceProtocol_Message decoded, Message *out){
   out->amount = decoded.queries_count;
 
-  Query *queries = (Query *)malloc(sizeof(Query) * decoded.queries_count);
+  Query *queries = (Query *)calloc(sizeof(Query), decoded.queries_count);
 
   for(int i = 0; i < decoded.queries_count; i++){
     Query current;
@@ -164,7 +164,7 @@ void decoded_input_to_message(EndDeviceProtocol_Message decoded, Message *out){
 void decoded_input_to_query(EndDeviceProtocol_Query decoded, Query *out){
   out->amount = decoded.operations_count;
 
-  Operation *operations = (Operation *)malloc(sizeof(Operation) * decoded.operations_count);
+  Operation *operations = (Operation *)calloc(sizeof(Operation),decoded.operations_count);
 
   for(int i = 0; i < decoded.operations_count; i++){
     Operation current;
@@ -177,17 +177,17 @@ void decoded_input_to_query(EndDeviceProtocol_Query decoded, Query *out){
 
 void decoded_input_to_operation(EndDeviceProtocol_Operation decoded, Operation *out){
   if(decoded.which_operation == EndDeviceProtocol_Operation_map_tag){
-    Map *current = (Map *)malloc(sizeof(Map));
+    Map *current = (Map *)calloc(sizeof(Map),1);
     decoded_input_to_map_operation(decoded.operation.map, current);
     out->operation.map = current;
     out->unionCase = 0;
   } else if(decoded.which_operation == EndDeviceProtocol_Operation_filter_tag){
-    Filter *current = (Filter *)malloc(sizeof(Filter));
+    Filter *current = (Filter *)calloc(sizeof(Filter),1);
     decoded_input_to_filter_operation(decoded.operation.filter, current);
     out->operation.filter = current;
     out->unionCase = 1;
   } else if(decoded.which_operation == EndDeviceProtocol_Operation_window_tag){
-    Window *current = (Window *)malloc(sizeof(Window));
+    Window *current = (Window *)calloc(sizeof(Window),1);
     decoded_input_to_window_operation(decoded.operation.window, current);
     out->operation.window = current;
     out->unionCase = 2;
@@ -239,13 +239,13 @@ void decoded_input_to_window_operation(EndDeviceProtocol_WindowOperation input, 
 }
 
 void decoded_input_to_filter_operation(EndDeviceProtocol_FilterOperation decoded, Filter *out){
-  Expression *submessage = (Expression *)malloc(sizeof(Expression));
+  Expression *submessage = (Expression *)calloc(sizeof(Expression),1);
   submessage->p_size = decoded.predicate.instructions_count;
   
-  Instruction *instructions = (Instruction *)malloc(sizeof(Instruction) * decoded.predicate.instructions_count);
+  Instruction *instructions = (Instruction *)calloc(sizeof(Instruction),decoded.predicate.instructions_count);
 
   for(int i = 0; i < decoded.predicate.instructions_count; i++){
-    Instruction *current = (Instruction *)malloc(sizeof(Instruction));
+    Instruction *current = (Instruction *)calloc(sizeof(Instruction),1);
     decoded_input_to_instruction(decoded.predicate.instructions[i], current);
     instructions[i] = *current;
   }
@@ -258,13 +258,13 @@ void decoded_input_to_filter_operation(EndDeviceProtocol_FilterOperation decoded
 void decoded_input_to_map_operation(EndDeviceProtocol_MapOperation decoded, Map *out){
   out->attribute = decoded.attribute;
 
-  Expression *submessage = (Expression *)malloc(sizeof(Expression));
+  Expression *submessage = (Expression *)calloc(sizeof(Expression),1);
   submessage->p_size = decoded.function.instructions_count;
   
-  Instruction *instructions = (Instruction *)malloc(sizeof(Instruction) * decoded.function.instructions_count);
+  Instruction *instructions = (Instruction *)calloc(sizeof(Instruction), decoded.function.instructions_count);
   
   for(int i = 0; i < decoded.function.instructions_count; i++){
-    Instruction *current = (Instruction *)malloc(sizeof(Instruction));
+    Instruction *current = (Instruction *)calloc(sizeof(Instruction),1);
     decoded_input_to_instruction(decoded.function.instructions[i], current);
     instructions[i] = *current;
   }

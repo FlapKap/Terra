@@ -6,10 +6,11 @@
 
 void executeQueries(Message message, OutputMessage *out, Env * env){
 
-  QueryResponse *responses = (QueryResponse *) malloc(sizeof(QueryResponse) * message.amount);
+  QueryResponse *responses = (QueryResponse *) calloc(sizeof(QueryResponse) * message.amount,1);
 
   for (int i = 0; i < message.amount; i++) {
-    QueryResponse current;
+    // TODO: should really remove the need for calloc here
+    QueryResponse current = {.id = i, .response = (Instruction *) calloc(sizeof(Instruction), 1), .amount = 1};
     executeQuery(message.queries[i], &current, env);
     responses[i] = current;
   }
