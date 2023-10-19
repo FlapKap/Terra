@@ -914,35 +914,37 @@ def populate_traces_table_from_file(db_con, nodes, file_path: Path):
 def populate_power_consumption_table_from_file(
     db_con, nodes: List[configuration.Node], file_path: Path
 ):
-    rows = []
+    # rows = []
     node = next(filter(lambda node: node.oml_name == file_path.name, nodes))
     if node is None:
         logging.error(f"Could not find node for {file_path.name}")
         return
-    matcher = regex.compile(
-        r"^(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$"
-    )
+    oml =db_con.read_csv(file_path, skiprows=9,names=["exp_runtime", "schema", "cnmc", "timestamp_s", "timestamp_us", "power", "voltage", "current"])
+    db_con.execute(f"WITH PC AS (SELECT '{node.deveui}' as node_id, make_timestamp(timestamp_s * 1000000 + timestamp_us) as timestamp, current, power, voltage FROM oml) INSERT INTO Power_Consumption BY NAME SELECT * from PC")
+    # matcher = regex.compile(
+    #     r"^(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$"
+    # )
 
-    with file_path.open() as f:
-        for line in f:
-            record = matcher.match(line)
-            if record is None:
-                continue
-            timestamp = int(
-                int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
-            )
-            row = (
-                node.deveui,
-                datetime.fromtimestamp(timestamp / 1e6),
-                float(record["current"]),
-                float(record["voltage"]),
-                float(record["power"]),
-            )
-            rows.append(row)
-    db_con.executemany(
-        "INSERT INTO Power_Consumption (node_id, timestamp, current, voltage, power) VALUES (?,?,?,?,?)",
-        rows,
-    )
+    # with file_path.open() as f:
+    #     for line in f:
+    #         record = matcher.match(line)
+    #         if record is None:
+    #             continue
+    #         timestamp = int(
+    #             int(record["timestamp_s"]) * 1e6 + int(record["timestamp_us"])
+    #         )
+    #         row = (
+    #             node.deveui,
+    #             datetime.fromtimestamp(timestamp / 1e6),
+    #             float(record["current"]),
+    #             float(record["voltage"]),
+    #             float(record["power"]),
+    #         )
+    #         rows.append(row)
+    # db_con.executemany(
+    #     "INSERT INTO Power_Consumption (node_id, timestamp, current, voltage, power) VALUES (?,?,?,?,?)",
+    #     rows,
+    # )
 
 
 async def is_experiment_running():
