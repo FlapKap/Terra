@@ -166,11 +166,11 @@ void print_number_value_and_ucase(Number number)
 
 void print_stack(const Stack *stack)
 {
-    printf("Stack (top: %d, size: %d):\n", stack->top, stack->size);
-    printf("Elements:\n");
+    printf(" Stack (top: %d, size: %d):\n", stack->top, stack->size);
+    printf("  Elements:\n");
     for (int i = stack->top; i >= 0; i--)
     {
-        printf("  %d. ", stack->top - i + 1);
+        printf("    %d. ", stack->top - i + 1);
         print_number_value_and_ucase(stack->stack[i]);
         printf("\n");
     }
@@ -179,55 +179,55 @@ void print_stack(const Stack *stack)
 void print_env(const Env *env)
 {
     printf("Env (size: %d):\n", env->size);
-    printf("Array:\n");
+    printf(" Array:\n");
     for (int i = 0; i < env->size; i++)
     {
-        printf("  %d. ", i + 1);
+        printf("   %d. ", i + 1);
         print_number_value_and_ucase(env->memory[i]);
         printf("\n");
     }
 
-    printf("Stack:\n");
+    printf(" Stack:\n");
     print_stack(env->stack);
 }
 
 void print_expression(const Expression *expression)
 {
-    printf("Expression (p_size: %d, pc: %d):\n", expression->p_size, expression->pc);
-    printf("Program:\n");
+    printf("     Expression (p_size: %d, pc: %d):\n", expression->p_size, expression->pc);
+    printf("      Program:\n");
     print_instruction_array(expression->program, expression->p_size);
     printf("\n");
-    printf("Environment:\n");
+    printf("      Environment:\n");
     if (expression->env != NULL)
     {
         print_env(expression->env);
     } else
     {
-        printf("NULL\n");
+        printf("       NULL\n");
     }
     
-    printf("Stack:\n");
+    printf("      Stack:\n");
     if (expression->stack != NULL)
     {
         print_stack(expression->stack);
     } else
     {
-        printf("NULL\n");
+        printf("       NULL\n");
     }
     printf("\n");
 }
 
 void print_map(const Map *map)
 {
-    printf("Map (attribute: %d):\n", map->attribute);
-    printf("Expression:\n");
+    printf("    Map (attribute: %d):\n", map->attribute);
+    printf("     Expression:\n");
     print_expression(map->expression);
 }
 
 void print_filter(const Filter *filter)
 {
-    printf("Filter:\n");
-    printf("Predicate:\n");
+    printf("    Filter:\n");
+    printf("     Predicate:\n");
     print_expression(filter->predicate);
 }
 
@@ -274,20 +274,20 @@ void print_window_size_type(WindowSizeType type)
 
 void print_window(Window *window)
 {
-    printf("Window:\n");
-    printf("size: %d\n", window->size);
+    printf("    Window:\n");
+    printf("     size: %d\n", window->size);
 
-    printf("sizeType: ");
+    printf("     sizeType: ");
     print_window_size_type(window->sizeType);
     printf("\n");
-    printf("aggregationType: ");
+    printf("     aggregationType: ");
     print_window_aggregation_type(window->aggregationType);
     printf("\n");
 
-    printf("startAttribute: %d\n", window->startAttribute);
-    printf("endAttribute: %d\n", window->endAttribute);
-    printf("resultAttribute: %d\n", window->resultAttribute);
-    printf("readAttribute: %d\n", window->readAttribute);
+    printf("     startAttribute: %d\n", window->startAttribute);
+    printf("     endAttribute: %d\n", window->endAttribute);
+    printf("     resultAttribute: %d\n", window->resultAttribute);
+    printf("     readAttribute: %d\n", window->readAttribute);
 }
 
 void print_operation(const Operation *operation)
@@ -295,29 +295,29 @@ void print_operation(const Operation *operation)
     switch (operation->unionCase)
     {
     case 0:
-        printf("Map operation:\n");
+        printf("   Map operation:\n");
         print_map(operation->operation.map);
         break;
     case 1:
-        printf("Filter operation:\n");
+        printf("   Filter operation:\n");
         print_filter(operation->operation.filter);
         break;
     case 2:
-        printf("Window operation:\n");
+        printf("   Window operation:\n");
         print_window(operation->operation.window);
         break;
     default:
-        printf("Unknown operation\n");
+        printf("   Unknown operation\n");
         break;
     }
 }
 
 void print_query(const Query *query)
 {
-    printf("Query (amount: %d):\n", query->amount);
+    printf(" Query (amount: %d):\n", query->amount);
     for (int i = 0; i < query->amount; i++)
     {
-        printf("Operation %d:\n", i + 1);
+        printf("  Operation %d:\n", i + 1);
         print_operation(&query->operations[i]);
     }
 }
@@ -327,7 +327,7 @@ void print_message(const Message *message)
     printf("Message (amount of queries: %d):\n", message->amount);
     for (int i = 0; i < message->amount; i++)
     {
-        printf("Query %d:\n", i + 1);
+        printf(" Query %d:\n", i + 1);
         print_query(&message->queries[i]);
     }
 }
