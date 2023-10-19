@@ -4,8 +4,7 @@
 #include "math.h"
 #include "log.h"
 
-
-
+#ifndef BOARD_NATIVE
 extern saul_reg_t *saul_reg;
 // apparently the sensors available are all populated in the registry. However since they are not standard part of the board, they need to be loaded through the module system
 // here the connection might change from the default value
@@ -14,6 +13,7 @@ static const char *sensor_names[] = SENSORS_ARRAY;
 static const uint8_t sensor_types[] = SENSORS_TYPES_ARRAY;
 
 static saul_reg_t *sensors[SENSORS_ARRAY_LENGTH];
+
 
 void sensors_print_available(void)
 {
@@ -94,3 +94,25 @@ bool sensors_collect_into_env(Env *env)
     }
     return true;
 }
+
+#else
+void sensors_print_available(void)
+{
+    printf("Running in native: No sensors available\n");
+}
+void sensors_print_enabled(void)
+{
+    printf("Running in native: No sensors enabled\n");
+}
+bool sensors_initialize_enabled(void)
+{
+    printf("Running in native: No sensors initialized\n");
+    return false;
+}
+bool sensors_collect_into_env(__attribute__((unused)) Env* env)
+{
+    
+    printf("Running in native: No sensors collected\n");
+    return false;
+}
+#endif
