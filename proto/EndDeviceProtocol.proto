@@ -2,19 +2,6 @@ syntax = "proto3";
 
 package EndDeviceProtocol;
 
-// enum DataTypes {
-//     INT8 = 0;
-//     UINT8 = 1;
-//     INT16 = 2;
-//     UINT16 = 3;
-//     INT32 = 4;
-//     UINT32 = 5;
-//     INT64 = 6;
-//     UINT64 = 7;
-//     FLOAT = 8;
-//     DOUBLE = 9;
-// }
-
 
 enum ExpressionInstructions {
     CONST = 0;
@@ -30,7 +17,18 @@ enum ExpressionInstructions {
     MUL = 10;
     DIV = 11;
     MOD = 12;
+    LOG = 13;
+    POW = 14;
+    SQRT = 15;
+    EXP = 16;
+    CEIL = 17;
+    FLOOR = 18;
+    ROUND = 19;
+    ABS = 20;
+    LTEQ = 21;
+    GTEQ = 22;
 }
+
 message Data {
     oneof data{
         ExpressionInstructions instruction = 1;
@@ -60,12 +58,12 @@ message Expression {
 }
 
 message MapOperation {
-    repeated Data function = 1;
+    Expression function = 1;
     int32 attribute = 2;
 }
 
 message FilterOperation {
-    repeated Data predicate = 1;
+    Expression predicate = 1;
 }
 
 enum WindowAggregationType {
@@ -98,7 +96,7 @@ message Operation {
     }
 }
 message Query {
-    //bytes resultType = 1; //For some reason minipb breaks if I make this a repeated enum or int32
+    //bytes resultType = 2; //For some reason minipb breaks if I make this a repeated enum or int32
     repeated Operation operations = 1;
     
 }

@@ -21,6 +21,16 @@ class ExpressionInstructions(betterproto.Enum):
     MUL = 10
     DIV = 11
     MOD = 12
+    LOG = 13
+    POW = 14
+    SQRT = 15
+    EXP = 16
+    CEIL = 17
+    FLOOR = 18
+    ROUND = 19
+    ABS = 20
+    LTEQ = 21
+    GTEQ = 22
 
 
 class WindowAggregationType(betterproto.Enum):
@@ -69,13 +79,13 @@ class Expression(betterproto.Message):
 
 @dataclass
 class MapOperation(betterproto.Message):
-    function: List["Data"] = betterproto.message_field(1)
+    function: "Expression" = betterproto.message_field(1)
     attribute: int = betterproto.int32_field(2)
 
 
 @dataclass
 class FilterOperation(betterproto.Message):
-    predicate: List["Data"] = betterproto.message_field(1)
+    predicate: "Expression" = betterproto.message_field(1)
 
 
 @dataclass
@@ -98,7 +108,7 @@ class Operation(betterproto.Message):
 
 @dataclass
 class Query(betterproto.Message):
-    # bytes resultType = 1; //For some reason minipb breaks if I make this a
+    # bytes resultType = 2; //For some reason minipb breaks if I make this a
     # repeated enum or int32
     operations: List["Operation"] = betterproto.message_field(1)
 

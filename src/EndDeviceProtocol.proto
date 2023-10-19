@@ -101,7 +101,7 @@ message Operation {
 }
 
 message Query {
-    bytes resultType = 2; //For some reason minipb breaks if I make this a repeated enum or int32
+    //bytes resultType = 2; //For some reason minipb breaks if I make this a repeated enum or int32
     repeated Operation operations = 1 [(nanopb).max_count = 3];   
 }
 
