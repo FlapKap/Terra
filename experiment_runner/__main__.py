@@ -10,18 +10,21 @@ import argparse
 from datetime import datetime
 from importlib import resources as impressources
 from typing import List
-from . import resources
-import tempfile
+import logging
+
 import regex
 import duckdb
 import aiomqtt
-import logging
+
+from experiment_runner import configuration
+
+from . import resources
+
 
 logging.basicConfig(level=logging.DEBUG)
 # import aiodebug.log_slow_callbacks
 
 # aiodebug.log_slow_callbacks.enable(2)
-from experiment_runner import configuration, nes_rest
 
 # import aiodebug.hang_inspection
 
@@ -68,7 +71,7 @@ DATA_FOLDER = EXPERIMENT_FOLDER / "data"
 EXPERIMENT_CONFIG_PATH = args.config
 CONFIG = configuration.configuration_from_json(EXPERIMENT_CONFIG_PATH.read_text())
 
-assert all([node.site for node in CONFIG.nodes])  # make sure all nodes have a site
+assert all(node.site for node in CONFIG.nodes)  # make sure all nodes have a site
 SITES: set[str] = {node.site for node in CONFIG.nodes}  # type: ignore[misc] # we know after this that all nodes have a site
 USER = CONFIG.user
 NODES_BY_SITE = {
@@ -80,7 +83,7 @@ SRC_PATH = Path.cwd() / "src"
 
 # make firmwares
 def make_and_assign_firmware(node: configuration.Node):
-    logging.info(f"make firmware for device: {node.deveui}")
+    logging.info("make firmware for device: %s", node.deveui)
     env = os.environ.copy()
     env["BOARD"] = node.riot_board
     env["DEVEUI"] = node.deveui
@@ -90,10 +93,10 @@ def make_and_assign_firmware(node: configuration.Node):
         env["SENSOR_NAMES"] = " ".join([sensor.name for sensor in node.sensors])
         env["SENSOR_TYPES"] = " ".join([sensor.type for sensor in node.sensors])
 
-    p = subprocess.run(["make", "all"], cwd=SRC_PATH, env=env)
+    p = subprocess.run(["make", "all"], cwd=SRC_PATH, env=env, check=True)
     ## find flash file
     p = subprocess.run(
-        ["make", "info-build-json"], cwd=SRC_PATH, env=env, capture_output=True
+        ["make", "info-build-json"], cwd=SRC_PATH, env=env, capture_output=True, check=True
     )
     build_info = json.loads(p.stdout)
     flash_file = Path(build_info["FLASHFILE"])
@@ -114,11 +117,11 @@ def find_and_assign_all_firmware(nodes: List[configuration.Node]):
                 node.firmware_path = firmware_path
 
 
-def has_prerequisites(prerequisites=["iotlab", "parallel", "ssh", "scp"]):
+def has_prerequisites(prerequisites=("iotlab", "parallel", "ssh", "scp")):
     for prerequisite in prerequisites:
         if not which(prerequisite):
             logging.error(
-                f"{prerequisite} not installed. Please install {prerequisite}"
+                "%s not installed. Please install %s", prerequisite, prerequisite
             )
             return False
     return True
@@ -157,10 +160,10 @@ async def register_experiment(nodes: List[configuration.Node]) -> int:
     stdout, _ = await p.communicate()
     exp_id = int(json.loads(stdout.decode("utf-8")).get("id"))
     if exp_id != None:
-        logging.info(f"successfully registered experiment! Got id {exp_id}")
+        logging.info("successfully registered experiment! Got id %s", exp_id)
         return exp_id
     else:
-        logging.error(f"Failed to create experiment. Error: {stdout}")
+        logging.error("Failed to create experiment. Error: %s", stdout)
         exit()
 
 
@@ -168,10 +171,10 @@ async def upload_firmware(node: configuration.Node):
     global EXPERIMENT_ID
     # check node contains info we need
     if node.firmware_path is None:
-        logging.error(f"Node {node.deveui} has no firmware")
+        logging.error("Node %s has no firmware", node.deveui)
         return
     if node.node_string_by_id is None or "":
-        logging.error(f"Node {node.deveui} has no node string")
+        logging.error("Node %s has no node string", node.deveui)
         return
 
     p = await asyncio.create_subprocess_exec(
@@ -189,7 +192,7 @@ async def upload_firmware(node: configuration.Node):
 
     ## check to see if we succeeded
     if not json.loads(stdout.decode("utf-8"))["0"][0] == node.network_address:
-        logging.error(f"Upload failed for node {node.deveui}")
+        logging.error("Upload failed for node %s", node.deveui)
 
     # stop node after upload
     p = await asyncio.create_subprocess_exec(
@@ -204,8 +207,8 @@ async def upload_firmware(node: configuration.Node):
     )
     stdout, _ = await p.communicate()
     if not json.loads(stdout.decode("utf-8"))["0"][0] == node.network_address:
-        logging.error(f"Stop failed for node {node.deveui}")
-        exit()
+        logging.error("Stop failed for node %s", node.deveui)
+        sys.exit()
 
 
 async def serial_aggregation_coroutine(
@@ -337,7 +340,7 @@ async def mqtt_collect_coroutine(db_con: duckdb.DuckDBPyConnection):
         ) as client:
             async with client.messages() as messages:
                 await client.subscribe(CONFIG.mqtt.topic, qos=2)
-                logging.info(f"subscribed to topic {CONFIG.mqtt.topic}")
+                logging.info("subscribed to topic %s", CONFIG.mqtt.topic)
 
                 async for msg in messages:
                     # print(msg.topic, msg.payload.decode("utf-8"))
@@ -879,7 +882,7 @@ async def find_latest_running_experiment():
 
     running_experiments = json.loads(out_decoded)["Running"]
     logging.info(
-        f"Found {len(running_experiments)} running experiments: {running_experiments}"
+        "Found %s running experiments: %s", len(running_experiments), running_experiments
     )
     return sorted(running_experiments)[-1]
 
@@ -917,10 +920,28 @@ def populate_power_consumption_table_from_file(
     # rows = []
     node = next(filter(lambda node: node.oml_name == file_path.name, nodes))
     if node is None:
-        logging.error(f"Could not find node for {file_path.name}")
+        logging.error("Could not find node for %s", file_path.name)
         return
-    oml =db_con.read_csv(file_path, skiprows=9,names=["exp_runtime", "schema", "cnmc", "timestamp_s", "timestamp_us", "power", "voltage", "current"])
-    db_con.execute(f"WITH PC AS (SELECT '{node.deveui}' as node_id, make_timestamp(timestamp_s * 1000000 + timestamp_us) as timestamp, current, power, voltage FROM oml) INSERT INTO Power_Consumption BY NAME SELECT * from PC")
+    
+    # oml is used through some magic in the following db_con.execute call
+    # pylint: disable=unused-variable
+    oml = db_con.read_csv(
+        file_path,
+        skiprows=9,
+        names=[
+            "exp_runtime",
+            "schema",
+            "cnmc",
+            "timestamp_s",
+            "timestamp_us",
+            "power",
+            "voltage",
+            "current",
+        ],
+    )
+    db_con.execute(
+        f"WITH PC AS (SELECT '{node.deveui}' as node_id, make_timestamp(timestamp_s * 1000000 + timestamp_us) as timestamp, current, power, voltage FROM oml) INSERT INTO Power_Consumption BY NAME SELECT * from PC"
+    )
     # matcher = regex.compile(
     #     r"^(?P<exp_runtime>\d+(\.\d*)?)\s+(?P<schema>\d+)\s+(?P<cnmc>\d+)\s+(?P<timestamp_s>\d+)\s+(?P<timestamp_us>\d+)\s+(?P<power>\d+(\.\d*)?)\s+(?P<voltage>\d+(\.\d*)?)\s+(?P<current>\d+(\.\d*)?)$"
     # )
@@ -995,7 +1016,8 @@ async def main():
 
     if not await has_passwordless_ssh_access(USER, "saclay.iot-lab.info"):
         logging.error(
-            "Passwordless SSH access to the ssh front-end is required.\ncant log in to %s@saclay.iot-lab.info without password. Check if ssh-agent is running and if not run 'eval $(ssh-agent);ssh-add' to start the agent and add your key", USER
+            "Passwordless SSH access to the ssh front-end is required.\ncant log in to %s@saclay.iot-lab.info without password. Check if ssh-agent is running and if not run 'eval $(ssh-agent);ssh-add' to start the agent and add your key",
+            USER,
         )
         sys.exit(0)
 
@@ -1009,12 +1031,12 @@ async def main():
         logging.info("Attaching to latest running experiment...")
         EXPERIMENT_ID = await find_latest_running_experiment()
 
-    logging.info(f"Waiting for experiment {EXPERIMENT_ID} to start")
+    logging.info("Waiting for experiment %s to start", EXPERIMENT_ID)
     # find experiment
     await wait_for_experiment_to_start()
 
     db_path = EXPERIMENT_FOLDER / f"{EXPERIMENT_ID}.duckdb"
-    logging.info(f"Create DuckDB for experiment data at {str(db_path)}")
+    logging.info("Create DuckDB for experiment data at %s", db_path)
     # Check if file already exists
     if db_path.exists():
         answer = input(
@@ -1070,7 +1092,7 @@ async def main():
 
     logging.info("download data folders from each site")
     for site, nodes in NODES_BY_SITE.items():
-        logging.info(f"downloading data from {site}")
+        logging.info("downloading data from %s", site)
         await download_data_folder(site, DATA_FOLDER / str(EXPERIMENT_ID))
 
     logging.info("populate traces in db from serial output file from each site")
@@ -1087,7 +1109,7 @@ async def main():
         )
         for oml_file in oml_files:
             logging.info(
-                f"populating power consumption measurements from {oml_file} from site {site}"
+                "populating power consumption measurements from %s from site %s", oml_file, site
             )
             populate_power_consumption_table_from_file(db_con, CONFIG.nodes, oml_file)
 
