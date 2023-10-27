@@ -16,9 +16,9 @@ $(error "Number of SENSOR_NAMES and SENSOR_TYPES must be the same")
 endif
 
 ## EXECUTE INTERVAL
-EXECUTION_EPOCH_S ?= 20
+EXECUTION_EPOCH_S ?= 5
 ## LORA
-DISABLE_LORA ?= 1
+DISABLE_LORA ?= 0
 ACTIVATION_MODE ?= otaa # only otaa is supported
 LORA_REGION ?= EU868
 APPEUI ?= 0000000000000000
@@ -71,7 +71,7 @@ PROTOBUF_PATH = $(CURDIR)/proto
 
 ## Timer stuff
 USEMODULE += ztimer
-USEMODULE += ztimer_sec
+#USEMODULE += ztimer_sec
 USEMODULE += ztimer_msec
 
 # features

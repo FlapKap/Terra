@@ -63,8 +63,22 @@ int lorawan_initialize_lorawan(void)
 {
     /* Convert identifiers and keys strings to byte arrays */
     size_t deveui_size = fmt_hex_bytes(deveui, CONFIG_LORAMAC_DEV_EUI_DEFAULT);
+    if (deveui_size == 0)
+    {
+        LOG_ERROR("deveui_size 0 indicating no dev eui\n");
+        return -1;
+    }
     size_t appeui_size = fmt_hex_bytes(appeui, CONFIG_LORAMAC_APP_EUI_DEFAULT);
+    if (appeui_size == 0)
+    {
+        LOG_ERROR("appeui_size 0 indicating no app eui\n");
+        return -1;
+    }
     size_t appkey_size = fmt_hex_bytes(appkey, CONFIG_LORAMAC_APP_KEY_DEFAULT);
+    if (appkey_size == 0)
+    {
+        LOG_ERROR("appkey_size 0 indicating no app key\n");
+    }
     semtech_loramac_set_deveui(&loramac, deveui);
     semtech_loramac_set_appeui(&loramac, appeui);
     semtech_loramac_set_appkey(&loramac, appkey);
@@ -72,29 +86,25 @@ int lorawan_initialize_lorawan(void)
     /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
     semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
 
-    // if any of deveui_size, appeui_size, or appkey_size is zero, return -1
-    if (deveui_size == 0 || appeui_size == 0 || appkey_size == 0)
-    {
-        return -1;
-    }
-    else
-    {
-        return 0;
-    }
+    return 0;
 }
+
 void lorawan_print_connection_info(void)
-{
-    char deveui[17] = "";
-    char appeui[17] = "";
-    char appkey[33] = "";
-    fmt_bytes_hex(deveui, loramac.deveui, LORAMAC_DEVEUI_LEN);
-    fmt_bytes_hex(appeui, loramac.appeui, LORAMAC_APPEUI_LEN);
-    fmt_bytes_hex(appkey, loramac.appkey, LORAMAC_APPKEY_LEN);
+{   
+    // ignoring the bounds-checking errors here. The length of the arrays should be
+    // the length of their corresponding bytelengths * 2 + 1 for null termination.
+    // This is ensured by the macros.
+    char deveui_str[LORAMAC_DEVEUI_LEN*2+1] = ""; /* Flawfinder: ignore */
+    char appeui_str[LORAMAC_DEVEUI_LEN*2+1] = ""; /* Flawfinder: ignore */
+    char appkey_str[LORAMAC_APPKEY_LEN*2+1] = ""; /* Flawfinder: ignore */
+    fmt_bytes_hex(deveui_str, loramac.deveui, LORAMAC_DEVEUI_LEN);
+    fmt_bytes_hex(appeui_str, loramac.appeui, LORAMAC_DEVEUI_LEN);
+    fmt_bytes_hex(appkey_str, loramac.appkey, LORAMAC_APPKEY_LEN);
     
     printf("LoRaWAN Connection info:\n");
-    printf("  Device EUI: %s\n", deveui);
-    printf("  Application EUI: %s\n", appeui);
-    printf("  Application Key: %s\n", appkey);
+    printf("  Device EUI: %s\n", deveui_str);
+    printf("  Application EUI: %s\n", appeui_str);
+    printf("  Application Key: %s\n", appkey_str);
 }
 
 int lorawan_connect_lorawan(void)

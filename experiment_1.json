@@ -1,0 +1,38 @@
+{
+    "USER": "berthels",
+    "DURATION": "5",
+    "MQTT": {
+        "ADDRESS": "eu1.cloud.thethings.network",
+        "PORT": 1883,
+        "USERNAME": "nes-test-application@ttn",
+        "PASSWORD": "",
+        "TOPIC": "v3/nes-test-application@ttn/devices/#"
+    },
+    "NODES": [
+        {
+            "TTN_DEVICE_ID": "eui-70b3d57ed005e88a",
+            "PROFILE": "stm32Profile",
+            "RIOT_BOARD": "b-l072z-lrwan1",
+            "IOT-LAB_BOARD_ID": "st-lrwan1",
+            "IOT-LAB_RADIO_CHIPSET": "sx1276",
+            "DEVEUI": "70B3D57ED005E88A",
+            "APPKEY": "385794DDE70CE2EAB5B5B12A4807822C",
+            "APPEUI": "0000000000000000",
+            "SITE": "saclay",
+            "SENSORS": [
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_TEMP"
+                },
+                {
+                    "NAME": "hts221",
+                    "TYPE": "SAUL_SENSE_HUM"
+                },
+                {
+                    "NAME": "lps22hb",
+                    "TYPE": "SAUL_SENSE_PRESS"
+                }
+            ]
+        }
+    ]
+}

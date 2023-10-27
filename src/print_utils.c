@@ -349,5 +349,6 @@ void print_output_message(const OutputMessage *message)
     {
         printf("Response %d:\n", i + 1);
         print_query_response(&message->responses[i]);
+        printf("\n");
     }
 }

@@ -39,11 +39,17 @@ static inline void toggle_all_leds(void){
     LED6_TOGGLE;
     LED7_TOGGLE;
 }
+/**
+ * @brief Runs a single blink where it turns all LED's on for BIT_SPEED_MS and then off for BIT_SPEED_MS.
+ * This function takes 2*BIT_SPEED_MS to run
+ * @param  
+ */
 void play_single_blink(void){
     LOG_INFO("Running single blink...");
     turn_all_leds_on();
     ztimer_sleep(ZTIMER_MSEC, BIT_SPEED_MS);
     turn_all_leds_off();
+    ztimer_sleep(ZTIMER_MSEC, BIT_SPEED_MS);
 }
 
 void play_syncword(void){

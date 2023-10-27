@@ -1,15 +1,16 @@
 {
     "USER": "berthels",
-    "DURATION": "20",
+    "DURATION": "5",
     "MQTT": {
         "ADDRESS": "eu1.cloud.thethings.network",
         "PORT": 1883,
         "USERNAME": "nes-test-application@ttn",
-        "PASSWORD": "NNSXS.QW3XBWWNAGDILLNQLA5HPCUKKYSLZFKS6CPL52Q.E2I52NDBCG7FOLR6ZEGWQQ5VMOJAX7ZL6CZ44OLJWETDVOV6I5WA",
+        "PASSWORD": "",
         "TOPIC": "v3/nes-test-application@ttn/devices/#"
     },
     "NODES": [
         {
+            "TTN_DEVICE_ID": "eui-70b3d57ed005e88a",
             "PROFILE": "stm32Profile",
             "RIOT_BOARD": "b-l072z-lrwan1",
             "IOT-LAB_BOARD_ID": "st-lrwan1",
@@ -35,6 +36,7 @@
             ]
         },
         {
+            "TTN_DEVICE_ID": "eui-70b3d57ed005ea55",
             "PROFILE": "stm32Profile",
             "RIOT_BOARD": "b-l072z-lrwan1",
             "IOT-LAB_BOARD_ID": "st-lrwan1",
@@ -60,6 +62,7 @@
             ]
         },
         {
+            "TTN_DEVICE_ID": "eui-70b3d57ed005ea56",
             "PROFILE": "stm32Profile",
             "RIOT_BOARD": "b-l072z-lrwan1",
             "IOT-LAB_BOARD_ID": "st-lrwan1",
@@ -85,6 +88,7 @@
             ]
         },
         {
+            "TTN_DEVICE_ID": "eui-70b3d57ed005ea57",
             "PROFILE": "stm32Profile",
             "RIOT_BOARD": "b-l072z-lrwan1",
             "IOT-LAB_BOARD_ID": "st-lrwan1",
@@ -110,6 +114,7 @@
             ]
         },
         {
+            "TTN_DEVICE_ID": "eui-70b3d57ed005ea59",
             "PROFILE": "stm32Profile",
             "RIOT_BOARD": "b-l072z-lrwan1",
             "IOT-LAB_BOARD_ID": "st-lrwan1",
