@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS Uplink_Message (
     gateway_received_at TIMESTAMP,
     app_received_at TIMESTAMP NOT NULL,
     rssi INTEGER NOT NULL,
-    snr INTEGER NOT NULL,
+    snr INTEGER,
     bandwidth INTEGER NOT NULL,
     frequency INTEGER NOT NULL,
     consumed_airtime_s REAL NOT NULL,
