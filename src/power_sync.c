@@ -45,7 +45,7 @@ static inline void toggle_all_leds(void){
  * @param  
  */
 void play_single_blink(void){
-    LOG_INFO("Running single blink...");
+    LOG_INFO("Running single blink...\n");
     turn_all_leds_on();
     ztimer_sleep(ZTIMER_MSEC, BIT_SPEED_MS);
     turn_all_leds_off();
@@ -53,7 +53,7 @@ void play_single_blink(void){
 }
 
 void play_syncword(void){
-    LOG_INFO("Running sync word...");
+    LOG_INFO("Running sync word...\n");
     for (size_t i = 0; i < (sizeof(BLINK) / sizeof(BLINK[0])); i++)
     {
         if (BLINK[i])
