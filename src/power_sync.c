@@ -29,7 +29,7 @@ static inline void turn_all_leds_off(void){
     LED7_OFF;
 }
 
-static inline void toggle_all_leds(void){
+__attribute__((unused)) static inline void toggle_all_leds(void){
     LED0_TOGGLE;
     LED1_TOGGLE;
     LED2_TOGGLE;

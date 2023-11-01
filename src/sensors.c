@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include "sensors.h"
 #include "environment.h"
 #include "stdio.h"
@@ -63,7 +64,7 @@ bool sensors_collect_into_env(Env *env)
             {
                 num.type._uint32 = (uint32_t)val;
                 num.unionCase = NUMBER_UINT32;
-                LOG_DEBUG("Read value %lu from Sensor %s. Saving in env position %d\n", (uint32_t)val, sensors[i]->name, i);
+                LOG_DEBUG("Read value %" PRIu32 " from Sensor %s. Saving in env position %d\n", (uint32_t)val, sensors[i]->name, i);
             }
             else
             {

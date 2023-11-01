@@ -59,7 +59,7 @@ void copy_instruction_to_number(Instruction *src, Number *dest)
 
 Number bin_op(Number n1, Number n2, ExpressionInstruction op)
 {
-    Number result;
+    Number result = { 0 };
     switch (op)
     {
     case ADD:
@@ -748,7 +748,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
 
 Number un_op(Number number, ExpressionInstruction op)
 {
-    Number result;
+    Number result = { 0 };
     double value = 0.0;
 
     // Extract the value from the Number union
