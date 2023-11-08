@@ -104,15 +104,15 @@ int main(void)
     ztimer_stopwatch_reset(&stopwatch);
     ztimer_stopwatch_reset(&loop_stopwatch);
     play_single_blink();
-    uint32_t sync_word_time = ztimer_stopwatch_reset(&stopwatch);
+    uint32_t sync_word_time_ms = ztimer_stopwatch_reset(&stopwatch);
     msg = network_get_message();
-    uint32_t listen_time = ztimer_stopwatch_reset(&stopwatch);
+    uint32_t listen_time_ms = ztimer_stopwatch_reset(&stopwatch);
     // Collect measurements
     LOG_INFO("collecting measurements...\n");
 
     ztimer_stopwatch_reset(&stopwatch);
     sensors_collect_into_env(global_env);
-    uint32_t sensor_collect_time = ztimer_stopwatch_reset(&stopwatch);
+    uint32_t sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
     // Execute queries
     OutputMessage out = {0};
@@ -120,7 +120,7 @@ int main(void)
     // play_syncword();
     ztimer_stopwatch_reset(&stopwatch);
     executeQueries(msg, &out, global_env);
-    uint32_t exec_time = ztimer_stopwatch_reset(&stopwatch);
+    uint32_t exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
     
     LOG_INFO("Sending Responses if any...\n");
     if (out.amount > 0)
@@ -131,11 +131,14 @@ int main(void)
     {
       network_send_heartbeat();
     }
-    uint32_t send_time = ztimer_stopwatch_reset(&stopwatch);
+    uint32_t send_time_ms = ztimer_stopwatch_reset(&stopwatch);
     // figure out how long the iteration took and sleep for the remaining time
-    uint32_t end_time = ztimer_stopwatch_reset(&loop_stopwatch);
+    uint32_t end_time_ms = ztimer_stopwatch_reset(&loop_stopwatch);
+    int sleep_time_ms_tmp = timeout_s - (end_time_ms / 1000);
+    uint32_t sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
     LOG_INFO("Done with everything! Playing sync_word!\n");
     play_single_blink();
+
     LOG_INFO(
         "TIMINGS> Loop: %" PRIu32 ", "
         "Sync: %" PRIu32 " ms, "
@@ -143,20 +146,19 @@ int main(void)
         "Collect: %" PRIu32 " ms, "
         "Exec: %" PRIu32 " ms, "
         "Send: %" PRIu32 " ms, "
+        "Sleep: %" PRIu32 " ms, "
         "Total: %" PRIu32 " ms\n",
         loop_counter,
-        sync_word_time,
-        listen_time,
-        sensor_collect_time,
-        exec_time,
-        send_time,
-        end_time
+        sync_word_time_ms,
+        listen_time_ms,
+        sensor_collect_time_ms,
+        exec_time_ms,
+        send_time_ms,
+        sleep_time_ms,
+        end_time_ms
         );
 
-    int sleep_time_tmp = timeout_s - (end_time / 1000);
-    uint32_t sleep_time = MAX(sleep_time_tmp, 0);
-    LOG_INFO("Sleeping for %" PRIu32 " seconds\n", sleep_time);
-    ztimer_sleep(ZTIMER_MSEC, sleep_time*1000);
+    ztimer_sleep(ZTIMER_MSEC, sleep_time_ms*1000);
 
     ++loop_counter;
   }
