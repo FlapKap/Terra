@@ -7,5 +7,5 @@ echo "Launch serial_aggregator with exp_id==${EXP_ID}" >&2
 while true
 do
     serial_aggregator -i ${EXP_ID} 2> /dev/null 1> ${OUTFILE}
-    sleep 0.1
+    sleep 0.01
 done

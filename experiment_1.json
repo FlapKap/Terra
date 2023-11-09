@@ -1,11 +1,11 @@
 {
     "USER": "berthels",
-    "DURATION": "5",
+    "DURATION": "15",
     "MQTT": {
         "ADDRESS": "eu1.cloud.thethings.network",
         "PORT": 1883,
         "USERNAME": "nes-test-application@ttn",
-        "PASSWORD": "",
+        "PASSWORD": "NNSXS.QW3XBWWNAGDILLNQLA5HPCUKKYSLZFKS6CPL52Q.E2I52NDBCG7FOLR6ZEGWQQ5VMOJAX7ZL6CZ44OLJWETDVOV6I5WA",
         "TOPIC": "v3/nes-test-application@ttn/devices/#"
     },
     "NODES": [

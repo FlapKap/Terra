@@ -123,9 +123,9 @@ int lorawan_connect_lorawan(void)
             LOG_WARNING("Join procedure failed. Trying again\n");
         }
     }
-    LOG_INFO("Join procedure succeeded");
+    LOG_INFO("Join procedure succeeded\n");
     // semtech_loramac_save();
-    LOG_INFO("creating recv thread");
+    LOG_INFO("creating recv thread\n");
     thread_create(_recv_stack, sizeof(_recv_stack),
                   THREAD_PRIORITY_MAIN - 1, 0, _recv, NULL, "recv thread");
     // printf("ret: %d\n", ret);

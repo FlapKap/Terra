@@ -3,7 +3,7 @@
 #include "led.h"
 #include "log.h"
 static int BIT_SPEED_MS = 200;
-
+static int WAIT_SPEED_MS = 100;
 //static bool BARKER11[] = {true, true, true, false, false, false, true, false, false, true, false};
 static bool BLINK[] = {true, false, true, false, true, false, true, false, true, false, true, false};
 
@@ -46,10 +46,11 @@ __attribute__((unused)) static inline void toggle_all_leds(void){
  */
 void play_single_blink(void){
     LOG_INFO("Running single blink...\n");
+    ztimer_sleep(ZTIMER_MSEC, WAIT_SPEED_MS);
     turn_all_leds_on();
     ztimer_sleep(ZTIMER_MSEC, BIT_SPEED_MS);
     turn_all_leds_off();
-    ztimer_sleep(ZTIMER_MSEC, BIT_SPEED_MS);
+    ztimer_sleep(ZTIMER_MSEC, WAIT_SPEED_MS);
 }
 
 void play_syncword(void){

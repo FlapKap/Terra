@@ -86,6 +86,7 @@ else
 
 CFLAGS += -g3 -O0 # unoptimized and with debug symbols
 CFLAGS += -Wall -Werror -Wextra -Wformat -Wformat-nonliteral -Werror=format-security -Werror=array-bounds -Wpedantic # extra warnings
+CFLAGS += -DDEBUG_ASSERT_VERBOSE # enable verbose asserts
 DEVELHELP ?= 1 # development helpers
 CREATE_STACKTEST ?= 1 # check stacksizes
 endif
@@ -100,6 +101,7 @@ endif
 ifeq ($(strip $(BOARD)),native)
 DISABLE_LORA ?= 1
 else
+## add configured sensors
 USEMODULE += $(sort $(SENSOR_NAMES))
 CFLAGS += -DSENSORS_ARRAY=$(SENSORS_ARRAY) -DSENSORS_ARRAY_LENGTH=$(SENSORS_ARRAY_LENGTH) -DSENSORS_TYPES_ARRAY=$(SENSORS_TYPES_ARRAY)
 DISABLE_LORA ?= 0
@@ -121,6 +123,7 @@ USEMODULE += $(DRIVER)
 USEPKG += semtech-loramac
 USEMODULE += auto_init_loramac
 USEMODULE += semtech_loramac_rx
+FEATURES_REQUIRED += periph_rtt # needed for loramac
 endif
 
 

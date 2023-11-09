@@ -93,7 +93,7 @@ int main(void)
   LOG_DEBUG("Startup done. Timings: sensor init: %" PRIu32 " ms, env init: %" PRIu32 " ms, net init: %" PRIu32 " ms\n", sensor_init_time, env_init_time, net_init_time);
 
   // main loop
-  const int timeout_s = EXECUTION_EPOCH_S;
+  const int timeout_ms = EXECUTION_EPOCH_S*1000;
   ztimer_stopwatch_t loop_stopwatch;
   ztimer_stopwatch_init(ZTIMER_MSEC, &loop_stopwatch);
   ztimer_stopwatch_start(&loop_stopwatch);
@@ -134,7 +134,7 @@ int main(void)
     uint32_t send_time_ms = ztimer_stopwatch_reset(&stopwatch);
     // figure out how long the iteration took and sleep for the remaining time
     uint32_t end_time_ms = ztimer_stopwatch_reset(&loop_stopwatch);
-    int sleep_time_ms_tmp = timeout_s - (end_time_ms / 1000);
+    int sleep_time_ms_tmp = timeout_ms - end_time_ms;
     uint32_t sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
     LOG_INFO("Done with everything! Playing sync_word!\n");
     play_single_blink();
