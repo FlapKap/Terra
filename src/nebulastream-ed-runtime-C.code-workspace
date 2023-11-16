@@ -5,30 +5,7 @@
 		},
 		{
 			"path": "../../RIOT"
-		},
-		{
-			"path": "../.."
 		}
 	],
-	"settings": {
-		"files.associations": {
-			"environment.h": "c",
-			"expression.h": "c",
-			"expressiontests.h": "c",
-			"runtest.h": "c",
-			"embunit.h": "c",
-			"protocoltests.h": "c",
-			"encodeinput.h": "c",
-			"protocol_tests.h": "c",
-			"power_sync.h": "c",
-			"debug.h": "c",
-			"*.inc": "c",
-			"number.h": "c",
-			"__locale": "c",
-			"semtech_loramac.h": "c",
-			"stack.h": "c",
-			"fmt.h": "c",
-			"log.h": "c"
-		}
-	}
+	"settings": {}
 }

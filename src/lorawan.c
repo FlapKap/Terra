@@ -63,22 +63,12 @@ int lorawan_initialize_lorawan(void)
 {
     /* Convert identifiers and keys strings to byte arrays */
     size_t deveui_size = fmt_hex_bytes(deveui, CONFIG_LORAMAC_DEV_EUI_DEFAULT);
-    if (deveui_size == 0)
-    {
-        LOG_ERROR("deveui_size 0 indicating no dev eui\n");
-        return -1;
-    }
+    assert(deveui_size > 0); // if deveui is 0 then it is not set
     size_t appeui_size = fmt_hex_bytes(appeui, CONFIG_LORAMAC_APP_EUI_DEFAULT);
-    if (appeui_size == 0)
-    {
-        LOG_ERROR("appeui_size 0 indicating no app eui\n");
-        return -1;
-    }
+    assert(appeui_size > 0); // if appeui is 0 then it is not set
     size_t appkey_size = fmt_hex_bytes(appkey, CONFIG_LORAMAC_APP_KEY_DEFAULT);
-    if (appkey_size == 0)
-    {
-        LOG_ERROR("appkey_size 0 indicating no app key\n");
-    }
+    assert(appkey_size > 0); // if appkey is 0 then it is not set
+    
     semtech_loramac_set_deveui(&loramac, deveui);
     semtech_loramac_set_appeui(&loramac, appeui);
     semtech_loramac_set_appkey(&loramac, appkey);
