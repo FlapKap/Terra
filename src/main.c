@@ -54,11 +54,12 @@ int main(void)
 }
 #else
 
-Message msg;
+Message* msg;
 bool valid_msg = false;
 
 // tracking stuff
-ztimer_stopwatch_t stopwatch = {0};
+ztimer_stopwatch_t stopwatch = { 0 };
+ztimer_stopwatch_t loop_stopwatch = { 0 };
 uint32_t loop_counter = 0;
 
 /**
@@ -68,10 +69,10 @@ uint32_t loop_counter = 0;
 int main(void)
 {
   ztimer_stopwatch_init(ZTIMER_MSEC, &stopwatch);
-
+  ztimer_stopwatch_init(ZTIMER_MSEC, &loop_stopwatch);
   LOG_INFO("Terra (Build Date: %s, Time of Build: %s)\n", __DATE__, __TIME__);
   LOG_INFO("=====================================\n");
-
+  LOG_INFO("Configured with duration: %" PRIiLEAST16 " seconds\n", EXECUTION_EPOCH_S);
   ztimer_stopwatch_start(&stopwatch);
   sensors_initialize_enabled();
   uint32_t sensor_init_time = ztimer_stopwatch_measure(&stopwatch);
@@ -93,9 +94,9 @@ int main(void)
   LOG_DEBUG("Startup done. Timings: sensor init: %" PRIu32 " ms, env init: %" PRIu32 " ms, net init: %" PRIu32 " ms\n", sensor_init_time, env_init_time, net_init_time);
 
   // main loop
-  const int timeout_ms = EXECUTION_EPOCH_S*1000;
-  ztimer_stopwatch_t loop_stopwatch;
-  ztimer_stopwatch_init(ZTIMER_MSEC, &loop_stopwatch);
+  const uint32_t timeout_ms = EXECUTION_EPOCH_S*1000;
+
+  
   ztimer_stopwatch_start(&loop_stopwatch);
 
   while (1)
@@ -158,7 +159,7 @@ int main(void)
         end_time_ms
         );
 
-    ztimer_sleep(ZTIMER_MSEC, sleep_time_ms*1000);
+    ztimer_sleep(ZTIMER_MSEC, sleep_time_ms);
 
     ++loop_counter;
   }

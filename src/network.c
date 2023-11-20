@@ -97,9 +97,9 @@ bool network_has_valid_message(void){
   return message.amount > 0;
 }
 
-Message network_get_message(void){
+Message* network_get_message(void){
   receive_and_decode(); //TODO: utilize the _recv thread msg queue to only update message when new message has actually been received
-  return message;
+  return &message;
 }
 
 bool network_send_message(OutputMessage msg){
@@ -114,7 +114,8 @@ bool network_send_message(OutputMessage msg){
 }
 
 bool network_send_heartbeat(void){
-  return lorawan_send_message((uint8_t[]){'<','3'}, 2);
+  static uint8_t heart[] = {'<','3'}; 
+  return lorawan_send_message(heart, 2);
 }
 
 #endif

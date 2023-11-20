@@ -619,7 +619,7 @@ static void og_test_execute_query_with_result(void)
 
   // Action
   QueryResponse queryRes;
-  executeQuery(query, &queryRes, expres.env);
+  executeQuery(&query, &queryRes, expres.env);
 
   // Assert
   TEST_ASSERT(NUMBER_INT == expres.env->stack->stack[0].unionCase);
@@ -674,7 +674,7 @@ static void og_test_execute_query_without_result(void)
 
   // Action
   QueryResponse output;
-  executeQuery(query, &output, env);
+  executeQuery(&query, &output, env);
 
   // Assert
   TEST_ASSERT(NUMBER_INT == env->stack->stack[0].unionCase);
@@ -712,7 +712,7 @@ static void og_test_execute_quries_single_result(void)
 
   // Action
   OutputMessage output;
-  executeQueries(msg, &output, expres.env);
+  executeQueries(&msg, &output, expres.env);
 
   // Assert
   TEST_ASSERT(NUMBER_INT == expres.env->stack->stack[0].unionCase);
@@ -793,7 +793,7 @@ static void og_test_execute_quries_multiple_results(void)
 
   // Action
   OutputMessage output;
-  executeQueries(msg, &output, env);
+  executeQueries(&msg, &output, env);
 
   // Assert
   TEST_ASSERT_EQUAL_INT(2, output.amount);
