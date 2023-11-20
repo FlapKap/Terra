@@ -85,6 +85,7 @@ SRC_PATH = Path.cwd() / "src"
 def make_and_assign_firmware(node: configuration.Node):
     logging.info("make firmware for device: %s", node.deveui)
     env = os.environ.copy()
+    env["EXECUTION_EPOCH_S"] = str(CONFIG.execution_epoch_s)
     env["BOARD"] = node.riot_board
     env["DEVEUI"] = node.deveui
     env["APPEUI"] = node.appeui

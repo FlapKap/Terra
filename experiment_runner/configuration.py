@@ -181,22 +181,25 @@ class Configuration:
     user: str
     duration: int
     mqtt: Mqtt
+    execution_epoch_s: int
     nodes: List[Node]
 
     @staticmethod
     def from_dict(obj: Any) -> 'Configuration':
         assert isinstance(obj, dict)
         user = from_str(obj.get("USER"))
-        duration = int(from_str(obj.get("DURATION")))
+        duration = from_int(obj.get("DURATION"))
         mqtt = Mqtt.from_dict(obj.get("MQTT"))
+        execution_epoch_s = from_int(obj.get("EXECUTION_EPOCH_S"))
         nodes = from_list(Node.from_dict, obj.get("NODES"))
-        return Configuration(user, duration, mqtt, nodes)
+        return Configuration(user, duration, mqtt, execution_epoch_s, nodes)
 
     def to_dict(self) -> dict:
         result = {
             "USER": from_str(self.user),
-            "DURATION": from_str(str(self.duration)),
+            "DURATION": from_int(self.duration),
             "MQTT": to_class(Mqtt, self.mqtt),
+            "EXECUTION_EPOCH_S": from_int(self.execution_epoch_s),
             "NODES": from_list(lambda x: to_class(Node, x), self.nodes)
         }
         return result

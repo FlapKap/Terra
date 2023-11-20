@@ -1,6 +1,7 @@
 {
     "USER": "berthels",
-    "DURATION": "15",
+    "DURATION": 5,
+    "EXECUTION_EPOCH_S": 20,
     "MQTT": {
         "ADDRESS": "eu1.cloud.thethings.network",
         "PORT": 1883,
