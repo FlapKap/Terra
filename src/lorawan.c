@@ -62,12 +62,9 @@ static void *_recv(void *arg)
 int lorawan_initialize_lorawan(void)
 {
     /* Convert identifiers and keys strings to byte arrays */
-    size_t deveui_size = fmt_hex_bytes(deveui, CONFIG_LORAMAC_DEV_EUI_DEFAULT);
-    assert(deveui_size > 0); // if deveui is 0 then it is not set
-    size_t appeui_size = fmt_hex_bytes(appeui, CONFIG_LORAMAC_APP_EUI_DEFAULT);
-    assert(appeui_size > 0); // if appeui is 0 then it is not set
-    size_t appkey_size = fmt_hex_bytes(appkey, CONFIG_LORAMAC_APP_KEY_DEFAULT);
-    assert(appkey_size > 0); // if appkey is 0 then it is not set
+    assert(fmt_hex_bytes(deveui, CONFIG_LORAMAC_DEV_EUI_DEFAULT) > 0); // if deveui is 0 then it is not set
+    assert(fmt_hex_bytes(appeui, CONFIG_LORAMAC_APP_EUI_DEFAULT) > 0); // if appeui is 0 then it is not set
+    assert(fmt_hex_bytes(appkey, CONFIG_LORAMAC_APP_KEY_DEFAULT) > 0); // if appkey is 0 then it is not set
     
     semtech_loramac_set_deveui(&loramac, deveui);
     semtech_loramac_set_appeui(&loramac, appeui);
@@ -95,6 +92,21 @@ void lorawan_print_connection_info(void)
     printf("  Device EUI: %s\n", deveui_str);
     printf("  Application EUI: %s\n", appeui_str);
     printf("  Application Key: %s\n", appkey_str);
+}
+
+bool lorawan_receive(void){
+    /* blocks until some data is received */
+    semtech_loramac_recv(&loramac);
+    loramac.rx_data.payload[loramac.rx_data.payload_len] = 0;
+    if (loramac.rx_data.payload_len > 0)
+    {
+        LOG_DEBUG("Data received: %s, port: %d\n length: %d\n",
+                    (char *)loramac.rx_data.payload, loramac.rx_data.port, loramac.rx_data.payload_len);
+        return true;
+    } else {
+        LOG_DEBUG("No data received. I guess this shouldn't happen?\n");
+        return false;
+    }
 }
 
 int lorawan_connect_lorawan(void)
