@@ -149,4 +149,7 @@ experiment/data/*
 # compiled binaries
 *.elf
 
+# IDEA based IDEs
+.idea/
+
 # End of https://www.toptal.com/developers/gitignore/api/c,visualstudiocode,git
