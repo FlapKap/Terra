@@ -1,2 +1,4 @@
+FEATURES_REQUIRED += periph_i2c
+
 USEMODULE += hts221
 USEMODULE += lps22hb

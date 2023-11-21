@@ -4,5 +4,11 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"cfg_i2c1_pb8_pb9.h": "c",
+			"periph_conf.h": "c",
+			"periph_cpu.h": "c"
+		}
+	}
 }

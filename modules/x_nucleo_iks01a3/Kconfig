@@ -7,5 +7,9 @@
 config MODULE_X_NUCLEO_IKS01A3
     bool "ST X-NUCLEO-IKS01A3"
     depends on TEST_KCONFIG
+    
     select MODULE_HTS221
     select MODULE_LPSXXX
+    
+    depends on HAS_PERIPH_I2C
+    select MODULE_PERIPH_I2C
