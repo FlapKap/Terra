@@ -1,0 +1,2 @@
+USEMODULE += hts221
+USEMODULE += lps22hb
