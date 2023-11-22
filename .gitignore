@@ -98,14 +98,6 @@ build/*
 
 .idea/*
 
-### VisualStudioCode ###
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
-
 # Local History for Visual Studio Code
 .history/
 
@@ -126,7 +118,9 @@ src/build/*
 # http://iamzed.com/2009/05/07/a-primer-on-virtualenv/
 .Python
 [Bb]in
-[Ii]nclude
+# remove below since it also blocks include folders in the c part. figure out how to fix this if/when we do use venvs in the repo
+#[Ii]nclude
+
 [Ll]ib
 [Ll]ib64
 [Ll]ocal
@@ -145,9 +139,6 @@ __pycache__
 
 #experiment data
 experiment/data/*
-
-# compiled binaries
-*.elf
 
 # IDEA based IDEs
 .idea/
