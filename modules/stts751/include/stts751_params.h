@@ -28,11 +28,11 @@ extern "C" {
 #endif
 
 /**
- * @name    Set default configuration parameters
+ * @name    Set default configuration parameters for the STTS751 driver
  * @{
  */
-#ifndef STTS751_PARAM_PARAM1
-#define STTS751_PARAM_PARAM1
+#ifndef STTS751_PARAM_I2C
+#define STTS751_PARAM_I2C I2C_DEV(0)
 #endif
 
 #ifndef STTS751_PARAMS
