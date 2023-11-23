@@ -22,7 +22,7 @@
 #define STTS751_H
 
 /* Add header includes here */
-
+#include "periph/i2c.h"
 #ifdef __cplusplus
 extern "C"
 {
@@ -36,7 +36,31 @@ extern "C"
     typedef struct
     {
         /* add initialization params here */
+        i2c_t i2c;
+        uint8_t addr;
+        uint8_t conversion_rate;
+        struct {
+            uint8_t high_byte;
+            uint8_t low_byte;
+        } temp_high_limit;
+        struct {
+            uint8_t high_byte;
+            uint8_t low_byte;
+        } temp_low_limit;
+        uint8_t therm_limit;
+        uint8_t therm_hysteresis;
+        uint8_t smbus_timeout_enable;
     } stts751_params_t;
+
+    /**
+     * @brief Return values and error codes
+     */
+    enum {
+        STTS751_OK = 0,
+        STTS751_ERROR,
+        STTS751_NOBUS,
+        STTS751_NODEV,
+    };
 
     /**
      * @brief   Device descriptor for the driver

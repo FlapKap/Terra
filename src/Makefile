@@ -13,8 +13,8 @@ EXTERNAL_BOARD_DIRS += $(PROJECT_BASE)/boards
 ## to handle sensor boards with multiple sensors, we need both name and type, as they are defined in RIOT
 ## The easiest way to find this is to search for the sensor at https://doc.riot-os.org/. The first part of the header files is the module name
 ## for the sensor driver, and if you enter the <sensor_name>_saul.c file in the source code, you can see which types are defined
-SENSOR_NAMES ?= hts221 hts221  
-SENSOR_TYPES ?= SAUL_SENSE_TEMP SAUL_SENSE_HUM
+SENSOR_NAMES ?= hts221 hts221 stts751
+SENSOR_TYPES ?= SAUL_SENSE_TEMP SAUL_SENSE_HUM SAUL_SENSE_TEMP
 ifneq ($(words SENSOR_NAMES),$(words SENSOR_TYPES))
 $(error "Number of SENSOR_NAMES and SENSOR_TYPES must be the same")
 endif

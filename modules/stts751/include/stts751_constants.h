@@ -31,7 +31,9 @@ extern "C" {
  * of the Addr/Therm pin, and the order code of the STTS751 sensor.
  * @{
 */
- // TODO: this
+
+#define STTS751_I2C_ADDRESS (0x94)
+
 /** @}*/
 
 /**
@@ -65,12 +67,12 @@ extern "C" {
 
 #define STTS751_DEFAULT_CONFIG                      (0x00)
 #define STTS751_DEFAULT_CONVERSION_RATE             (1 << 2)
-#define STTS751_DEFAULT_TEMP_HIGH_LIMIT_HIGH_BYTE   (0x55) // 85 C
+#define STTS751_DEFAULT_TEMP_HIGH_LIMIT_HIGH_BYTE   (0x55) // 85 Celcius
 #define STTS751_DEFAULT_TEMP_HIGH_LIMIT_LOW_BYTE    (0x00)
-#define STTS751_DEFAULT_TEMP_LOW_LIMIT_HIGH_BYTE    (0x00) // 0 C
+#define STTS751_DEFAULT_TEMP_LOW_LIMIT_HIGH_BYTE    (0x00) // 0 Celcius
 #define STTS751_DEFAULT_TEMP_LOW_LIMIT_LOW_BYTE     (0x00)
-#define STTS751_DEFAULT_THERM_LIMIT                 (0x55) // 85 C
-#define STTS751_DEFAULT_THERM_HYSTERESIS            (0x0A) // 10 C
+#define STTS751_DEFAULT_THERM_LIMIT                 (0x55) // 85 Celcius
+#define STTS751_DEFAULT_THERM_HYSTERESIS            (0x0A) // 10 Celcius
 #define STTS751_DEFAULT_SMBUS_TIMEOUT_ENABLE        (1 << 7)
 #define STTS751_DEFAULT_PRODUCT_ID                  (0x00) // for STTS751-0. is 0x01 for STTS751-1
 #define STTS751_DEFAULT_MANUFACTURER_ID             (0x53)
