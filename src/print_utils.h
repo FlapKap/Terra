@@ -3,6 +3,7 @@
 
 #include "operators.h"
 #include "number.h"
+#include "pm_layered.h"
 
 void print_expression_instruction(ExpressionInstruction instr);
 void print_instruction(const Instruction *instr);
@@ -23,5 +24,9 @@ void print_message(const Message *message);
 void print_query_response(const QueryResponse *response);
 void print_output_message(const OutputMessage *message);
 
+void print_blockers(pm_blocker_t *blockers, size_t size);
+
+void print_device_info(void);
+void print_build_info(void);
 
 #endif // PRINT_UTILS_H

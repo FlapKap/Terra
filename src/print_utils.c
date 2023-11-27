@@ -352,3 +352,29 @@ void print_output_message(const OutputMessage *message)
         printf("\n");
     }
 }
+
+void print_blockers(pm_blocker_t *blockers, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        printf("Power mode: %zu, blockers: %u\n", i, blockers->blockers[i]);
+    }
+}
+
+void print_device_info(void){
+    printf("Device Information:\n");
+    printf("CPU: %s\n", RIOT_CPU);
+    printf("Board: %s\n", RIOT_BOARD);
+    printf("Riot Version: %s\n", RIOT_VERSION);
+    printf("Number of power modes: %" PRIu32 "\n", PM_NUM_MODES);
+    printf("current blockers:\n");
+    pm_blocker_t blockers = pm_get_blocker();
+    print_blockers(&blockers, PM_NUM_MODES);
+}
+void print_build_info(void)
+{
+    printf("Build Information:\n");
+    printf("Terra (Build Date: %s, Time of Build: %s)\n", __DATE__, __TIME__);
+    printf("THREAD_STACKSIZE_MAIN: %" PRIi32 " bytes\n", THREAD_STACKSIZE_MAIN);
+    printf("EXECUTION_EPOCH_S: %" PRIiLEAST16 " seconds\n", EXECUTION_EPOCH_S);
+}

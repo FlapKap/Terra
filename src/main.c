@@ -29,7 +29,7 @@
 #endif
 
 // RIOT includes
-
+#include "pm_layered.h"
 #include "ztimer.h"
 #include "ztimer/stopwatch.h"
 // Power tracking
@@ -70,9 +70,11 @@ int main(void)
 {
   ztimer_stopwatch_init(ZTIMER_MSEC, &stopwatch);
   ztimer_stopwatch_init(ZTIMER_MSEC, &loop_stopwatch);
-  LOG_INFO("Terra (Build Date: %s, Time of Build: %s)\n", __DATE__, __TIME__);
-  LOG_INFO("=====================================\n");
-  LOG_INFO("Configured with duration: %" PRIiLEAST16 " seconds\n", EXECUTION_EPOCH_S);
+  
+  print_build_info();
+  print_device_info();
+
+
   ztimer_stopwatch_start(&stopwatch);
   sensors_initialize_enabled();
   uint32_t sensor_init_time = ztimer_stopwatch_measure(&stopwatch);

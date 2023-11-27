@@ -48,8 +48,8 @@ bool network_has_valid_message(void){
   return true;
 }
 
-Message network_get_message(void){
-  return message;
+Message* network_get_message(void){
+  return &message;
 }
 bool network_send_message(OutputMessage msg){
   LOG_DEBUG("network_send_message: DISABLE_LORA enabled so no message is actually sent. Just logged.\n");

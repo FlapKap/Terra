@@ -13,8 +13,8 @@ EXTERNAL_BOARD_DIRS += $(PROJECT_BASE)/boards
 ## to handle sensor boards with multiple sensors, we need both name and type, as they are defined in RIOT
 ## The easiest way to find this is to search for the sensor at https://doc.riot-os.org/. The first part of the header files is the module name
 ## for the sensor driver, and if you enter the <sensor_name>_saul.c file in the source code, you can see which types are defined
-SENSOR_NAMES ?= hts221 hts221 stts751
-SENSOR_TYPES ?= SAUL_SENSE_TEMP SAUL_SENSE_HUM SAUL_SENSE_TEMP
+SENSOR_NAMES ?= hts221 hts221
+SENSOR_TYPES ?= SAUL_SENSE_TEMP SAUL_SENSE_HUM
 ifneq ($(words SENSOR_NAMES),$(words SENSOR_TYPES))
 $(error "Number of SENSOR_NAMES and SENSOR_TYPES must be the same")
 endif
@@ -22,7 +22,7 @@ endif
 ## EXECUTE INTERVAL
 EXECUTION_EPOCH_S ?= 5
 ## LORA
-DISABLE_LORA ?= 0
+#DISABLE_LORA ?= 0
 ACTIVATION_MODE ?= otaa # only otaa is supported
 LORA_REGION ?= EU868
 APPEUI ?= 0000000000000000
@@ -68,7 +68,8 @@ COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
 # PACKAGES
 USEMODULE += saul_default
 USEMODULE += fmt
-
+#USEMODULE += idle_thread
+USEMODULE += pm_layered
 ## Nanopb stuff
 USEPKG += nanopb
 PROTOBUF_PATH = $(CURDIR)/proto
@@ -87,7 +88,8 @@ DEVELHELP ?= 0
 CREATE_STACKTEST ?= 0
 else
 # Debug stuff. We also want debug stuff to run when testing
-
+USEMODULE += ssp # enable stack smashing protection. Mainly to get explicit panics if a stack overflow happens
+CFLAGS += -fstack-protector-all
 CFLAGS += -g3 -Og # unoptimized and with debug symbols
 CFLAGS += -Wall -Werror -Wextra -Wformat -Wformat-nonliteral -Werror=format-security -Werror=array-bounds -Wpedantic # extra warnings
 CFLAGS += -DDEBUG_ASSERT_VERBOSE # enable verbose asserts
