@@ -305,7 +305,7 @@ static void testMul(void)
   int expected = 30;
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -321,7 +321,7 @@ static void testDiv(void)
   int expected = 3;
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -337,7 +337,7 @@ static void testMod(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -416,7 +416,7 @@ static void ceilValue(void)
   int expected = 2;
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -432,7 +432,7 @@ static void ceilValueBig(void)
   int expected = 2;
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -448,7 +448,7 @@ static void floorValue(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -464,7 +464,7 @@ static void floorValueBig(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -480,7 +480,7 @@ static void roundUnderHalf(void)
   int expected = 1;
   
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -495,7 +495,7 @@ static void roundOverHalf(void)
   Number actual = call(&expres);
   int expected = 2;
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -543,7 +543,7 @@ static void lessThanEqual1(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -558,7 +558,7 @@ static void lessThanEqual2(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -573,7 +573,7 @@ static void greaterThanEqual1(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -588,7 +588,7 @@ static void greaterThanEqual2(void)
   int expected = 1;
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == actual.unionCase);
+  TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
@@ -599,7 +599,7 @@ static void og_test_execute_query_with_result(void)
 
   Number envVal;
   envVal.type._int = 4;
-  envVal.unionCase = NUMBER_INT;
+  envVal.unionCase = NUMBER_INT32;
 
   expres.program = p;
   expres.p_size = 5;
@@ -622,7 +622,7 @@ static void og_test_execute_query_with_result(void)
   executeQuery(&query, &queryRes, expres.env);
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == expres.env->stack->stack[0].unionCase);
+  TEST_ASSERT(NUMBER_INT32 == expres.env->stack->stack[0].unionCase);
   TEST_ASSERT_EQUAL_INT(8, expres.env->stack->stack[0].type._int);
 
   TEST_ASSERT_EQUAL_INT(-1, expres.env->stack->top); // stack should be empty
@@ -636,7 +636,7 @@ static void og_test_execute_query_without_result(void)
 
   Number envVal;
   envVal.type._int = 4;
-  envVal.unionCase = NUMBER_INT;
+  envVal.unionCase = NUMBER_INT32;
 
   Env *env = init_env();
   set_value(env, 0, envVal);
@@ -677,7 +677,7 @@ static void og_test_execute_query_without_result(void)
   executeQuery(&query, &output, env);
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == env->stack->stack[0].unionCase);
+  TEST_ASSERT(NUMBER_INT32 == env->stack->stack[0].unionCase);
   TEST_ASSERT_EQUAL_INT(0, env->stack->stack[0].type._int);
 }
 
@@ -688,7 +688,7 @@ static void og_test_execute_quries_single_result(void)
 
   Number envVal;
   envVal.type._int = 4;
-  envVal.unionCase = NUMBER_INT;
+  envVal.unionCase = NUMBER_INT32;
 
   expres.program = p;
   expres.p_size = 5;
@@ -715,10 +715,10 @@ static void og_test_execute_quries_single_result(void)
   executeQueries(&msg, &output, expres.env);
 
   // Assert
-  TEST_ASSERT(NUMBER_INT == expres.env->stack->stack[0].unionCase);
+  TEST_ASSERT(NUMBER_INT32 == expres.env->stack->stack[0].unionCase);
   TEST_ASSERT_EQUAL_INT(8, expres.env->stack->stack[0].type._int);
 
-  TEST_ASSERT_EQUAL_INT(NUMBER_INT, expres.env->stack->stack[1].unionCase);
+  TEST_ASSERT_EQUAL_INT(NUMBER_INT32, expres.env->stack->stack[1].unionCase);
   TEST_ASSERT_EQUAL_INT(4, expres.env->stack->stack[1].type._int);
 }
 
@@ -730,7 +730,7 @@ static void og_test_execute_quries_multiple_results(void)
 
   Number envVal;
   envVal.type._int = 4;
-  envVal.unionCase = NUMBER_INT;
+  envVal.unionCase = NUMBER_INT32;
 
   Env *env = init_env();
   set_value(env, 0, envVal);

@@ -21,13 +21,6 @@
 #include "sensors.h"
 #include "print_utils.h"
 
-// Testing
-#ifdef APPLICATION_RUN_TEST
-#include "embUnit.h"
-#include "protocol_tests.h"
-#include "expression_tests.h"
-#endif
-
 // RIOT includes
 #include "pm_layered.h"
 #include "ztimer.h"
@@ -37,7 +30,11 @@
 
 #include "log.h"
 
+// Testing
 #ifdef APPLICATION_RUN_TEST
+#include "embUnit.h"
+#include "protocol_tests.h"
+#include "expression_tests.h"
 void test_encode_input(void);
 void test_encode_output(void);
 
@@ -54,8 +51,11 @@ int main(void)
 }
 #else
 
-Message* msg;
+static TerraProtocol_Message msg = TerraProtocol_Message_init_zero;
+static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
 bool valid_msg = false;
+
+static Stack stack = { 0 };
 
 // tracking stuff
 ztimer_stopwatch_t stopwatch = { 0 };
@@ -108,7 +108,7 @@ int main(void)
     ztimer_stopwatch_reset(&loop_stopwatch);
     play_single_blink();
     uint32_t sync_word_time_ms = ztimer_stopwatch_reset(&stopwatch);
-    msg = network_get_message();
+    network_get_message(&msg);
     uint32_t listen_time_ms = ztimer_stopwatch_reset(&stopwatch);
     // Collect measurements
     LOG_INFO("collecting measurements...\n");
@@ -118,7 +118,6 @@ int main(void)
     uint32_t sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
     // Execute queries
-    OutputMessage out = {0};
     LOG_INFO("Execute Queries...\n");
     // play_syncword();
     ztimer_stopwatch_reset(&stopwatch);

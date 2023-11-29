@@ -3,7 +3,7 @@
 syntax = "proto3";
 import "nanopb.proto";
 
-package EndDeviceProtocol;
+package TerraProtocol;
 
 
 enum ExpressionInstructions {
@@ -38,11 +38,11 @@ message Data {
         uint32 _uint8 = 2;
         uint32 _uint16 = 3;
         uint32 _uint32 = 4;
-        uint64 _uint64 = 5;
+        //uint64 _uint64 = 5;
         sint32 _int8 = 6;
         sint32 _int16 = 7;
         sint32 _int32 = 8;
-        sint64 _int64 = 9;
+        //sint64 _int64 = 9;
         float _float = 10;
         double _double = 11;
     }

@@ -127,7 +127,7 @@ void print_number_value(Number val)
 
         printf("%" PRIu32, val.type._uint32);
         break;
-    case NUMBER_INT:
+    case NUMBER_INT32:
         printf("%d", val.type._int);
         break;
     case NUMBER_FLOAT:
@@ -149,7 +149,7 @@ void print_number_value_and_ucase(Number number)
     case NUMBER_UINT32:
         printf("%" PRIu32 " (uint)", number.type._uint32);
         break;
-    case NUMBER_INT:
+    case NUMBER_INT32:
         printf("%d (int)", number.type._int);
         break;
     case NUMBER_FLOAT:

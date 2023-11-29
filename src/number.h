@@ -6,7 +6,7 @@
 
 typedef enum __attribute__((packed)) _number_union_case_t {
     NUMBER_UINT32,
-    NUMBER_INT,
+    NUMBER_INT32,
     NUMBER_FLOAT,
     NUMBER_DOUBLE
 } number_union_case_t;

@@ -4,27 +4,24 @@
 #include "expression.h"
 #include "environment.h"
 
-void executeQueries(Message* message, OutputMessage *out, Env * env){
 
-  QueryResponse *responses = (QueryResponse *) calloc(sizeof(QueryResponse) * message->amount,1);
 
-  for (int i = 0; i < message->amount; i++) {
-    // TODO: should really remove the need for calloc here
-    QueryResponse current = {.id = i, .response = (Instruction *) calloc(sizeof(Instruction), 1), .amount = 1};
-    executeQuery(&message->queries[i], &current, env);
-    responses[i] = current;
+void executeQueries(TerraProtocol_Message* message, TerraProtocol_Output *out, Env * env){
+  for (int i = 0; i < message->queries_count; i++) {
+    executeQuery(&message->queries[i], &out->responses[i], env);
   }
 
-  out->responses = responses;
-  out->amount = message->amount;
+  //TODO: right now we generate 1 response per query. what if no responses are needed?
+  out->responses_count = message->queries_count;
 }
 
-void executeQuery(Query* query, QueryResponse *out, Env * env){
-  for(int i = 0; i < query->amount; i++){
+void executeQuery(TerraProtocol_Query* query, TerraProtocol_Output_QueryResponse *out, Env * env){
+  for(int i = 0; i < query->operations_count; i++){
     clear_stack(env);
-    if(query->operations[i].unionCase == 0){
-      // map
-      query->operations[i].operation.map->expression->stack = env->stack;
+    switch (query->operations[i].which_operation)
+    {
+    case TerraProtocol_Operation_map_tag:
+      query->operations[i].operation.map.function.instructions = env->stack;
       Number number = call(query->operations[i].operation.map->expression);
  
       // Set env value
@@ -35,6 +32,14 @@ void executeQuery(Query* query, QueryResponse *out, Env * env){
       copy_number_to_instruction(&number, instruction);
       out->response = instruction;
       out->amount = 1;
+      break;
+    
+    default:
+      break;
+    }
+    if(query->operations[i].unionCase == 0){
+      // map
+
     } else if(query->operations[i].unionCase == 1){
       // filter
       query->operations[i].operation.filter->predicate->stack = env->stack;

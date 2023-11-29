@@ -43,7 +43,7 @@ bool lorawan_send_message(uint8_t *serializedData, uint8_t len)
 static void *_recv(void *arg)
 {
     msg_init_queue(_recv_queue, RECV_MSG_QUEUE);
-
+    
     (void)arg; // just to get the compiler to stop complaining
     while (1)
     {

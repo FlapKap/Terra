@@ -8,24 +8,23 @@
 #include <debug.h>
 
 
-Stack *init_stack(void)
+void init_stack(Number* memory, size_t size, Stack* out)
 {
-    Stack *stack = (Stack*) malloc(sizeof(Stack));
-    stack->stack = (Number*) calloc(10, sizeof(Number));
-    stack->size = 10;
-    stack->top = -1;
-    return stack;
+    
+    out->stack_memory = memory;
+    out->size = size;
+    out->top = -1;
 }
 
 void push(Stack *stack, Number val)
 {
     DEBUG("push %d\n to stack with size before: %d. top: %d\n", val.type._int, stack->size, stack->top);
-    if (stack->top == stack->size - 1)
-    {
-        resize_stack(stack);
-    }
+    // if (stack->top == stack->size - 1)
+    // {
+    //     resize_stack(stack);
+    // }
     stack->top++;
-    stack->stack[stack->top] = val;
+    stack->stack_memory[stack->top] = val;
 }
 
 Number pop(Stack *stack)
@@ -33,15 +32,15 @@ Number pop(Stack *stack)
     DEBUG("pop from stack with size before: %d. top: %d\n", stack->size, stack->top);
     if(stack->top == -1) {
         printf("Stack is empty\n");
-        return (Number){{CONST}, 2};
+        return (Number){NUMBER_UINT32, 2};
     }
-    return stack->stack[stack->top--];
+    return stack->stack_memory[stack->top--];
 }
 
-// TODO: change stack to be static size
-void resize_stack(Stack *stack)
-{
-    stack->size += 10;
-    stack->stack = (Number*) realloc(stack->stack, stack->size * sizeof(int));
-}
+// // TODO: change stack to be static size
+// void resize_stack(Stack *stack)
+// {
+//     stack->size += 10;
+//     stack->stack_memory = (Number*) realloc(stack->stack, stack->size * sizeof(int));
+// }
 

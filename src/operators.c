@@ -6,63 +6,70 @@
 #include "print_utils.h"
 #include "debug.h"
 
-void copy_number_to_instruction(Number *src, Instruction *dest)
+void copy_number_to_instruction(Number *src, TerraProtocol_Data *dest)
 {
 
     switch (src->unionCase)
     {
     case NUMBER_UINT32:
-        dest->unionCase = INSTRUCTION_UINT32;
+        dest->which_data = TerraProtocol_Data__uint32_tag;
         dest->data._uint32 = src->type._uint32;
         break;
-    case NUMBER_INT:
-        dest->unionCase = INSTRUCTION_INT;
-        dest->data._int = src->type._int;
+    case NUMBER_INT32:
+        dest->which_data = TerraProtocol_Data__int32_tag;
+        dest->data._int32 = src->type._int;
         break;
     case NUMBER_FLOAT:
-        dest->unionCase = INSTRUCTION_FLOAT;
+        dest->which_data = TerraProtocol_Data__float_tag;
         dest->data._float = src->type._float;
         break;
     case NUMBER_DOUBLE:
-        dest->unionCase = INSTRUCTION_DOUBLE;
+        dest->which_data = TerraProtocol_Data__double_tag;
         dest->data._double = src->type._double;
         break;
     }
 
 }
 
-void copy_instruction_to_number(Instruction *src, Number *dest)
+void copy_instruction_to_number(TerraProtocol_Data *src, Number *dest)
 {
-    switch (src->unionCase)
+    switch (src->which_data)
     {
-    case INSTRUCTION_UINT32:
-        dest->unionCase = NUMBER_UINT32;
-        dest->type._uint32 = src->data._uint32;
-        break;
-    case INSTRUCTION_INT:
-        dest->unionCase = NUMBER_INT;
-        dest->type._int = src->data._int;
-        break;
-    case INSTRUCTION_FLOAT:
-        dest->unionCase = NUMBER_FLOAT;
-        dest->type._float = src->data._float;
-        break;
-    case INSTRUCTION_DOUBLE:
-        dest->unionCase = NUMBER_DOUBLE;
-        dest->type._double = src->data._double;
-        break;
+        //these case-fallthroughs relies on union-cases always
+        // expanding to the biggest type.
+        // I.e. we can still read a uint8 as if it where a uint32
+        case TerraProtocol_Data__uint8_tag:
+        case TerraProtocol_Data__uint16_tag:
+        case TerraProtocol_Data__uint32_tag:
+            dest->unionCase = NUMBER_UINT32;
+            dest->type._uint32 = src->data._uint32;
+            break;
+        case TerraProtocol_Data__int8_tag:
+        case TerraProtocol_Data__int16_tag:
+        case TerraProtocol_Data__int32_tag:
+            dest->unionCase = NUMBER_INT32;
+            dest->type._int = src->data._int32;
+            break;
+        case TerraProtocol_Data__float_tag:
+            dest->unionCase = NUMBER_FLOAT;
+            dest->type._float = src->data._float;
+            break;
+        case TerraProtocol_Data__double_tag:
+            dest->unionCase = NUMBER_DOUBLE;
+            dest->type._double = src->data._double;
+            break;
     default:
-        DEBUG("Error: Invalid unionCase: %" PRIu8, src->unionCase);
+        DEBUG("Error: Invalid unionCase: %" PRIu8, src->which_data);
     }
 
 }
 
-Number bin_op(Number n1, Number n2, ExpressionInstruction op)
+Number bin_op(Number n1, Number n2, TerraProtocol_ExpressionInstructions op)
 {
     Number result = { 0 };
     switch (op)
     {
-    case ADD:
+    case TerraProtocol_ADD:
     {
         switch (n1.unionCase)
         {
@@ -73,8 +80,8 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_UINT32;
                 result.type._uint32 = n1.type._uint32 + n2.type._uint32;
                 break;
-            case NUMBER_INT:
-                result.unionCase = NUMBER_INT;
+            case NUMBER_INT32:
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._uint32 + n2.type._int;
                 break;
             case NUMBER_FLOAT:
@@ -87,15 +94,15 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 break;
             }
             break;
-        case NUMBER_INT:
+        case NUMBER_INT32:
             switch (n2.unionCase)
             {
             case NUMBER_UINT32:
-                result.unionCase = NUMBER_INT;
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int + n2.type._uint32;
                 break;
-            case NUMBER_INT:
-                result.unionCase = NUMBER_INT;
+            case NUMBER_INT32:
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int + n2.type._int;
                 break;
             case NUMBER_FLOAT:
@@ -115,7 +122,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_FLOAT;
                 result.type._float = n1.type._float + n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.unionCase = NUMBER_FLOAT;
                 result.type._float = n1.type._float + n2.type._int;
                 break;
@@ -136,7 +143,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_DOUBLE;
                 result.type._double = n1.type._double + n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.unionCase = NUMBER_DOUBLE;
                 result.type._double = n1.type._double + n2.type._int;
                 break;
@@ -153,7 +160,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
         }
     }
     break;
-    case SUB:
+    case TerraProtocol_SUB:
     {
         switch (n1.unionCase)
         {
@@ -166,8 +173,8 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.type._uint32 = n1.type._uint32 - n2.type._uint32;
                 break;
 
-            case NUMBER_INT:
-                result.unionCase = NUMBER_INT;
+            case NUMBER_INT32:
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._uint32 - n2.type._int;
                 break;
             case NUMBER_FLOAT:
@@ -181,16 +188,16 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             }
         }
         break;
-        case NUMBER_INT:
+        case NUMBER_INT32:
         {
             switch (n2.unionCase)
             {
             case NUMBER_UINT32:
-                result.unionCase = NUMBER_INT;
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int - n2.type._uint32;
                 break;
-            case NUMBER_INT:
-                result.unionCase = NUMBER_INT;
+            case NUMBER_INT32:
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int - n2.type._int;
                 break;
             case NUMBER_FLOAT:
@@ -212,7 +219,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_FLOAT;
                 result.type._float = n1.type._float - n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.unionCase = NUMBER_FLOAT;
                 result.type._float = n1.type._float - n2.type._int;
                 break;
@@ -235,7 +242,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_DOUBLE;
                 result.type._double = n1.type._double - n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.unionCase = NUMBER_DOUBLE;
                 result.type._double = n1.type._double - n2.type._int;
                 break;
@@ -253,7 +260,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
         }
     }
     break;
-    case MUL:
+    case TerraProtocol_MUL:
     {
         switch (n1.unionCase)
         {
@@ -265,8 +272,8 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_UINT32;
                 result.type._uint32 = n1.type._uint32 * n2.type._uint32;
                 break;
-            case NUMBER_INT:
-                result.unionCase = NUMBER_INT;
+            case NUMBER_INT32:
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._uint32 * n2.type._int;
                 break;
             case NUMBER_FLOAT:
@@ -280,16 +287,16 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             }
         }
         break;
-        case NUMBER_INT:
+        case NUMBER_INT32:
         {
             switch (n2.unionCase)
             {
             case NUMBER_UINT32:
-                result.unionCase = NUMBER_INT;
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int * n2.type._uint32;
                 break;
-            case NUMBER_INT:
-                result.unionCase = NUMBER_INT;
+            case NUMBER_INT32:
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int * n2.type._int;
                 break;
             case NUMBER_FLOAT:
@@ -311,7 +318,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_FLOAT;
                 result.type._float = n1.type._float * n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.unionCase = NUMBER_FLOAT;
                 result.type._float = n1.type._float * n2.type._int;
                 break;
@@ -333,7 +340,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_DOUBLE;
                 result.type._double = n1.type._double * n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.unionCase = NUMBER_DOUBLE;
                 result.type._double = n1.type._double * n2.type._int;
                 break;
@@ -352,7 +359,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
         break;
     }
     break;
-    case DIV:
+    case TerraProtocol_DIV:
     {
         switch (n1.unionCase)
         {
@@ -369,12 +376,12 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_UINT32;
                 result.type._uint32 = n1.type._uint32 / n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 if (n2.type._int == 0) {
                     printf("Error: Division by zero");
                     break;
                 }
-                result.unionCase = NUMBER_INT;
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._uint32 / n2.type._int;
                 break;
             case NUMBER_FLOAT:
@@ -396,16 +403,16 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             }
         }
         break;
-        case NUMBER_INT:
+        case NUMBER_INT32:
         {
             switch (n2.unionCase)
             {
             case NUMBER_UINT32:
-                result.unionCase = NUMBER_INT;
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int / n2.type._uint32;
                 break;
-            case NUMBER_INT:
-                result.unionCase = NUMBER_INT;
+            case NUMBER_INT32:
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int / n2.type._int;
                 break;
             case NUMBER_FLOAT:
@@ -427,7 +434,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_FLOAT;
                 result.type._float = n1.type._float / n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.unionCase = NUMBER_FLOAT;
                 result.type._float = n1.type._float / n2.type._int;
                 break;
@@ -450,7 +457,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_DOUBLE;
                 result.type._double = n1.type._double / n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.unionCase = NUMBER_DOUBLE;
                 result.type._double = n1.type._double / n2.type._int;
                 break;
@@ -468,7 +475,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
         }
     }
     break;
-    case POW:
+    case TerraProtocol_POW:
     {
         result.unionCase = NUMBER_DOUBLE;
         switch (n1.unionCase)
@@ -480,7 +487,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             case NUMBER_UINT32:
                 result.type._double = pow(n1.type._uint32, n2.type._uint32);
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.type._double = pow(n1.type._uint32, n2.type._int);
                 break;
             case NUMBER_FLOAT:
@@ -492,14 +499,14 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             }
         }
         break;
-        case NUMBER_INT:
+        case NUMBER_INT32:
         {
             switch (n2.unionCase)
             {
             case NUMBER_UINT32:
                 result.type._double = pow(n1.type._int, n2.type._uint32);
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.type._double = pow(n1.type._int, n2.type._int);
                 break;
             case NUMBER_FLOAT:
@@ -518,7 +525,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             case NUMBER_UINT32:
                 result.type._double = pow(n1.type._float, n2.type._uint32);
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.type._double = pow(n1.type._float, n2.type._int);
                 break;
             case NUMBER_FLOAT:
@@ -537,7 +544,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             case NUMBER_UINT32:
                 result.type._double = pow(n1.type._double, n2.type._uint32);
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.type._double = pow(n1.type._double, n2.type._int);
                 break;
             case NUMBER_FLOAT:
@@ -552,9 +559,9 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
         }
     }
     break;
-    case AND:
+    case TerraProtocol_AND:
     {
-        result.unionCase = NUMBER_INT;
+        result.unionCase = NUMBER_INT32;
         switch (n1.unionCase)
         {
         case NUMBER_UINT32:
@@ -564,7 +571,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             case NUMBER_UINT32:
                 result.type._uint32 = n1.type._uint32 && n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.type._int = n1.type._uint32 && n2.type._int;
                 break;
             default:
@@ -573,36 +580,36 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             }
         }
         break;
-        case NUMBER_INT:
+        case NUMBER_INT32:
         {
             switch (n2.unionCase)
             {
             case NUMBER_UINT32:
-                result.unionCase = NUMBER_INT;
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int & n2.type._uint32;
                 break;
-            case NUMBER_INT:
-                result.unionCase = NUMBER_INT;
+            case NUMBER_INT32:
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int & n2.type._int;
                 break;
             default:
                 printf("Error: Invalid AND operation");
                 result.type._int = 0;
-                result.unionCase = NUMBER_INT;
+                result.unionCase = NUMBER_INT32;
             }
         }
         break;
         default:
             printf("Error: Invalid AND operation");
             result.type._int = 0;
-            result.unionCase = NUMBER_INT;
+            result.unionCase = NUMBER_INT32;
             break;
         }
     }
     break;
-    case OR:
+    case TerraProtocol_OR:
     {
-        result.unionCase = NUMBER_INT;
+        result.unionCase = NUMBER_INT32;
         switch (n1.unionCase)
         {
         case NUMBER_UINT32:
@@ -612,7 +619,7 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             case NUMBER_UINT32:
                 result.type._uint32 = n1.type._uint32 || n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.type._int = n1.type._uint32 || n2.type._int;
                 break;
             default:
@@ -622,14 +629,14 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
             }
         }
         break;
-        case NUMBER_INT:
+        case NUMBER_INT32:
         {
             switch (n2.unionCase)
             {
             case NUMBER_UINT32:
                 result.type._int = n1.type._int || n2.type._uint32;
                 break;
-            case NUMBER_INT:
+            case NUMBER_INT32:
                 result.type._int = n1.type._int || n2.type._int;
                 break;
             default:
@@ -646,38 +653,38 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
         }
     }
     break;
-    case LT:
+    case TerraProtocol_LT:
     {
-        result.unionCase = NUMBER_INT;
+        result.unionCase = NUMBER_INT32;
         result.type._int = compare(n1, n2) == -1;
 
         break;
     }
-    case GT:
+    case TerraProtocol_GT:
     {
-        result.unionCase = NUMBER_INT;
+        result.unionCase = NUMBER_INT32;
         result.type._int = compare(n1, n2) == 1;
         break;
     }
-    case EQ:
+    case TerraProtocol_EQ:
     {
-        result.unionCase = NUMBER_INT;
+        result.unionCase = NUMBER_INT32;
         result.type._int = compare(n1, n2) == 0;
         break;
     }
-    case LTEQ:
+    case TerraProtocol_LTEQ:
     {
-        result.unionCase = NUMBER_INT;
+        result.unionCase = NUMBER_INT32;
         result.type._int = compare(n1, n2) <= 0;
         break;
     }
-    case GTEQ:
+    case TerraProtocol_GTEQ:
     {
-        result.unionCase = NUMBER_INT;
+        result.unionCase = NUMBER_INT32;
         result.type._int = compare(n1, n2) >= 0;
         break;
     }
-    case MOD:
+    case TerraProtocol_MOD:
     {
         switch (n1.unionCase)
         {
@@ -689,35 +696,35 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
                 result.unionCase = NUMBER_UINT32;
                 result.type._uint32 = n1.type._uint32 % n2.type._uint32;
                 break;
-            case NUMBER_INT:
-                result.unionCase = NUMBER_INT;
+            case NUMBER_INT32:
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._uint32 % n2.type._int;
                 break;
 
             default:
                 printf("Error: Invalid MOD operation. Divisor must be integer");
                 result.type._int = 0;
-                result.unionCase = NUMBER_INT;
+                result.unionCase = NUMBER_INT32;
                 break;
             }
             break;
         }
-        case NUMBER_INT:
+        case NUMBER_INT32:
         {
             switch (n2.unionCase)
             {
             case NUMBER_UINT32:
-                result.unionCase = NUMBER_INT;
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int % n2.type._uint32;
                 break;
-            case NUMBER_INT:
-                result.unionCase = NUMBER_INT;
+            case NUMBER_INT32:
+                result.unionCase = NUMBER_INT32;
                 result.type._int = n1.type._int % n2.type._int;
                 break;
             default:
                 printf("Error: Invalid MOD operation. Divisor must be integer");
                 result.type._int = 0;
-                result.unionCase = NUMBER_INT;
+                result.unionCase = NUMBER_INT32;
                 break;
             }
         }
@@ -725,28 +732,28 @@ Number bin_op(Number n1, Number n2, ExpressionInstruction op)
         default:
             printf("Error: Invalid MOD operation. Dividend must be integer");
             result.type._int = 0;
-            result.unionCase = NUMBER_INT;
+            result.unionCase = NUMBER_INT32;
             break;
         }
     }
     break;
-    case VAR:
-    case CONST:
-    case NOT:
-    case LOG:
-    case SQRT:
-    case EXP:
-    case CEIL:
-    case FLOOR:
-    case ROUND:
-    case ABS:
-        printf("Error: Unary operation in bin_op");
+    case TerraProtocol_VAR:
+    case TerraProtocol_CONST:
+    case TerraProtocol_NOT:
+    case TerraProtocol_LOG:
+    case TerraProtocol_SQRT:
+    case TerraProtocol_EXP:
+    case TerraProtocol_CEIL:
+    case TerraProtocol_FLOOR:
+    case TerraProtocol_ROUND:
+    case TerraProtocol_ABS:
+        DEBUG("Error: Unary operation in bin_op: %s", TerraProtocol_ExpressionInstructions_name(op));
         break;
     }
     return result;
 }
 
-Number un_op(Number number, ExpressionInstruction op)
+Number un_op(Number number, TerraProtocol_ExpressionInstructions op)
 {
     Number result = { 0 };
     double value = 0.0;
@@ -757,7 +764,7 @@ Number un_op(Number number, ExpressionInstruction op)
     case NUMBER_UINT32:
         value = (double)number.type._uint32;
         break;
-    case NUMBER_INT:
+    case NUMBER_INT32:
         value = (double)number.type._int;
         break;
     case NUMBER_FLOAT:
@@ -771,40 +778,40 @@ Number un_op(Number number, ExpressionInstruction op)
     // Perform the operation based on the given instruction
     switch (op)
     {
-    case SQRT:
+    case TerraProtocol_SQRT:
         result.type._double = sqrt(value);
         result.unionCase = NUMBER_DOUBLE;
         break;
-    case EXP:
+    case TerraProtocol_EXP:
         result.type._double = exp(value);
         result.unionCase = NUMBER_DOUBLE;
         break;
-    case CEIL:
+    case TerraProtocol_CEIL:
         result.type._int = (int)ceil(value);
-        result.unionCase = NUMBER_INT;
+        result.unionCase = NUMBER_INT32;
         break;
-    case FLOOR:
+    case TerraProtocol_FLOOR:
         result.type._int = (int)floor(value);
-        result.unionCase = NUMBER_INT;
+        result.unionCase = NUMBER_INT32;
         break;
-    case ROUND:
+    case TerraProtocol_ROUND:
         result.type._int =  (int) round(value);
-        result.unionCase = NUMBER_INT;
+        result.unionCase = NUMBER_INT32;
         break;
-    case ABS:
+    case TerraProtocol_ABS:
         result.type._double = fabs(value);
         result.unionCase = NUMBER_DOUBLE;
         break;
-    case NOT:
+    case TerraProtocol_NOT:
         result.type._int = !(int)value;
-        result.unionCase = NUMBER_INT;
+        result.unionCase = NUMBER_INT32;
         break;
-    case LOG:
+    case TerraProtocol_LOG:
         result.type._double = log(value);
         result.unionCase = NUMBER_DOUBLE;
         break;
     default:
-        printf("Error: Invalid unary operation");
+        printf("Error: Invalid unary operation: %s", TerraProtocol_ExpressionInstructions_name(op));
     }
 
     // Return the result

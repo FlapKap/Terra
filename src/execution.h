@@ -3,9 +3,9 @@
 
 #include "operators.h"
 
-void executeQueries(Message* message, OutputMessage *out, Env * env);
-void executeQuery(Query* query, QueryResponse *out, Env * env);
+void executeQueries(TerraProtocol_Message* message, TerraProtocol_Output *out, Env * env);
+void executeQuery(TerraProtocol_Query* query, TerraProtocol_Output_QueryResponse *out, Env * env);
 
-void free_output_message(OutputMessage *out);
+//void free_output_message(OutputMessage *out);
 
 #endif // EXECUTION_H

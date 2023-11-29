@@ -4,12 +4,10 @@
 
 #include "operators.h"
 
-#include "EndDeviceProtocol.pb.h"
+#include "terraprotocol.pb.h"
 #include "pb_common.h"
 #include "pb_encode.h"
 #include "pb_decode.h"
-#include "input_serialization.h"
-#include "output_serialization.h"
 #include "print_utils.h"
 #include "log.h"
 #ifndef DISABLE_LORA
@@ -20,8 +18,6 @@ extern semtech_loramac_t loramac;
 
 
 #endif
-//TODO: Message need to be properly initialized
-static Message message = { 0 };
 
 // we provide two implementations: one for lora, and one with a default message defined
 #if DISABLE_LORA
@@ -63,18 +59,6 @@ bool network_send_heartbeat(void){
 }
 
 #else
-static bool receive_and_decode(void)
-{
-  // Check for received messages
-  Message tmp;
-  pb_istream_t istream = pb_istream_from_buffer(loramac.rx_data.payload, loramac.rx_data.payload_len);
-  bool res = decode_input_message(&istream, &tmp);
-  if (res)
-  {
-    message = tmp;
-  }
-    return res;
-}
 
 
 bool network_initialize_network(void){
@@ -92,30 +76,31 @@ bool network_initialize_network(void){
   }
 }
 
-bool network_has_valid_message(void){
-  //TODO: right now we define valid message as a message with amount > 0, but amount == 0 could be used to cancel message. This should be revisited
-  return message.amount > 0;
+bool network_get_message(TerraProtocol_Message* out){
+  // Check for received messages
+  pb_istream_t istream = pb_istream_from_buffer(loramac.rx_data.payload, loramac.rx_data.payload_len);
+  bool res = pb_decode(&istream, TerraProtocol_Message_fields, out);
+  return res;
 }
 
-Message* network_get_message(void){
-  receive_and_decode(); //TODO: utilize the _recv thread msg queue to only update message when new message has actually been received
-  return &message;
-}
-
-bool network_send_message(OutputMessage msg){
+bool network_send_message(TerraProtocol_Output* msg){
   //encode
   uint8_t buffer[256];
   pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(buffer));
-  encode_output_message(&ostream, &msg);
+  bool res = pb_encode(&ostream, TerraProtocol_Output_fields, msg);
+  if (!res){
+    LOG_ERROR("Failed to encode message\n");
+    return false;
+  }
 
   //send
-    LOG_INFO("Sending message with length %d\n", ostream.bytes_written);
-  return lorawan_send_message(buffer, (uint8_t)256);
+  LOG_INFO("Sending message with length %d\n", ostream.bytes_written);
+  return lorawan_send_message(buffer, sizeof(buffer));
 }
 
 bool network_send_heartbeat(void){
   static uint8_t heart[] = {'<','3'}; 
-  return lorawan_send_message(heart, 2);
+  return lorawan_send_message(heart, sizeof(heart));
 }
 
 #endif

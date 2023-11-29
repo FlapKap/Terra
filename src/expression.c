@@ -14,42 +14,18 @@ void _CONST(Expression *e)
 {
     // push the next value from program as data to the stack
     Number val = { 0 };
-    Instruction nextInstruction = e->program[++(e->pc)];
+    TerraProtocol_Data* nextInstruction = &(e->program->instructions[++(e->pc)]);
 
-    //TODO: check if 1 can be replaced with enum for instance?
-    switch (nextInstruction.unionCase)
-    {
-        // for instructions 0 is the instruction and above is data types
-    case 1:
-        val.unionCase = NUMBER_UINT32;
-        val.type._uint32 = nextInstruction.data._uint32;
-        break;
-    case 2:
-        val.unionCase = NUMBER_INT;
-        val.type._int = nextInstruction.data._int;
-        break;
-    case 3:
-        val.unionCase = NUMBER_FLOAT;
-        val.type._float = nextInstruction.data._float;
-        break;
-    case 4:
-        val.unionCase = NUMBER_DOUBLE;
-        val.type._double = nextInstruction.data._double;
-        break;
-    default:
-        LOG_DEBUG("Error: Invalid unionCase: %" PRIu8, nextInstruction.unionCase);
-        exit(1);
-    }
-
-
+    copy_instruction_to_number(nextInstruction, &val);
+    
     push(e->stack, val);
 }
 
 void _VAR(Expression *e)
 {
-    //TODO: check index is an int.
-    int index = e->program[++e->pc].data._int;
-    Number val = get_value(e->env, index);
+    //TODO: assert data is an uint
+    uint32_t index = e->program->instructions[++e->pc].data._uint32;
+    Number val = env_get_value(e->env, index);
     push(e->stack, val);
 }
 
@@ -58,7 +34,7 @@ void _AND(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    Number val = bin_op(l1, l2, AND);
+    Number val = bin_op(l1, l2, TerraProtocol_AND);
 
     push(e->stack, val);
 }
@@ -68,7 +44,7 @@ void _OR(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
     
-    Number val = bin_op(l1, l2, OR);
+    Number val = bin_op(l1, l2, TerraProtocol_OR);
 
     push(e->stack, val);
 }
@@ -76,7 +52,7 @@ void _OR(Expression *e)
 void _NOT(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, NOT);
+    Number val = un_op(l1, TerraProtocol_NOT);
     push(e->stack, val);
 }
 
@@ -85,7 +61,7 @@ void _LT(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    Number val = bin_op(l1, l2, LT);
+    Number val = bin_op(l1, l2, TerraProtocol_LT);
 
     push(e->stack, val);
 }
@@ -95,7 +71,7 @@ void _GT(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
     
-    Number val = bin_op(l1, l2, GT);
+    Number val = bin_op(l1, l2, TerraProtocol_GT);
     push(e->stack, val);
 }
 
@@ -105,7 +81,7 @@ void _EQ(Expression *e)
     Number l1 = pop(e->stack);
     
 
-    Number val = bin_op(l1, l2, EQ);
+    Number val = bin_op(l1, l2, TerraProtocol_EQ);
     
     push(e->stack, val);
 }
@@ -117,7 +93,7 @@ void _ADD(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    val = bin_op(l1, l2, ADD);
+    val = bin_op(l1, l2, TerraProtocol_ADD);
     
     push(e->stack, val);
 }
@@ -129,7 +105,7 @@ void _SUB(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    val = bin_op(l1, l2, SUB);
+    val = bin_op(l1, l2, TerraProtocol_SUB);
 
     push(e->stack, val);
 }
@@ -141,7 +117,7 @@ void _MUL(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    val = bin_op(l1, l2, MUL);
+    val = bin_op(l1, l2, TerraProtocol_MUL);
 
     push(e->stack, val);
 }
@@ -153,7 +129,7 @@ void _DIV(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    val = bin_op(l1, l2, DIV);
+    val = bin_op(l1, l2, TerraProtocol_DIV);
 
     push(e->stack, val);
 }
@@ -163,7 +139,7 @@ void _MOD(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    Number val = bin_op(l1, l2, MOD);
+    Number val = bin_op(l1, l2, TerraProtocol_MOD);
 
     push(e->stack, val);
 }
@@ -171,7 +147,7 @@ void _MOD(Expression *e)
 void _LOG(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number res = un_op(l1, LOG);
+    Number res = un_op(l1, TerraProtocol_LOG);
     push(e->stack, res);
 }
 
@@ -179,49 +155,49 @@ void _POW(Expression *e)
 {
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
-    Number res = bin_op(l1, l2, POW);
+    Number res = bin_op(l1, l2, TerraProtocol_POW);
     push(e->stack, res);
 }
 
 void _SQRT(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, SQRT);
+    Number val = un_op(l1, TerraProtocol_SQRT);
     push(e->stack, val);
 }
 
 void _EXP(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, EXP);
+    Number val = un_op(l1, TerraProtocol_EXP);
     push(e->stack, val);
 }
 
 void _CEIL(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, CEIL);
+    Number val = un_op(l1, TerraProtocol_CEIL);
     push(e->stack, val);
 }
 
 void _FLOOR(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, FLOOR);
+    Number val = un_op(l1, TerraProtocol_FLOOR);
     push(e->stack, val);
 }
 
 void _ROUND(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, ROUND);
+    Number val = un_op(l1, TerraProtocol_ROUND);
     push(e->stack, val);
 }
 
 void _ABS(Expression *e)
 {
     Number l1 = pop(e->stack);
-    Number val = un_op(l1, ABS);
+    Number val = un_op(l1, TerraProtocol_ABS);
     push(e->stack, val);
 }
 
@@ -230,7 +206,7 @@ void _LTEQ(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
     
-    Number val = bin_op(l1, l2, LTEQ);
+    Number val = bin_op(l1, l2, TerraProtocol_LTEQ);
 
     push(e->stack, val);
 }
@@ -240,7 +216,7 @@ void _GTEQ(Expression *e)
     Number l2 = pop(e->stack);
     Number l1 = pop(e->stack);
 
-    Number val = bin_op(l1, l2, GTEQ);
+    Number val = bin_op(l1, l2, TerraProtocol_GTEQ);
 
     push(e->stack, val);
 }
@@ -248,78 +224,78 @@ void _GTEQ(Expression *e)
 void execute_next(Expression *e)
 {
     if (LOG_LEVEL >= LOG_DEBUG) {
-        print_instruction(&e->program[e->pc]);
+        print_instruction(&e->program->instructions[e->pc]);
         puts("\n");
     }
-    switch (e->program[e->pc].data._instruction)
+    switch (e->program->instructions[e->pc].data.instruction)
     {
-    case 0:
+    case TerraProtocol_CONST:
         _CONST(e);
         break;
-    case 1:
+    case TerraProtocol_VAR:
         _VAR(e);
         break;
-    case 2:
+    case TerraProtocol_AND:
         _AND(e);
         break;
-    case 3:
+    case TerraProtocol_OR:
         _OR(e);
         break;
-    case 4:
+    case TerraProtocol_NOT:
         _NOT(e);
         break;
-    case 5:
+    case TerraProtocol_LT:
         _LT(e);
         break;
-    case 6:
+    case TerraProtocol_GT:
         _GT(e);
         break;
-    case 7:
+    case TerraProtocol_EQ:
         _EQ(e);
         break;
-    case 8:
+    case TerraProtocol_ADD:
         _ADD(e);
         break;
-    case 9:
+    case TerraProtocol_SUB:
         _SUB(e);
         break;
-    case 10:
+    case TerraProtocol_MUL: 
         _MUL(e);
         break;
-    case 11:
+    case TerraProtocol_DIV:
         _DIV(e);
         break;
-    case 12:
+    case TerraProtocol_MOD:
         _MOD(e);
         break;
-    case 13:
+    case TerraProtocol_LOG:
         _LOG(e);
         break;
-    case 14:
+    case TerraProtocol_POW:
         _POW(e);
         break;
-    case 15:
+    case TerraProtocol_SQRT:
         _SQRT(e);
         break;
-    case 16:
+    case TerraProtocol_EXP:
         _EXP(e);
         break;
-    case 17:
+    case TerraProtocol_CEIL:
         _CEIL(e);
         break;
-    case 18:
+    case TerraProtocol_FLOOR:
         _FLOOR(e);
         break;
-    case 19:
+    case TerraProtocol_ROUND:
         _ROUND(e);
         break;
-    case 20:
+    case TerraProtocol_ABS:
         _ABS(e);
         break;
-    case 21:
+    case TerraProtocol_LTEQ:
         _LTEQ(e);
         break;
-    case 22:
+    case TerraProtocol_GTEQ:
         _GTEQ(e);
         break;
     }
@@ -331,7 +307,7 @@ Number call(Expression *e)
         print_expression(e);
     }
     e->pc = 0;
-    while (e->pc < e->p_size)
+    while (e->pc < e->program->instructions_count)
     {
         execute_next(e);
         ++e->pc;

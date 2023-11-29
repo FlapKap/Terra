@@ -69,7 +69,7 @@ bool sensors_collect_into_env(Env *env)
             else
             {
                 num.type._int = (int)val;
-                num.unionCase = NUMBER_INT;
+                num.unionCase = NUMBER_INT32;
                 LOG_DEBUG("Read value %d from Sensor %s. Saving in env position %d\n", (int)val, sensors[i]->name, i);
             }
         }
