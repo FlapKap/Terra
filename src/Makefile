@@ -34,7 +34,7 @@ MAIN_STACKSIZE ?= 10480
 LOG_LEVEL ?= LOG_ALL
 
 # Different build configurations. Optimized builds run without any debug symbols and with o3 optimizations
-APPLICATION_BUILD_OPTIMIZED ?= 0
+APPLICATION_BUILD_OPTIMIZED = 0
 
 # Application run tests instead of the normal "main" function
 APPLICATION_RUN_TEST ?= 0
@@ -82,22 +82,23 @@ USEMODULE += ztimer_msec
 # features
 FEATURES_OPTIONAL += periph_uart
 
-ifeq (1,$(APPLICATION_BUILD_OPTIMIZED))
-CFLAGS += -O3
-DEVELHELP ?= 0
-CREATE_STACKTEST ?= 0
+ifeq ($(APPLICATION_BUILD_OPTIMIZED),1)
+  CFLAGS += -O3
+  DEVELHELP = 0
+  CREATE_STACKTEST = 0
 else
 # Debug stuff. We also want debug stuff to run when testing
-USEMODULE += ssp # enable stack smashing protection. Mainly to get explicit panics if a stack overflow happens
-CFLAGS += -fstack-protector-all
-CFLAGS += -g3 -Og # unoptimized and with debug symbols
-CFLAGS += -Wall -Werror -Wextra -Wformat -Wformat-nonliteral -Werror=format-security -Werror=array-bounds -Wpedantic # extra warnings
-CFLAGS += -DDEBUG_ASSERT_VERBOSE # enable verbose asserts
-DEVELHELP ?= 1 # development helpers
-CREATE_STACKTEST ?= 1 # check stacksizes
+  USEMODULE += ssp # enable stack smashing protection. Mainly to get explicit panics if a stack overflow happens
+  DEVELHELP = 1 # development helpers
+  CREATE_STACKTEST = 1 # check stacksizes
+  VERBOSE_ASSERT = 1
+  CFLAGS += -fstack-protector-all
+  CFLAGS += -g3 -Og # unoptimized and with debug symbols
+  CFLAGS += -Wall -Werror -Wextra -Wformat -Wformat-nonliteral -Werror=format-security -Werror=array-bounds -Wpedantic # extra warnings
+
 endif
 
-ifeq (1, $(APPLICATION_RUN_TEST))
+ifeq (1,$(APPLICATION_RUN_TEST))
 # Test stuff
 CFLAGS += -DAPPLICATION_RUN_TEST
 USEMODULE += embunit
@@ -105,17 +106,17 @@ endif
 
 ## handle native builds and builds without lora
 ifeq ($(strip $(BOARD)),native)
-DISABLE_LORA ?= 1
+  DISABLE_LORA = 1
 else
 ## add configured sensors
-USEMODULE += $(sort $(SENSOR_NAMES))
-CFLAGS += -DSENSORS_ARRAY=$(SENSORS_ARRAY) -DSENSORS_ARRAY_LENGTH=$(SENSORS_ARRAY_LENGTH) -DSENSORS_TYPES_ARRAY=$(SENSORS_TYPES_ARRAY)
-DISABLE_LORA ?= 0
+  USEMODULE += $(sort $(SENSOR_NAMES))
+  CFLAGS += -DSENSORS_ARRAY=$(SENSORS_ARRAY) -DSENSORS_ARRAY_LENGTH=$(SENSORS_ARRAY_LENGTH) -DSENSORS_TYPES_ARRAY=$(SENSORS_TYPES_ARRAY)
+  DISABLE_LORA ?= 0
 endif
 
 ifeq (1,$(DISABLE_LORA))
-CFLAGS += -DDISABLE_LORA
-CFLAGS += -DDEFAULT_QUERY_AS_PB_CHAR_ARRAY=$(DEFAULT_QUERY_AS_PB_CHAR_ARRAY)
+  CFLAGS += -DDISABLE_LORA
+  CFLAGS += -DDEFAULT_QUERY_AS_PB_CHAR_ARRAY=$(DEFAULT_QUERY_AS_PB_CHAR_ARRAY)
 endif
 
 # Different board configurations. Native and hardware
@@ -124,22 +125,22 @@ ifeq ($(DISABLE_LORA),0)
 
 # Include the Semtech-loramac package
 #USEMODULE += netdev_default
-DRIVER ?= sx1276
-USEMODULE += $(DRIVER)
-USEPKG += semtech-loramac
-USEMODULE += auto_init_loramac
-USEMODULE += semtech_loramac_rx
-FEATURES_REQUIRED += periph_rtt # needed for loramac
+  DRIVER ?= sx1276
+  USEMODULE += $(DRIVER)
+  USEPKG += semtech-loramac
+  USEMODULE += auto_init_loramac
+  USEMODULE += semtech_loramac_rx
+  FEATURES_REQUIRED += periph_rtt # needed for loramac
 endif
 
 
 # LoRaWAN Stuff
 ifneq (,$(filter semtech-loramac,$(USEPKG)))
 
-CFLAGS += -DCONFIG_LORAMAC_APP_KEY_DEFAULT=\"$(APPKEY)\"
-CFLAGS += -DCONFIG_LORAMAC_APP_EUI_DEFAULT=\"$(APPEUI)\"
-CFLAGS += -DCONFIG_LORAMAC_DEV_EUI_DEFAULT=\"$(DEVEUI)\"
-CFLAGS += -DUSE_OTAA
+  CFLAGS += -DCONFIG_LORAMAC_APP_KEY_DEFAULT=\"$(APPKEY)\"
+  CFLAGS += -DCONFIG_LORAMAC_APP_EUI_DEFAULT=\"$(APPEUI)\"
+  CFLAGS += -DCONFIG_LORAMAC_DEV_EUI_DEFAULT=\"$(DEVEUI)\"
+  CFLAGS += -DUSE_OTAA
 endif
 
 
