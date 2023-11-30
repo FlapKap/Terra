@@ -1,28 +1,30 @@
 #ifndef PRINT_UTILS_H
 #define PRINT_UTILS_H
 
+#include <terraprotocol.pb.h>
 #include "operators.h"
 #include "number.h"
 #include "pm_layered.h"
 
-void print_expression_instruction(ExpressionInstruction instr);
-void print_instruction(const Instruction *instr);
-void print_instruction_array(const Instruction* instruction, size_t size);
+
+void print_terraprotocol_expression_instruction(TerraProtocol_ExpressionInstructions instr);
+void print_terraprotocol_data(const TerraProtocol_Data* instr);
+void print_terraprotocol_data_array(const TerraProtocol_Data* instruction, size_t size);
 void print_number_value(Number val);
 void print_number_value_and_ucase(Number number);
-void print_stack(const Stack *stack);
-void print_env(const Env *env);
-void print_expression(const Expression *expression);
-void print_map(const Map *map);
-void print_filter(const Filter *filter);
-void print_window_aggregation_type(WindowAggregationType type);
-void print_window_size_type(WindowSizeType type);
-void print_window(Window *window);
-void print_operation(const Operation *operation);
-void print_query(const Query *query);
-void print_message(const Message *message);
-void print_query_response(const QueryResponse *response);
-void print_output_message(const OutputMessage *message);
+void print_stack(const Stack* stack);
+void print_env(const Env* env);
+void print_expression(const Expression* expression);
+void print_terraprotocol_map(const TerraProtocol_MapOperation* map);
+void print_terraprotocol_filter(const TerraProtocol_FilterOperation* filter);
+void print_terraprotocol_window_aggregation_type(const TerraProtocol_WindowAggregationType type);
+void print_terraprotocol_window_size_type(const TerraProtocol_WindowSizeType type);
+void print_terraprotocol_window(const TerraProtocol_WindowOperation* window);
+void print_terraprotocol_operation(const TerraProtocol_Operation* operation);
+void print_terraprotocol_query(const TerraProtocol_Query* query);
+void print_terraprotocol_message(const TerraProtocol_Message* message);
+void print_terraprotocol_query_response(const TerraProtocol_Output_QueryResponse* response);
+void print_terraprotocol_output_message(const TerraProtocol_Output* message);
 
 void print_blockers(pm_blocker_t *blockers, size_t size);
 

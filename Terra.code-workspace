@@ -10,7 +10,29 @@
 			"periph_conf.h": "c",
 			"periph_cpu.h": "c",
 			"hts221_regs.h": "c",
-			"i2c.h": "c"
+			"i2c.h": "c",
+			"expression.h": "c",
+			"*.tcc": "c",
+			"compare": "c",
+			"exception": "c",
+			"algorithm": "c",
+			"initializer_list": "c",
+			"istream": "c",
+			"mutex": "c",
+			"ostream": "c",
+			"numeric": "c",
+			"stop_token": "c",
+			"streambuf": "c",
+			"thread": "c",
+			"functional": "c",
+			"type_traits": "c",
+			"ranges": "c",
+			"execution.h": "c",
+			"output_serialization.h": "c",
+			"expression_tests.h": "c",
+			"stack.h": "c",
+			"operators.h": "c",
+			"number.h": "c"
 		}
 	}
 }

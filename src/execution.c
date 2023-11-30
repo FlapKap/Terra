@@ -1,67 +1,66 @@
 #include <stdio.h>
+#include "assert.h"
 #include "execution.h"
 #include "operators.h"
 #include "expression.h"
-#include "environment.h"
+static Expression exp;
 
+void executeQuery(TerraProtocol_Query *query, Env *env, Stack *stack)
+{
+  stack_clear_stack(stack);
+  //env_clear_env(env);
 
+  bool filter_triggered = false;
+  for (int i = 0; i < query->operations_count && !filter_triggered; i++)
+  {
 
-void executeQueries(TerraProtocol_Message* message, TerraProtocol_Output *out, Env * env){
-  for (int i = 0; i < message->queries_count; i++) {
-    executeQuery(&message->queries[i], &out->responses[i], env);
-  }
-
-  //TODO: right now we generate 1 response per query. what if no responses are needed?
-  out->responses_count = message->queries_count;
-}
-
-void executeQuery(TerraProtocol_Query* query, TerraProtocol_Output_QueryResponse *out, Env * env){
-  for(int i = 0; i < query->operations_count; i++){
-    clear_stack(env);
     switch (query->operations[i].which_operation)
     {
     case TerraProtocol_Operation_map_tag:
-      query->operations[i].operation.map.function.instructions = env->stack;
-      Number number = call(query->operations[i].operation.map->expression);
- 
+    {
+      // map
+      TerraProtocol_MapOperation *map = &query->operations[i].operation.map;
+      expression_init_expression(&exp, &(map->function), env, stack);
+
+      Number number = expression_call(&exp);
+
       // Set env value
-      set_value(env, query->operations[i].operation.map->attribute, number);
-
-      Instruction *instruction = (Instruction *) calloc(sizeof(Instruction), 1);
-
-      copy_number_to_instruction(&number, instruction);
-      out->response = instruction;
-      out->amount = 1;
+      env_set_value(env, map->attribute, number);
       break;
-    
+    }
+    case TerraProtocol_Operation_filter_tag:
+    {
+      // filter
+      TerraProtocol_FilterOperation *filter = &query->operations[i].operation.filter;
+      expression_init_expression(&exp, &(filter->predicate), env, stack);
+      Number number = expression_call(&exp);
+
+      if (is_false(&number))
+      {
+        filter_triggered = true;
+      }
+      break;
+    }
+
+    case TerraProtocol_Operation_window_tag:
+      // window
+      puts("Window operation not yet supported");
+      break;
+
     default:
       break;
     }
-    if(query->operations[i].unionCase == 0){
-      // map
 
-    } else if(query->operations[i].unionCase == 1){
-      // filter
-      query->operations[i].operation.filter->predicate->stack = env->stack;
-
-      Number number = call(query->operations[i].operation.filter->predicate);
-
-      Instruction *instruction = (Instruction *) calloc(sizeof(Instruction), 1);
-      //TODO: this seems like a bug. Shouldnt filter stop execution?
-      copy_number_to_instruction(&number, instruction);
-      out->response = instruction;
-      out->amount = 1;
-    } else if(query->operations[i].unionCase == 2){
-      // window
-      puts("Window operation not yet supported");
-      return;
-    }
+    // after each execution the stack should be empty or 1
+    // empty stack after maps. Possible one after filter
+    assert(stack->size == 0 || stack->size == 1);
   }
 }
 
-void free_output_message(OutputMessage *out){
-  for(int i = 0; i < out->amount; i++){
-    free(out->responses[i].response);
+void executeQueries(TerraProtocol_Message *message, Env *env, Stack *stack)
+{
+  for (int i = 0; i < message->queries_count; i++)
+  {
+    executeQuery(&message->queries[i], env, stack);
   }
-  free(out->responses);
 }

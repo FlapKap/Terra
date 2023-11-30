@@ -6,6 +6,7 @@ void env_init_env(Number* memory, size_t memory_size, Env* out)
 {
     out->memory = memory;
     out->size = memory_size;
+    env_clear_env(out);
 }
 
 void env_clear_env(Env *env)
@@ -13,7 +14,7 @@ void env_clear_env(Env *env)
     for (int i = 0; i < env->size; i++)
     {
         Number number;
-        number.type._int = 0;
+        number.type._uint32 = 0;
         number.unionCase = NUMBER_UINT32;
         env->memory[i] = number;
     }

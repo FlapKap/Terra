@@ -2,10 +2,12 @@
 #define EXECUTION_H
 
 #include "operators.h"
+#include "stack.h"
+#include "environment.h"
+#include <terraprotocol.pb.h>
 
-void executeQueries(TerraProtocol_Message* message, TerraProtocol_Output *out, Env * env);
-void executeQuery(TerraProtocol_Query* query, TerraProtocol_Output_QueryResponse *out, Env * env);
+void executeQueries(TerraProtocol_Message* message, Env * env, Stack * stack);
+void executeQuery(TerraProtocol_Query* query, Env * env, Stack * stack);
 
-//void free_output_message(OutputMessage *out);
 
 #endif // EXECUTION_H

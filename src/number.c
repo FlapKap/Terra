@@ -96,56 +96,60 @@ static int compare_uint32_with_double(uint32_t n1, double n2) {
 * Returns:
 *     int: -1 if n1 < n2, 0 if n1 == n2, 1 if n1 > n2.
 */
-int compare(Number n1, Number n2){
-    switch(n1.unionCase){
+int compare(Number* n1, Number* n2){
+    switch(n1->unionCase){
         case NUMBER_UINT32:
-            switch(n2.unionCase){
+            switch(n2->unionCase){
                 case NUMBER_UINT32:
-                    return compare_uint32(n1.type._uint32, n2.type._uint32);
+                    return compare_uint32(n1->type._uint32, n2->type._uint32);
                 case NUMBER_INT32:
-                    return compare_uint32_with_int(n1.type._uint32, n2.type._int);
+                    return compare_uint32_with_int(n1->type._uint32, n2->type._int);
                 case NUMBER_FLOAT:
-                    return compare_uint32_with_float(n1.type._uint32, n2.type._float);
+                    return compare_uint32_with_float(n1->type._uint32, n2->type._float);
                 case NUMBER_DOUBLE:
-                    return compare_uint32_with_double(n1.type._uint32, n2.type._double);
+                    return compare_uint32_with_double(n1->type._uint32, n2->type._double);
             }
             break;
         case NUMBER_INT32:
-            switch(n2.unionCase){
+            switch(n2->unionCase){
                 case NUMBER_UINT32:
-                    return compare_int_with_uint32(n1.type._int, n2.type._uint32);
+                    return compare_int_with_uint32(n1->type._int, n2->type._uint32);
                 case NUMBER_INT32:
-                    return compare_int(n1.type._int, n2.type._int);
+                    return compare_int(n1->type._int, n2->type._int);
                 case NUMBER_FLOAT:
-                    return compare_int_with_float(n1.type._int, n2.type._float);
+                    return compare_int_with_float(n1->type._int, n2->type._float);
                 case NUMBER_DOUBLE:
-                    return compare_int_with_double(n1.type._int, n2.type._double);
+                    return compare_int_with_double(n1->type._int, n2->type._double);
             }
             break;
         case NUMBER_FLOAT:
-            switch(n2.unionCase){
+            switch(n2->unionCase){
                 case NUMBER_UINT32:
-                    return compare_float_with_uint32(n1.type._float, n2.type._uint32);
+                    return compare_float_with_uint32(n1->type._float, n2->type._uint32);
                 case NUMBER_INT32:
-                    return compare_float_with_int(n1.type._float, n2.type._int);
+                    return compare_float_with_int(n1->type._float, n2->type._int);
                 case NUMBER_FLOAT:
-                    return compare_float(n1.type._float, n2.type._float);
+                    return compare_float(n1->type._float, n2->type._float);
                 case NUMBER_DOUBLE:
-                    return compare_float_with_double(n1.type._float, n2.type._double);
+                    return compare_float_with_double(n1->type._float, n2->type._double);
             }
             break;
         case NUMBER_DOUBLE:
-            switch(n2.unionCase){
+            switch(n2->unionCase){
                 case NUMBER_UINT32:
-                    return compare_double_with_uint32(n1.type._double, n2.type._uint32);
+                    return compare_double_with_uint32(n1->type._double, n2->type._uint32);
                 case NUMBER_INT32:
-                    return compare_double_with_int(n1.type._double, n2.type._int);
+                    return compare_double_with_int(n1->type._double, n2->type._int);
                 case NUMBER_FLOAT:
-                    return compare_double_with_float(n1.type._double, n2.type._float);
+                    return compare_double_with_float(n1->type._double, n2->type._float);
                 case NUMBER_DOUBLE:
-                    return compare_double(n1.type._double, n2.type._double);
+                    return compare_double(n1->type._double, n2->type._double);
             }
             break;
     }
     return 0;
+}
+
+bool is_false(Number* n) {
+    return n->type._int == 0 && (n->unionCase == NUMBER_UINT32 || n->unionCase == NUMBER_INT32);
 }

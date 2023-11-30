@@ -91,7 +91,7 @@ bool sensors_collect_into_env(Env *env)
             LOG_DEBUG("Read value %f from Sensor %s. Saving in env position %d\n", val, sensors[i]->name, i);
         }
 
-        set_value(env, i, num);
+        env_set_value(env, i, num);
     }
     return true;
 }

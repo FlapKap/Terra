@@ -3,77 +3,77 @@
 #include <inttypes.h>
 
 // #lizard forgives
-void print_expression_instruction(ExpressionInstruction instr)
+void print_terraprotocol_expression_instruction(TerraProtocol_ExpressionInstructions instr)
 {
     switch (instr)
     {
-    case CONST:
+    case TerraProtocol_CONST:
         printf("CONST");
         break;
-    case VAR:
+    case TerraProtocol_VAR:
         printf("VAR");
         break;
-    case AND:
+    case TerraProtocol_AND:
         printf("AND");
         break;
-    case OR:
+    case TerraProtocol_OR:
         printf("OR");
         break;
-    case NOT:
+    case TerraProtocol_NOT:
         printf("NOT");
         break;
-    case LT:
+    case TerraProtocol_LT:
         printf("LT");
         break;
-    case GT:
+    case TerraProtocol_GT:
         printf("GT");
         break;
-    case EQ:
+    case TerraProtocol_EQ:
         printf("EQ");
         break;
-    case ADD:
+    case TerraProtocol_ADD:
         printf("ADD");
         break;
-    case SUB:
+    case TerraProtocol_SUB:
         printf("SUB");
         break;
-    case MUL:
+    case TerraProtocol_MUL:
         printf("MUL");
         break;
-    case DIV:
+    case TerraProtocol_DIV:
         printf("DIV");
         break;
-    case MOD:
+    case TerraProtocol_MOD:
         printf("MOD");
         break;
-    case LOG:
+    case TerraProtocol_LOG:
         printf("LOG");
         break;
-    case POW:
+    case TerraProtocol_POW:
         printf("POW");
         break;
-    case SQRT:
+    case TerraProtocol_SQRT:
         printf("SQRT");
         break;
-    case EXP:
+    case TerraProtocol_EXP:
         printf("EXP");
         break;
-    case CEIL:
+    case TerraProtocol_CEIL:
         printf("CEIL");
         break;
-    case FLOOR:
+    case TerraProtocol_FLOOR:
         printf("FLOOR");
         break;
-    case ROUND:
+    case TerraProtocol_ROUND:
         printf("ROUND");
         break;
-    case ABS:
+    case TerraProtocol_ABS:
         printf("ABS");
         break;
-    case LTEQ:
+    case TerraProtocol_LTEQ:
         printf("LTEQ");
         break;
-    case GTEQ:
+    case TerraProtocol_GTEQ:
         printf("GTEQ");
         break;
     default:
@@ -82,38 +82,55 @@ void print_expression_instruction(ExpressionInstruction instr)
     }
 }
 
-void print_instruction(const Instruction *instruction)
+void print_terraprotocol_data(const TerraProtocol_Data *instruction)
 {
-    switch (instruction->unionCase)
+    switch (instruction->which_data)
     {
-    case 0:
-        print_expression_instruction(instruction->data._instruction);
+    case TerraProtocol_Data_instruction_tag:
+        print_terraprotocol_expression_instruction(instruction->data.instruction);
         printf(" (ExpressionInstruction)");
         break;
-    case 1:
+
+    case TerraProtocol_Data__uint8_tag:
+        printf("%" PRIu32 " (uint8_t)", instruction->data._uint8);
+        break;
+
+    case TerraProtocol_Data__uint16_tag:
+        printf("%" PRIu32 " (uint16_t)", instruction->data._uint16);
+        break;
+
+    case TerraProtocol_Data__uint32_tag:
         printf("%" PRIu32 " (uint32_t)", instruction->data._uint32);
         break;
-    case 2:
-        printf("%d (int)", instruction->data._int);
+
+    case TerraProtocol_Data__int8_tag:
+        printf("%" PRIi32 " (int8_t)", instruction->data._int8);
         break;
-    case 3:
+
+    case TerraProtocol_Data__int16_tag:
+        printf("%" PRIi32 " (int16_t)", instruction->data._int16);
+        break;
+
+    case TerraProtocol_Data__int32_tag:
+        printf("%" PRIi32 " (int32_t)", instruction->data._int32);
+        break;
+
+    case TerraProtocol_Data__float_tag:
         printf("%f (float)", instruction->data._float);
         break;
-    case 4:
-        printf("%lf (double)", instruction->data._double);
-        break;
-    default:
-        printf("Invalid union case: %d", instruction->unionCase);
+
+    case TerraProtocol_Data__double_tag:
+        printf("%f (double)", instruction->data._double);
         break;
     }
 }
 
-void print_instruction_array(const Instruction *instruction, size_t size)
+void print_terraprotocol_data_array(const TerraProtocol_Data *instruction, size_t size)
 {
     printf("[");
     for (size_t i = 0; i < size; i++)
     {
-        print_instruction(&instruction[i]);
+        print_terraprotocol_data(&instruction[i]);
         printf(", ");
     }
     printf("]");
@@ -167,12 +184,19 @@ void print_number_value_and_ucase(Number number)
 void print_stack(const Stack *stack)
 {
     printf(" Stack (top: %d, size: %d):\n", stack->top, stack->size);
-    printf("  Elements:\n");
-    for (int i = stack->top; i >= 0; i--)
+    if (stack->top == -1)
     {
-        printf("    %d. ", stack->top - i + 1);
-        print_number_value_and_ucase(stack->stack[i]);
-        printf("\n");
+        printf("  Empty\n");
+    }
+    else
+    {
+        printf("  Elements:\n");
+        for (int i = stack->top; i >= 0; i--)
+        {
+            printf("    %d. ", stack->top - i + 1);
+            print_number_value_and_ucase(stack->stack_memory[i]);
+            printf("\n");
+        }
     }
 }
 
@@ -186,68 +210,75 @@ void print_env(const Env *env)
         print_number_value_and_ucase(env->memory[i]);
         printf("\n");
     }
-
-    printf(" Stack:\n");
-    print_stack(env->stack);
 }
 
 void print_expression(const Expression *expression)
 {
-    printf("     Expression (p_size: %d, pc: %d):\n", expression->p_size, expression->pc);
+    printf("     Expression (length: %d, pc: %d):\n", expression->program->instructions_count, expression->pc);
     printf("      Program:\n");
-    print_instruction_array(expression->program, expression->p_size);
+    print_terraprotocol_data_array(expression->program->instructions, expression->program->instructions_count);
     printf("\n");
     printf("      Environment:\n");
     if (expression->env != NULL)
     {
         print_env(expression->env);
-    } else
+    }
+    else
     {
         printf("       NULL\n");
     }
-    
+
     printf("      Stack:\n");
     if (expression->stack != NULL)
     {
         print_stack(expression->stack);
-    } else
+    }
+    else
     {
         printf("       NULL\n");
     }
     printf("\n");
 }
 
-void print_map(const Map *map)
+void print_terraprotocol_expression(const TerraProtocol_Expression *expression)
 {
-    printf("    Map (attribute: %d):\n", map->attribute);
-    printf("     Expression:\n");
-    print_expression(map->expression);
+    printf("    Expression (len = %d):\n", expression->instructions_count);
+    printf("     Program:\n");
+    print_terraprotocol_data_array(expression->instructions, expression->instructions_count);
+    printf("\n");
 }
 
-void print_filter(const Filter *filter)
+void print_terraprotocol_map(const TerraProtocol_MapOperation *map)
+{
+    printf("    Map (attribute: %" PRIi32 "):\n", map->attribute);
+    printf("     Expression:\n");
+    print_terraprotocol_expression(&map->function);
+}
+
+void print_terraprotocol_filter(const TerraProtocol_FilterOperation *filter)
 {
     printf("    Filter:\n");
     printf("     Predicate:\n");
-    print_expression(filter->predicate);
+    print_terraprotocol_expression(&filter->predicate);
 }
 
-void print_window_aggregation_type(WindowAggregationType type)
+void print_terraprotocol_window_aggregation_type(TerraProtocol_WindowAggregationType type)
 {
     switch (type)
     {
-    case MIN:
+    case TerraProtocol_MIN:
         printf("MIN");
         break;
-    case MAX:
+    case TerraProtocol_MAX:
         printf("MAX");
         break;
-    case SUM:
+    case TerraProtocol_SUM:
         printf("SUM");
         break;
-    case AVG:
+    case TerraProtocol_AVG:
         printf("AVG");
         break;
-    case COUNT:
+    case TerraProtocol_COUNT:
         printf("COUNT");
         break;
     default:
@@ -256,14 +287,14 @@ void print_window_aggregation_type(WindowAggregationType type)
     }
 }
 
-void print_window_size_type(WindowSizeType type)
+void print_terraprotocol_window_size_type(TerraProtocol_WindowSizeType type)
 {
     switch (type)
     {
-    case TIMEBASED:
+    case TerraProtocol_TIMEBASED:
         printf("TIMEBASED");
         break;
-    case COUNTBASED:
+    case TerraProtocol_COUNTBASED:
         printf("COUNTBASED");
         break;
     default:
@@ -272,39 +303,39 @@ void print_window_size_type(WindowSizeType type)
     }
 }
 
-void print_window(Window *window)
+void print_terraprotocol_window(const TerraProtocol_WindowOperation *window)
 {
     printf("    Window:\n");
-    printf("     size: %d\n", window->size);
+    printf("     size: %" PRIi32 "\n", window->size);
 
     printf("     sizeType: ");
-    print_window_size_type(window->sizeType);
+    print_terraprotocol_window_size_type(window->sizeType);
     printf("\n");
     printf("     aggregationType: ");
-    print_window_aggregation_type(window->aggregationType);
+    print_terraprotocol_window_aggregation_type(window->aggregationType);
     printf("\n");
 
-    printf("     startAttribute: %d\n", window->startAttribute);
-    printf("     endAttribute: %d\n", window->endAttribute);
-    printf("     resultAttribute: %d\n", window->resultAttribute);
-    printf("     readAttribute: %d\n", window->readAttribute);
+    printf("     startAttribute: %" PRIi32 "\n", window->startAttribute);
+    printf("     endAttribute: %" PRIi32 "\n", window->endAttribute);
+    printf("     resultAttribute: %" PRIi32 "\n", window->resultAttribute);
+    printf("     readAttribute: %" PRIi32 "\n", window->readAttribute);
 }
 
-void print_operation(const Operation *operation)
+void print_terraprotocol_operation(const TerraProtocol_Operation *operation)
 {
-    switch (operation->unionCase)
+    switch (operation->which_operation)
     {
-    case 0:
+    case TerraProtocol_Operation_map_tag:
         printf("   Map operation:\n");
-        print_map(operation->operation.map);
+        print_terraprotocol_map(&operation->operation.map);
         break;
-    case 1:
+    case TerraProtocol_Operation_filter_tag:
         printf("   Filter operation:\n");
-        print_filter(operation->operation.filter);
+        print_terraprotocol_filter(&operation->operation.filter);
         break;
-    case 2:
+    case TerraProtocol_Operation_window_tag:
         printf("   Window operation:\n");
-        print_window(operation->operation.window);
+        print_terraprotocol_window(&operation->operation.window);
         break;
     default:
         printf("   Unknown operation\n");
@@ -312,57 +343,58 @@ void print_operation(const Operation *operation)
     }
 }
 
-void print_query(const Query *query)
+void print_terraprotocol_query(const TerraProtocol_Query *query)
 {
-    printf(" Query (amount: %d):\n", query->amount);
-    for (int i = 0; i < query->amount; i++)
+    printf(" Query (amount: %d):\n", query->operations_count);
+    for (int i = 0; i < query->operations_count; i++)
     {
         printf("  Operation %d:\n", i + 1);
-        print_operation(&query->operations[i]);
+        print_terraprotocol_operation(&query->operations[i]);
     }
 }
 
-void print_message(const Message *message)
+void print_terraprotocol_message(const TerraProtocol_Message *message)
 {
-    printf("Message (amount of queries: %d):\n", message->amount);
-    for (int i = 0; i < message->amount; i++)
+    printf("Message (amount of queries: %d):\n", message->queries_count);
+    for (int i = 0; i < message->queries_count; i++)
     {
         printf(" Query %d:\n", i + 1);
-        print_query(&message->queries[i]);
+        print_terraprotocol_query(&message->queries[i]);
     }
 }
 
-void print_query_response(const QueryResponse *response)
+void print_terraprotocol_query_response(const TerraProtocol_Output_QueryResponse *response)
 {
-    printf("Query Response (id: %d, amount of instructions: %d):\n", response->id, response->amount);
-    for (int i = 0; i < response->amount; i++)
+    printf("Query Response (id: %" PRIi32 ", amount of instructions: %d):\n", response->id, response->response_count);
+    for (int i = 0; i < response->response_count; i++)
     {
         printf("Instruction %d:\n", i + 1);
-        print_instruction(&response->response[i]);
+        print_terraprotocol_data(&response->response[i]);
     }
 }
 
-void print_output_message(const OutputMessage *message)
+void print_terraprotocol_output_message(const TerraProtocol_Output *message)
 {
-    printf("Output Message (amount of responses: %d):\n", message->amount);
-    for (int i = 0; i < message->amount; i++)
+    printf("Output Message (amount of responses: %d):\n", message->responses_count);
+    for (int i = 0; i < message->responses_count; i++)
     {
         printf("Response %d:\n", i + 1);
-        print_query_response(&message->responses[i]);
+        print_terraprotocol_query_response(&message->responses[i]);
         printf("\n");
     }
 }
 
-void print_blockers(pm_blocker_t *blockers, unsigned int size)
+void print_blockers(pm_blocker_t *blockers, size_t size)
 {
     for (unsigned int i = 0; i < size; i++)
     {
         uint8_t blocker_num = blockers->blockers[i];
-        printf("Power mode: %u, blockers: %d\n", i, (int) blocker_num);
+        printf("Power mode: %u, blockers: %d\n", i, (int)blocker_num);
     }
 }
 
-void print_device_info(void){
+void print_device_info(void)
+{
     printf("Device Information:\n");
     printf("CPU: %s\n", RIOT_CPU);
     printf("Board: %s\n", RIOT_BOARD);

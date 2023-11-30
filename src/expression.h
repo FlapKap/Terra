@@ -4,6 +4,8 @@
 #include "number.h"
 #include "operators.h"
 
-Number call(Expression *e);
+void expression_init_expression(Expression* e, TerraProtocol_Expression* program, Env* env, Stack* stack);
+
+Number expression_call(Expression *e);
 
 #endif

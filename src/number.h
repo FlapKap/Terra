@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef enum __attribute__((packed)) _number_union_case_t {
     NUMBER_UINT32,
@@ -22,6 +23,7 @@ typedef struct {
 } Number;
 
 
-int compare(Number n1, Number n2);
+int compare(Number* n1, Number* n2);
+bool is_false(Number*);
 
 #endif /* NUMBER_H */

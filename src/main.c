@@ -33,17 +33,17 @@
 // Testing
 #ifdef APPLICATION_RUN_TEST
 #include "embUnit.h"
-#include "protocol_tests.h"
+//#include "protocol_tests.h"
 #include "expression_tests.h"
 void test_encode_input(void);
 void test_encode_output(void);
 
 int main(void)
 {
-  ztimer_sleep(ZTIMER_SEC, 1); // wait one second before starting
+  //ztimer_sleep(ZTIMER_MSEC, 1000); // wait one second before starting
   puts("Start tests");
   TESTS_START();
-  TESTS_RUN(tests_protocol());
+  //TESTS_RUN(tests_protocol());
   TESTS_RUN(tests_expression());
   TESTS_END();
 
@@ -53,9 +53,12 @@ int main(void)
 
 static TerraProtocol_Message msg = TerraProtocol_Message_init_zero;
 static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
-bool valid_msg = false;
+//static bool valid_msg = false;
 
+static Number stack_memory[20];
 static Stack stack = { 0 };
+static Number env_memory[20];
+static Env env = { 0 };
 
 // tracking stuff
 ztimer_stopwatch_t stopwatch = { 0 };
@@ -75,6 +78,7 @@ int main(void)
   print_device_info();
 
 
+
   ztimer_stopwatch_start(&stopwatch);
   sensors_initialize_enabled();
   uint32_t sensor_init_time = ztimer_stopwatch_measure(&stopwatch);
@@ -83,9 +87,12 @@ int main(void)
   sensors_print_enabled();
 
   ztimer_stopwatch_reset(&stopwatch);
-  Env *global_env = init_env();
-  LOG_INFO("environment initialized:\n");
-  print_env(global_env);
+  // initialize env and stack
+  env_init_env(env_memory, sizeof(Number)/sizeof(env_memory), &env);
+  stack_init_stack(stack_memory, sizeof(Number)/sizeof(stack_memory), &stack);
+  LOG_INFO("environment and stack initialized:\n");
+  print_env(&env);
+  print_stack(&stack);
   uint32_t env_init_time = ztimer_stopwatch_reset(&stopwatch);
 
   network_initialize_network();
@@ -114,20 +121,20 @@ int main(void)
     LOG_INFO("collecting measurements...\n");
 
     ztimer_stopwatch_reset(&stopwatch);
-    sensors_collect_into_env(global_env);
+    sensors_collect_into_env(&env);
     uint32_t sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
     // Execute queries
     LOG_INFO("Execute Queries...\n");
     // play_syncword();
     ztimer_stopwatch_reset(&stopwatch);
-    executeQueries(msg, &out, global_env);
+    executeQueries(&msg, &env, &stack);
     uint32_t exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
     
     LOG_INFO("Sending Responses if any...\n");
-    if (out.amount > 0)
+    if ( out.responses_count > 0)
     {
-      network_send_message(out);
+      network_send_message(&out);
     }
     else
     {

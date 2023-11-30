@@ -8,34 +8,44 @@
 #include "expression.h"
 #include "expression_tests.h"
 #include "execution.h"
+#include <terraprotocol.pb.h>
+
 
 static Expression expres;
+static Number stack_memory[20];
+static Stack stack;
+static Number env_memory[20];
+static Env env;
 
 static void setUp(void)
 {
-  expres.env = init_env();
-  expres.stack = expres.env->stack;
-  // exp->program = program;
-  // exp->p_size = p_size;
+  
+  env_init_env(env_memory,sizeof(Number)/sizeof(env_memory), &env);
+  stack_init_stack(stack_memory, sizeof(Number)/sizeof(stack_memory), &stack);
+  expres.env = &env;
+  expres.stack = &stack;
+  expres.pc = 0;
 }
 
 static void tearDown(void)
 {
-  free(expres.env->memory);
-  free(expres.env->stack->stack);
-  free(expres.env->stack);
-  //free(expres.program);
+  env_clear_env(expres.env);
+  stack_clear_stack(expres.stack);
+
 }
 
 // static void Adding a const to the stack
 static void testPushToStack(void)
 {
   // Arrange
-  Instruction p[2] = {{{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}};
-  expres.program = p;
-  expres.p_size = 2;
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {3}};
+  p.instructions_count = 2;
+  expres.program = &p;
+
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
   int expected = 3;
   // Assert
   TEST_ASSERT_EQUAL_INT(expected, actual);
@@ -45,15 +55,17 @@ static void testPushToStack(void)
 static void testPushVarToStack(void)
 {
   // Arrange
-  Instruction p[2] = {{{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}};
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_VAR}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__uint32_tag, {0}};
+  p.instructions_count = 2;
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 2;
-  Number val = {{10}, 2};
-  set_value(expres.env, 0, val);
+  Number val = {{10}, NUMBER_INT32};
+  env_set_value(expres.env, 0, val);
 
   // Act
-  Number popped = call(&expres);
+  Number popped = expression_call(&expres);
   int actual = popped.type._int;
   int expected = 10;
 
@@ -64,11 +76,17 @@ static void testPushVarToStack(void)
 static void testAnd1(void)
 {
   // Arrange
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{AND}, 0}};
-  expres.program = p;
-  expres.p_size = 5;
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {1}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {1}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_AND}};
+  p.instructions_count = 5;
+  expres.program = &p;
+
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(actual);
@@ -77,12 +95,17 @@ static void testAnd1(void)
 static void testAnd2(void)
 {
   // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {0}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {0}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_AND}};
+  p.instructions_count = 5;
+  expres.program = &p;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{AND}, 0}};
-  expres.program = p;
-  expres.p_size = 5;
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(!actual);
@@ -91,28 +114,37 @@ static void testAnd2(void)
 static void testAnd3(void)
 {
   // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {1}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {0}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_AND}};
+  p.instructions_count = 5;
+  expres.program = &p;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{AND}, 0}};
-
-  expres.program = p;
-  expres.p_size = 5;
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(!actual);
 }
 
+
 static void testOr1(void)
 {
   // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {1}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {0}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_OR}};
+  p.instructions_count = 5;
+  expres.program = &p;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{OR}, 0}};
-
-  expres.program = p;
-  expres.p_size = 5;
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(actual);
@@ -121,13 +153,17 @@ static void testOr1(void)
 static void testOr2(void)
 {
   // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {0}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {0}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_OR}};
+  p.instructions_count = 5;
+  expres.program = &p;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{OR}, 0}};
-
-  expres.program = p;
-  expres.p_size = 5;
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(!actual);
@@ -136,13 +172,16 @@ static void testOr2(void)
 static void testNot1(void)
 {
   // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int8_tag, {0}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_NOT}};
+  p.instructions_count = 3;
+  
+  expres.program = &p;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{NOT}, 0}};
-
-  expres.program = p;
-  expres.p_size = 3;
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(actual);
@@ -151,13 +190,16 @@ static void testNot1(void)
 static void testNot2(void)
 {
   // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__double_tag, {0.0}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_NOT}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 0.0, 4}, {{NOT}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 3;
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(actual);
@@ -166,13 +208,16 @@ static void testNot2(void)
 static void testNot3(void)
 {
   // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__uint32_tag, {5}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_NOT}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._uint32 = 5, 1}, {{NOT}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 3;
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(!actual);
@@ -181,28 +226,37 @@ static void testNot3(void)
 static void testNot4(void)
 {
   // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {1}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_NOT}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{NOT}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 3;
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(!actual);
 }
 
+
 static void testLT1(void)
 {
   // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__double_tag, {1.0}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {5}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_LT}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._double = 1.0, INSTRUCTION_DOUBLE}, {{CONST}, 0}, {.data._int = 5, INSTRUCTION_INT}, {{LT}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 5;
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(actual);
@@ -211,12 +265,18 @@ static void testLT1(void)
 static void testLT2(void)
 {
   // Arrange
-  Instruction p[5] = {{{CONST}, 0}, {.data._uint32 = 7, INSTRUCTION_UINT32}, {{CONST}, 0}, {.data._float = 3.4f, INSTRUCTION_FLOAT}, {{LT}, 0}};
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__uint32_tag, {7}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__float_tag, {3.4f}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_LT}};
+  p.instructions_count = 5;
 
-  expres.program = p;
-  expres.p_size = 5;
+  expres.program = &p;
+
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(!actual);
@@ -225,12 +285,18 @@ static void testLT2(void)
 static void testGT1(void)
 {
   // Arrange
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = -3, INSTRUCTION_INT}, {{CONST}, 0}, {.data._uint32 = 5, INSTRUCTION_UINT32}, {{GT}, 0}};
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {-3}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__uint32_tag, {5}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_GT}};
+  p.instructions_count = 5;
 
-  expres.program = p;
-  expres.p_size = 5;
+  expres.program = &p;
+
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
 
   // Assert
   TEST_ASSERT(!actual);
@@ -239,39 +305,59 @@ static void testGT1(void)
 static void testGT2(void)
 {
   // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__double_tag, {3.14}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {0}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_GT}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._double = 3.14, INSTRUCTION_DOUBLE}, {{CONST}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{GT}, 0}};
-  expres.program = p;
-  expres.p_size = 5;
+  expres.program = &p;
+
+
   // Act
-  int actual = call(&expres).type._int;
+  int actual = expression_call(&expres).type._int;
   // Assert
   TEST_ASSERT(actual);
 }
 
 static void testEqual(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {10}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {10}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_EQ}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{EQ}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 5;
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
 
   // Assert
   TEST_ASSERT(actual.type._int);
 }
 
+
 static void testAdd(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {10}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {3}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_ADD}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{ADD}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 5;
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 13;
 
   // Assert
@@ -280,13 +366,19 @@ static void testAdd(void)
 
 static void testSub(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {10}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {3}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_SUB}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{SUB}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 5;
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 7;
 
   // Assert
@@ -295,13 +387,19 @@ static void testSub(void)
 
 static void testMul(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {10}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {3}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_MUL}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{MUL}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 5;
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 30;
 
   // Assert
@@ -311,13 +409,19 @@ static void testMul(void)
 
 static void testDiv(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {10}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {3}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_DIV}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{DIV}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 5;
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 3;
 
   // Assert
@@ -327,13 +431,19 @@ static void testDiv(void)
 
 static void testMod(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {10}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {3}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_MOD}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 10, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{MOD}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 5;
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 1;
 
   // Assert
@@ -343,28 +453,41 @@ static void testMod(void)
 
 void testLog(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__double_tag, .data._double = 10.0};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_LOG}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 10, INSTRUCTION_DOUBLE}, {{LOG}, 0}};
-  expres.program = p;
-  expres.p_size = 3;
+  expres.program = &p;
+
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   double expected = log(10);
-
+  printf("actual: %lf, expected: %lf\n", actual.type._double, expected);
+  printf("cases: %d, %d\n", actual.unionCase, NUMBER_DOUBLE);
   // Assert
   TEST_ASSERT(NUMBER_DOUBLE == actual.unionCase);
   TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
+  
 }
 
 static void testPow(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {2}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {3}};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_POW}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{POW}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 5;
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   double expected = pow(2, 3);
 
   // Assert
@@ -374,13 +497,17 @@ static void testPow(void)
 
 static void testSqrt(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {4}};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_SQRT}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = 4, INSTRUCTION_INT}, {{SQRT}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 3;
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   double expected = sqrt(4);
 
   // Assert
@@ -388,15 +515,20 @@ static void testSqrt(void)
   TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
 }
 
-static void expValue(void)
+
+static void testExpValue(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int32_tag, .data._int32 = 1};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_EXP}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{EXP}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 3;
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   double expected = exp(1);
 
   // Assert
@@ -404,15 +536,19 @@ static void expValue(void)
   TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
 }
 
-static void ceilValue(void)
+static void testCeilValue(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__double_tag, .data._double = 1.4};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CEIL}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.4, INSTRUCTION_DOUBLE}, {{CEIL}, 0}};
-  expres.p_size = 3;
-  expres.program = p;
+  expres.program = &p;
 
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 2;
 
   // Assert
@@ -420,15 +556,19 @@ static void ceilValue(void)
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
-static void ceilValueBig(void)
+static void testCeilValueBig(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__double_tag, .data._double = 1.9};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CEIL}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.9, INSTRUCTION_DOUBLE}, {{CEIL}, 0}};
-  expres.p_size = 3;
-  expres.program = p;
+  expres.program = &p;
 
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 2;
 
   // Assert
@@ -436,15 +576,19 @@ static void ceilValueBig(void)
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
-static void floorValue(void)
+static void testFloorValue(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__double_tag, .data._double = 1.4};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_FLOOR}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.4, INSTRUCTION_DOUBLE}, {{FLOOR}, 0}};
-  expres.p_size = 3;
-  expres.program = p;
+  expres.program = &p;
 
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 1;
 
   // Assert
@@ -452,15 +596,19 @@ static void floorValue(void)
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
-static void floorValueBig(void)
+static void testFloorValueBig(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__double_tag, .data._double = 1.9};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_FLOOR}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.9, INSTRUCTION_DOUBLE}, {{FLOOR}, 0}};
-  expres.p_size = 3;
-  expres.program = p;
+  expres.program = &p;
 
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 1;
 
   // Assert
@@ -468,15 +616,19 @@ static void floorValueBig(void)
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
-static void roundUnderHalf(void)
+static void testRoundUnderHalf(void)
 {
-
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.4, INSTRUCTION_DOUBLE}, {{ROUND}, 0}};
-  expres.p_size = 3;
-  expres.program = p;
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__double_tag, .data._double = 1.4};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_ROUND}};
+  p.instructions_count = 3;
+  
+  expres.program = &p;
 
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 1;
   
   // Assert
@@ -484,30 +636,38 @@ static void roundUnderHalf(void)
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
-static void roundOverHalf(void)
+static void testRoundOverHalf(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__double_tag, .data._double = 1.6};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_ROUND}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._double = 1.6, INSTRUCTION_DOUBLE}, {{ROUND}, 0}};
-  expres.p_size = 3;
-  expres.program = p;
+  expres.program = &p;
 
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 2;
   // Assert
   TEST_ASSERT(NUMBER_INT32 == actual.unionCase);
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
-static void absoluteValue1(void)
+static void testAbsoluteValue1(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 5};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_ABS}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = 5, INSTRUCTION_INT}, {{ABS}, 0}};
-  expres.p_size = 3;
-  expres.program = p;
+  expres.program = &p;
 
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   double expected = 5;
 
   // Assert
@@ -515,15 +675,19 @@ static void absoluteValue1(void)
   TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
 }
 
-static void absoluteValue2(void)
+static void testAbsoluteValue2(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = -5};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_ABS}};
+  p.instructions_count = 3;
 
-  Instruction p[3] = {{{CONST}, 0}, {.data._int = -5, INSTRUCTION_INT}, {{ABS}, 0}};
-  expres.p_size = 3;
-  expres.program = p;
+  expres.program = &p;
 
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   double expected = 5;
 
   // Assert
@@ -531,15 +695,21 @@ static void absoluteValue2(void)
   TEST_ASSERT(actual.type._double >= expected - 0.001 && actual.type._double <= expected + 0.001);
 }
 
-static void lessThanEqual1(void)
+static void testLessThanEqual1(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 2};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 3};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_LTEQ}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{LTEQ}, 0}};
+  expres.program = &p;
 
-  expres.program = p;
-  expres.p_size = 5;
   // Act
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 1;
 
   // Assert
@@ -547,14 +717,21 @@ static void lessThanEqual1(void)
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
-static void lessThanEqual2(void)
+static void testLessThanEqual2(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 3};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 3};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_LTEQ}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{LTEQ}, 0}};
-  expres.program = p;
-  expres.p_size = 5;
+  expres.program = &p;
+
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 1;
 
   // Assert
@@ -562,14 +739,21 @@ static void lessThanEqual2(void)
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
-static void greaterThanEqual1(void)
+static void testGreaterThanEqual1(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 4};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 3};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_GTEQ}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 4, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{GTEQ}, 0}};
-  expres.program = p;
-  expres.p_size = 5;
+  expres.program = &p;
+
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 1;
 
   // Assert
@@ -577,14 +761,21 @@ static void greaterThanEqual1(void)
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
-static void greaterThanEqual2(void)
+static void testGreaterThanEqual2(void)
 {
+  // Arrange
+  TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
+  p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 3};
+  p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  p.instructions[3] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 3};
+  p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_GTEQ}};
+  p.instructions_count = 5;
 
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 3, INSTRUCTION_INT}, {{GTEQ}, 0}};
-  expres.program = p;
-  expres.p_size = 5;
+  expres.program = &p;
+
   // Action
-  Number actual = call(&expres);
+  Number actual = expression_call(&expres);
   int expected = 1;
 
   // Assert
@@ -592,224 +783,125 @@ static void greaterThanEqual2(void)
   TEST_ASSERT_EQUAL_INT(expected, actual.type._int);
 }
 
-static void og_test_execute_query_with_result(void)
+
+static void test_execute_query_with_result(void)
 {
   //[CONST, 2, VAR, 0, MUL]
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{MUL}, 0}};
 
+  // Arrange
   Number envVal;
   envVal.type._int = 4;
   envVal.unionCase = NUMBER_INT32;
 
-  expres.program = p;
-  expres.p_size = 5;
-  set_value(expres.env, 0, envVal);
+  env_set_value(expres.env, 0, envVal);
 
-  Map map;
-  map.attribute = 1;
-  map.expression = &expres;
+  TerraProtocol_Query query = TerraProtocol_Query_init_zero;
 
-  Operation op;
-  op.operation.map = &map;
-  op.unionCase = 0;
-
-  Query query;
-  query.operations = &op;
-  query.amount = 1;
+  query.operations_count = 1;
+  query.operations[0].which_operation = TerraProtocol_Operation_map_tag;
+  query.operations[0].operation.map.attribute = 1;
+  query.operations[0].operation.map.function.instructions_count = 5;
+  query.operations[0].operation.map.function.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  query.operations[0].operation.map.function.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 2};
+  query.operations[0].operation.map.function.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_VAR}};
+  query.operations[0].operation.map.function.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int16_tag, .data._int16 = 0};
+  query.operations[0].operation.map.function.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_MUL}};
 
   // Action
-  QueryResponse queryRes;
-  executeQuery(&query, &queryRes, expres.env);
+  executeQuery(&query, expres.env, expres.stack);
 
   // Assert
-  TEST_ASSERT(NUMBER_INT32 == expres.env->stack->stack[0].unionCase);
-  TEST_ASSERT_EQUAL_INT(8, expres.env->stack->stack[0].type._int);
+  // that the environment has the result
 
-  TEST_ASSERT_EQUAL_INT(-1, expres.env->stack->top); // stack should be empty
+  TEST_ASSERT(NUMBER_INT32 == expres.env->memory[1].unionCase);
+  TEST_ASSERT_EQUAL_INT(8, expres.env->memory[1].type._int);
+
+  TEST_ASSERT_EQUAL_INT(-1, expres.stack->top); // stack should be empty
 }
 
-static void og_test_execute_query_without_result(void)
+static void test_execute_query_without_result(void)
 {
-
-  Instruction mapPro[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{MUL}, 0}};
-  Instruction filterPro[5] = {{{VAR}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{LT}, 0}};
-
   Number envVal;
   envVal.type._int = 4;
   envVal.unionCase = NUMBER_INT32;
 
-  Env *env = init_env();
-  set_value(env, 0, envVal);
+  env_set_value(expres.env, 0, envVal);
 
-  Expression mapExp;
-  mapExp.program = mapPro;
-  mapExp.p_size = 5;
-  mapExp.env = env;
+  TerraProtocol_Query query = TerraProtocol_Query_init_zero;
 
-  Expression filterExp;
-  filterExp.program = filterPro;
-  filterExp.p_size = 5;
-  filterExp.env = env;
-
-  Map map;
-  map.attribute = 1;
-  map.expression = &mapExp;
-
-  Filter filter;
-  filter.predicate = &filterExp;
-
-  Operation mapOp;
-  mapOp.operation.map = &map;
-  mapOp.unionCase = 0;
-
-  Operation filterOp;
-  filterOp.operation.filter = &filter;
-  filterOp.unionCase = 1;
-
-  Operation ops[2] = {mapOp, filterOp};
-
-  Query query;
-  query.operations = ops;
-  query.amount = 2;
-
+  query.operations_count = 2;
+  query.operations[0].which_operation = TerraProtocol_Operation_map_tag;
+  query.operations[0].operation.map.attribute = 1;
+  query.operations[0].operation.map.function.instructions_count = 5;
+  query.operations[0].operation.map.function.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  query.operations[0].operation.map.function.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 2};
+  query.operations[0].operation.map.function.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_VAR}};
+  query.operations[0].operation.map.function.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int16_tag, .data._int16 = 0};
+  query.operations[0].operation.map.function.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_MUL}};
+  query.operations[1].which_operation = TerraProtocol_Operation_filter_tag;
+  query.operations[1].operation.filter.predicate.instructions_count = 5;
+  query.operations[1].operation.filter.predicate.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_VAR}};
+  query.operations[1].operation.filter.predicate.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int16_tag, .data._int16 = 1};
+  query.operations[1].operation.filter.predicate.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  query.operations[1].operation.filter.predicate.instructions[3] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 2};
+  query.operations[1].operation.filter.predicate.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_LT}};
+  
   // Action
-  QueryResponse output;
-  executeQuery(&query, &output, env);
+  executeQuery(&query, expres.env, expres.stack);
 
   // Assert
-  TEST_ASSERT(NUMBER_INT32 == env->stack->stack[0].unionCase);
-  TEST_ASSERT_EQUAL_INT(0, env->stack->stack[0].type._int);
+  TEST_ASSERT(NUMBER_INT32 == expres.stack->stack_memory[0].unionCase);
+  TEST_ASSERT_EQUAL_INT(0, expres.stack->stack_memory[0].type._int);
 }
 
-static void og_test_execute_quries_single_result(void)
+
+static void test_execute_query_with_multiple_results(void)
 {
-
-  Instruction p[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{MUL}, 0}};
-
   Number envVal;
   envVal.type._int = 4;
   envVal.unionCase = NUMBER_INT32;
 
-  expres.program = p;
-  expres.p_size = 5;
-  set_value(expres.env, 0, envVal);
+  env_set_value(expres.env, 0, envVal);
 
-  Map map;
-  map.attribute = 1;
-  map.expression = &expres;
 
-  Operation op;
-  op.operation.map = &map;
-  op.unionCase = 0;
+  TerraProtocol_Query query = TerraProtocol_Query_init_zero;
 
-  Query query;
-  query.operations = &op;
-  query.amount = 1;
+  query.operations_count = 2;
+  query.operations[0].which_operation = TerraProtocol_Operation_map_tag;
+  query.operations[0].operation.map.attribute = 1;
+  query.operations[0].operation.map.function.instructions_count = 5;
+  query.operations[0].operation.map.function.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  query.operations[0].operation.map.function.instructions[1] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 2};
+  query.operations[0].operation.map.function.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_VAR}};
+  query.operations[0].operation.map.function.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__int16_tag, .data._int16 = 0};
+  query.operations[0].operation.map.function.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_MUL}};
+  
+  query.operations[1].which_operation = TerraProtocol_Operation_map_tag;
+  query.operations[1].operation.map.attribute = 2;
+  query.operations[1].operation.map.function.instructions_count = 5;
+  query.operations[1].operation.map.function.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_VAR}};
+  query.operations[1].operation.map.function.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int16_tag, .data._int16 = 1};
+  query.operations[1].operation.map.function.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
+  query.operations[1].operation.map.function.instructions[3] = (TerraProtocol_Data) {.which_data = TerraProtocol_Data__int16_tag, .data._int16 = 2};
+  query.operations[1].operation.map.function.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_ADD}};
+  
 
-  Message msg;
-  msg.amount = 1;
-  msg.queries = &query;
-
-  // Action
-  OutputMessage output;
-  executeQueries(&msg, &output, expres.env);
-
-  // Assert
-  TEST_ASSERT(NUMBER_INT32 == expres.env->stack->stack[0].unionCase);
-  TEST_ASSERT_EQUAL_INT(8, expres.env->stack->stack[0].type._int);
-
-  TEST_ASSERT_EQUAL_INT(NUMBER_INT32, expres.env->stack->stack[1].unionCase);
-  TEST_ASSERT_EQUAL_INT(4, expres.env->stack->stack[1].type._int);
-}
-
-static void og_test_execute_quries_multiple_results(void)
-{
-
-  Instruction mapPro[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{MUL}, 0}};
-  Instruction filterPro[5] = {{{VAR}, 0}, {.data._int = 1, INSTRUCTION_INT}, {{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{LT}, 0}};
-
-  Number envVal;
-  envVal.type._int = 4;
-  envVal.unionCase = NUMBER_INT32;
-
-  Env *env = init_env();
-  set_value(env, 0, envVal);
-
-  Expression mapExp;
-  mapExp.program = mapPro;
-  mapExp.p_size = 5;
-  mapExp.env = env;
-
-  Expression filterExp;
-  filterExp.program = filterPro;
-  filterExp.p_size = 5;
-  filterExp.env = env;
-
-  Map map;
-  map.attribute = 1;
-  map.expression = &mapExp;
-
-  Filter filter;
-  filter.predicate = &filterExp;
-
-  Operation mapOp;
-  mapOp.operation.map = &map;
-  mapOp.unionCase = 0;
-
-  Operation filterOp;
-  filterOp.operation.filter = &filter;
-  filterOp.unionCase = 1;
-
-  Operation ops[2] = {mapOp, filterOp};
-
-  Query query1;
-  query1.operations = ops;
-  query1.amount = 2;
-
-  Instruction mapPro2[5] = {{{CONST}, 0}, {.data._int = 2, INSTRUCTION_INT}, {{VAR}, 0}, {.data._int = 0, INSTRUCTION_INT}, {{MUL}, 0}};
-
-  Expression mapExp2;
-  mapExp2.program = mapPro2;
-  mapExp2.p_size = 5;
-  mapExp2.env = env;
-
-  Map map2;
-  map2.attribute = 1;
-  map2.expression = &mapExp2;
-
-  Operation mapOp2;
-  mapOp2.operation.map = &map2;
-  mapOp2.unionCase = 0;
-
-  Query query2;
-  query2.operations = &mapOp2;
-  query2.amount = 1;
-
-  Query queries[2] = {query1, query2};
-
-  Message msg;
-  msg.amount = 2;
-  msg.queries = queries;
-
-  // Action
-  OutputMessage output;
-  executeQueries(&msg, &output, env);
+  executeQuery(&query, expres.env, expres.stack);
 
   // Assert
-  TEST_ASSERT_EQUAL_INT(2, output.amount);
+
   // output of query 1
-  TEST_ASSERT_EQUAL_INT(1, output.responses[0].amount);
-  TEST_ASSERT_EQUAL_INT(2, output.responses[0].response->unionCase);
-  TEST_ASSERT_EQUAL_INT(0, output.responses[0].response->data._int);
+  TEST_ASSERT_EQUAL_INT(8, env.memory[1].type._int);
+  TEST_ASSERT_EQUAL_INT(NUMBER_INT32, env.memory[1].unionCase);
 
   //output of query 2
-  TEST_ASSERT_EQUAL_INT(1, output.responses[1].amount);
-  TEST_ASSERT_EQUAL_INT(2, output.responses[1].response->unionCase);
-  TEST_ASSERT_EQUAL_INT(8, output.responses[1].response->data._int);
+  TEST_ASSERT_EQUAL_INT(10, env.memory[2].type._int);
+  TEST_ASSERT_EQUAL_INT(NUMBER_INT32, env.memory[1].unionCase);
 
   //check that stack is empty
-  TEST_ASSERT_EQUAL_INT(-1, env->stack->top);
+  TEST_ASSERT_EQUAL_INT(-1, expres.stack->top);
 }
+
 TestRef tests_expression(void)
 {
   EMB_UNIT_TESTFIXTURES(fixtures){
@@ -837,24 +929,23 @@ TestRef tests_expression(void)
       new_TestFixture(testLog),
       new_TestFixture(testPow),
       new_TestFixture(testSqrt),
-      new_TestFixture(expValue),
-      new_TestFixture(ceilValue),
-      new_TestFixture(ceilValueBig),
-      new_TestFixture(floorValue),
-      new_TestFixture(floorValueBig),
-      new_TestFixture(roundUnderHalf),
-      new_TestFixture(roundOverHalf),
-      new_TestFixture(absoluteValue1),
-      new_TestFixture(absoluteValue2),
-      new_TestFixture(lessThanEqual1),
-      new_TestFixture(lessThanEqual2),
-      new_TestFixture(greaterThanEqual1),
-      new_TestFixture(greaterThanEqual2),
-      // The original testsuite
-      new_TestFixture(og_test_execute_query_with_result),
-      new_TestFixture(og_test_execute_query_without_result),
-      new_TestFixture(og_test_execute_quries_single_result),
-      new_TestFixture(og_test_execute_quries_multiple_results),
+      new_TestFixture(testExpValue),
+      new_TestFixture(testCeilValue),
+      new_TestFixture(testCeilValueBig),
+      new_TestFixture(testFloorValue),
+      new_TestFixture(testFloorValueBig),
+      new_TestFixture(testRoundUnderHalf),
+      new_TestFixture(testRoundOverHalf),
+      new_TestFixture(testAbsoluteValue1),
+      new_TestFixture(testAbsoluteValue2),
+      new_TestFixture(testLessThanEqual1),
+      new_TestFixture(testLessThanEqual2),
+      new_TestFixture(testGreaterThanEqual1),
+      new_TestFixture(testGreaterThanEqual2),
+      // // The original testsuite
+      new_TestFixture(test_execute_query_with_result),
+      new_TestFixture(test_execute_query_without_result),
+      new_TestFixture(test_execute_query_with_multiple_results),
   };
   EMB_UNIT_TESTCALLER(expression_tests, &setUp, &tearDown, fixtures);
   return (TestRef)&expression_tests;

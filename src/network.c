@@ -28,10 +28,8 @@ static const pb_byte_t raw_message[] = DEFAULT_QUERY_AS_PB_CHAR_ARRAY;
 
 bool network_initialize_network(void){
   LOG_DEBUG("network_initialize_network: DISABLE_LORA enabled so no network is actually initialized\n");
-  pb_istream_t stream = pb_istream_from_buffer(raw_message, sizeof(raw_message));
-  bool res = decode_input_message(&stream, &message);
-  print_message(&message);
-  return res;
+
+  return true;
 }
 
 bool network_is_connected(void){
@@ -44,12 +42,15 @@ bool network_has_valid_message(void){
   return true;
 }
 
-Message* network_get_message(void){
-  return &message;
+bool network_get_message(TerraProtocol_Message* out){
+  pb_istream_t stream = pb_istream_from_buffer(raw_message, sizeof(raw_message));
+  bool res = pb_decode(&stream, TerraProtocol_Message_fields, out);
+  print_terraprotocol_message(out);
+  return res;
 }
-bool network_send_message(OutputMessage msg){
+bool network_send_message(TerraProtocol_Output* msg){
   LOG_DEBUG("network_send_message: DISABLE_LORA enabled so no message is actually sent. Just logged.\n");
-  print_output_message(&msg);
+  print_terraprotocol_output_message(msg);
   return true;
 }
 
@@ -85,7 +86,7 @@ bool network_get_message(TerraProtocol_Message* out){
 
 bool network_send_message(TerraProtocol_Output* msg){
   //encode
-  uint8_t buffer[256];
+  uint8_t buffer[255];
   pb_ostream_t ostream = pb_ostream_from_buffer(buffer, sizeof(buffer));
   bool res = pb_encode(&ostream, TerraProtocol_Output_fields, msg);
   if (!res){
