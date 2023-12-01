@@ -68,6 +68,7 @@ COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
 # PACKAGES
 USEMODULE += saul_default
 USEMODULE += fmt
+USEMODULE += periph_eeprom
 #USEMODULE += idle_thread
 USEMODULE += pm_layered
 ## Nanopb stuff

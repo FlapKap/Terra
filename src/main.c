@@ -20,6 +20,7 @@
 #include "network.h"
 #include "sensors.h"
 #include "print_utils.h"
+#include "configuration.h"
 
 // RIOT includes
 #include "pm_layered.h"
@@ -50,9 +51,15 @@ int main(void)
   return 0;
 }
 #else
-
 static TerraProtocol_Message msg = TerraProtocol_Message_init_zero;
 static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
+static TerraConfiguration config = {
+    .loop_counter = 0,
+    .query = &msg,
+    .loramac = &loramac
+};
+
+
 //static bool valid_msg = false;
 
 static Number stack_memory[20];
@@ -107,7 +114,7 @@ int main(void)
 
   
   ztimer_stopwatch_start(&loop_stopwatch);
-
+  configuration_save(&config);
   while (1)
   {
     LOG_INFO("Main loop iteration\n");
