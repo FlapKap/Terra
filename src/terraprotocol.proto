@@ -51,9 +51,9 @@ message Data {
 message Output {
     message QueryResponse {
         int32 id = 1;
-        repeated Data response = 2 [(nanopb).max_count = 20];
+        repeated Data response = 2 [(nanopb).max_count = 5];
     }
-    repeated QueryResponse responses = 1 [(nanopb).max_count = 2];
+    repeated QueryResponse responses = 1 [(nanopb).max_count = 1];
 }
 
 message Expression {
@@ -102,9 +102,9 @@ message Operation {
 
 message Query {
     //bytes resultType = 2; //For some reason minipb breaks if I make this a repeated enum or int32
-    repeated Operation operations = 1 [(nanopb).max_count = 3];   
+    repeated Operation operations = 1 [(nanopb).max_count = 2];   
 }
 
 message Message {
-    repeated Query queries = 1 [(nanopb).max_count = 2];
+    repeated Query queries = 1 [(nanopb).max_count = 1];
 }

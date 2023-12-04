@@ -34,8 +34,9 @@
 // Testing
 #ifdef APPLICATION_RUN_TEST
 #include "embUnit.h"
-//#include "protocol_tests.h"
+
 #include "expression_tests.h"
+#include "configuration_tests.h"
 void test_encode_input(void);
 void test_encode_output(void);
 
@@ -44,8 +45,8 @@ int main(void)
   //ztimer_sleep(ZTIMER_MSEC, 1000); // wait one second before starting
   puts("Start tests");
   TESTS_START();
-  //TESTS_RUN(tests_protocol());
   TESTS_RUN(tests_expression());
+  TESTS_RUN(tests_configuration());
   TESTS_END();
 
   return 0;
