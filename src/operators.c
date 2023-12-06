@@ -35,17 +35,26 @@ void copy_instruction_to_number(TerraProtocol_Data *src, Number *dest)
 {
     switch (src->which_data)
     {
-        //these case-fallthroughs relies on union-cases always
-        // expanding to the biggest type.
-        // I.e. we can still read a uint8 as if it where a uint32
         case TerraProtocol_Data__uint8_tag:
+            dest->unionCase = NUMBER_UINT32;
+            dest->type._uint32 = src->data._uint8;
+            break;
         case TerraProtocol_Data__uint16_tag:
+            dest->unionCase = NUMBER_UINT32;
+            dest->type._uint32 = src->data._uint16;
+            break;
         case TerraProtocol_Data__uint32_tag:
             dest->unionCase = NUMBER_UINT32;
             dest->type._uint32 = src->data._uint32;
             break;
         case TerraProtocol_Data__int8_tag:
+            dest->unionCase = NUMBER_INT32;
+            dest->type._int = src->data._int8;
+            break;
         case TerraProtocol_Data__int16_tag:
+            dest->unionCase = NUMBER_INT32;
+            dest->type._int = src->data._int16;
+            break;
         case TerraProtocol_Data__int32_tag:
             dest->unionCase = NUMBER_INT32;
             dest->type._int = src->data._int32;
@@ -169,7 +178,7 @@ Number bin_op(Number n1, Number n2, TerraProtocol_ExpressionInstructions op)
             switch (n2.unionCase)
             {
             case NUMBER_UINT32:
-                result.unionCase = NUMBER_UINT32;
+                result.unionCase = NUMBER_UINT32; //TODO: can underflow here. Figure out how to handle. Prolly just fix to 0.
                 result.type._uint32 = n1.type._uint32 - n2.type._uint32;
                 break;
 
@@ -747,7 +756,7 @@ Number bin_op(Number n1, Number n2, TerraProtocol_ExpressionInstructions op)
     case TerraProtocol_FLOOR:
     case TerraProtocol_ROUND:
     case TerraProtocol_ABS:
-        DEBUG("Error: Unary operation in bin_op: %s", TerraProtocol_ExpressionInstructions_name(op));
+        DEBUG("Error: Unary operation in bin_op: %d", op);
         break;
     }
     return result;
@@ -811,7 +820,7 @@ Number un_op(Number number, TerraProtocol_ExpressionInstructions op)
         result.unionCase = NUMBER_DOUBLE;
         break;
     default:
-        printf("Error: Invalid unary operation: %s", TerraProtocol_ExpressionInstructions_name(op));
+        printf("Error: Invalid unary operation: %d", op);
     }
 
     // Return the result
