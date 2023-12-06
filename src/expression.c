@@ -38,57 +38,57 @@ static void _VAR(Expression *e)
 
 static void _AND(Expression *e)
 {
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
 
-    Number val = bin_op(l1, l2, TerraProtocol_AND);
+    Number val = bin_op(left, right, TerraProtocol_AND);
 
     stack_push(e->stack, val);
 }
 
 static void _OR(Expression *e)
 {
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
     
-    Number val = bin_op(l1, l2, TerraProtocol_OR);
+    Number val = bin_op(left, right, TerraProtocol_OR);
 
     stack_push(e->stack, val);
 }
 
 static void _NOT(Expression *e)
 {
-    Number l1 = stack_pop(e->stack);
-    Number val = un_op(l1, TerraProtocol_NOT);
+    Number left = stack_pop(e->stack);
+    Number val = un_op(left, TerraProtocol_NOT);
     stack_push(e->stack, val);
 }
 
 static void _LT(Expression *e)
 {
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
 
-    Number val = bin_op(l1, l2, TerraProtocol_LT);
+    Number val = bin_op(left, right, TerraProtocol_LT);
 
     stack_push(e->stack, val);
 }
 
 static void _GT(Expression *e)
 {
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
     
-    Number val = bin_op(l1, l2, TerraProtocol_GT);
+    Number val = bin_op(left, right, TerraProtocol_GT);
     stack_push(e->stack, val);
 }
 
 static void _EQ(Expression *e)
 {
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
     
 
-    Number val = bin_op(l1, l2, TerraProtocol_EQ);
+    Number val = bin_op(left, right, TerraProtocol_EQ);
     
     stack_push(e->stack, val);
 }
@@ -97,10 +97,10 @@ static void _ADD(Expression *e)
 {
     Number val;
     
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
 
-    val = bin_op(l1, l2, TerraProtocol_ADD);
+    val = bin_op(left, right, TerraProtocol_ADD);
     
     stack_push(e->stack, val);
 }
@@ -109,10 +109,10 @@ static void _SUB(Expression *e)
 {
     Number val;
     
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
 
-    val = bin_op(l1, l2, TerraProtocol_SUB);
+    val = bin_op(left, right, TerraProtocol_SUB);
 
     stack_push(e->stack, val);
 }
@@ -121,10 +121,10 @@ static void _MUL(Expression *e)
 {
     Number val;
     
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
 
-    val = bin_op(l1, l2, TerraProtocol_MUL);
+    val = bin_op(left, right, TerraProtocol_MUL);
 
     stack_push(e->stack, val);
 }
@@ -133,97 +133,97 @@ static void _DIV(Expression *e)
 {
     Number val;
     
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
 
-    val = bin_op(l1, l2, TerraProtocol_DIV);
+    val = bin_op(left, right, TerraProtocol_DIV);
 
     stack_push(e->stack, val);
 }
 
 static void _MOD(Expression *e)
 {
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
 
-    Number val = bin_op(l1, l2, TerraProtocol_MOD);
+    Number val = bin_op(left, right, TerraProtocol_MOD);
 
     stack_push(e->stack, val);
 }
 
 static void _LOG(Expression *e)
 {
-    Number l1 = stack_pop(e->stack);
-    Number res = un_op(l1, TerraProtocol_LOG);
+    Number left = stack_pop(e->stack);
+    Number res = un_op(left, TerraProtocol_LOG);
     stack_push(e->stack, res);
 }
 
 static void _POW(Expression *e)
 {
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
-    Number res = bin_op(l1, l2, TerraProtocol_POW);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
+    Number res = bin_op(left, right, TerraProtocol_POW);
     stack_push(e->stack, res);
 }
 
 static void _SQRT(Expression *e)
 {
-    Number l1 = stack_pop(e->stack);
-    Number val = un_op(l1, TerraProtocol_SQRT);
+    Number left = stack_pop(e->stack);
+    Number val = un_op(left, TerraProtocol_SQRT);
     stack_push(e->stack, val);
 }
 
 static void _EXP(Expression *e)
 {
-    Number l1 = stack_pop(e->stack);
-    Number val = un_op(l1, TerraProtocol_EXP);
+    Number left = stack_pop(e->stack);
+    Number val = un_op(left, TerraProtocol_EXP);
     stack_push(e->stack, val);
 }
 
 static void _CEIL(Expression *e)
 {
-    Number l1 = stack_pop(e->stack);
-    Number val = un_op(l1, TerraProtocol_CEIL);
+    Number left = stack_pop(e->stack);
+    Number val = un_op(left, TerraProtocol_CEIL);
     stack_push(e->stack, val);
 }
 
 static void _FLOOR(Expression *e)
 {
-    Number l1 = stack_pop(e->stack);
-    Number val = un_op(l1, TerraProtocol_FLOOR);
+    Number left = stack_pop(e->stack);
+    Number val = un_op(left, TerraProtocol_FLOOR);
     stack_push(e->stack, val);
 }
 
 static void _ROUND(Expression *e)
 {
-    Number l1 = stack_pop(e->stack);
-    Number val = un_op(l1, TerraProtocol_ROUND);
+    Number left = stack_pop(e->stack);
+    Number val = un_op(left, TerraProtocol_ROUND);
     stack_push(e->stack, val);
 }
 
 static void _ABS(Expression *e)
 {
-    Number l1 = stack_pop(e->stack);
-    Number val = un_op(l1, TerraProtocol_ABS);
+    Number left = stack_pop(e->stack);
+    Number val = un_op(left, TerraProtocol_ABS);
     stack_push(e->stack, val);
 }
 
 static void _LTEQ(Expression *e)
 {
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
     
-    Number val = bin_op(l1, l2, TerraProtocol_LTEQ);
+    Number val = bin_op(left, right, TerraProtocol_LTEQ);
 
     stack_push(e->stack, val);
 }
 
 static void _GTEQ(Expression *e)
 {
-    Number l2 = stack_pop(e->stack);
-    Number l1 = stack_pop(e->stack);
+    Number right = stack_pop(e->stack);
+    Number left = stack_pop(e->stack);
 
-    Number val = bin_op(l1, l2, TerraProtocol_GTEQ);
+    Number val = bin_op(left, right, TerraProtocol_GTEQ);
 
     stack_push(e->stack, val);
 }
