@@ -1,7 +1,9 @@
 #include "operators.h"
-#include "semtech_loramac.h"
 #include <stdbool.h>
+#ifndef DISABLE_LORA
+#include "semtech_loramac.h"
 extern semtech_loramac_t loramac;
+#endif
 bool network_initialize_network(void);
 
 bool network_is_connected(void);

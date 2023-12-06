@@ -23,9 +23,17 @@
 #include "configuration.h"
 
 // RIOT includes
+#include "periph/pm.h"
 #include "pm_layered.h"
+#include "periph/rtt.h"
 #include "ztimer.h"
 #include "ztimer/stopwatch.h"
+
+#include "periph/i2c.h"
+#include "periph/spi.h"
+#include "periph/uart.h"
+#include "periph/gpio.h"
+
 // Power tracking
 #include "power_sync.h"
 
@@ -57,8 +65,20 @@ static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
 static TerraConfiguration config = {
     .loop_counter = 0,
     .query = &msg,
+#ifndef DISABLE_LORA
     .loramac = &loramac
+#endif
 };
+
+
+void disable_peripherals(void)
+{
+    //i2c_deinit_pins(I2C_DEV(0));
+    // spi should automatically be disabled whenever it is not used
+    //uart_poweroff(UART_DEV(0));
+    // TODO: figure out how to handle sensors
+    // TODO: possibly also keep lora network stack turned off until actual usage
+}
 
 
 //static bool valid_msg = false;
@@ -68,24 +88,18 @@ static Stack stack = { 0 };
 static Number env_memory[20];
 static Env env = { 0 };
 
+static const uint32_t timeout_ms = EXECUTION_EPOCH_S*1000;
+static uint32_t sleep_time_ms = 0;
 // tracking stuff
 ztimer_stopwatch_t stopwatch = { 0 };
-ztimer_stopwatch_t loop_stopwatch = { 0 };
 uint32_t loop_counter = 0;
 
-/**
- * @brief Main function. Initializes everything and runs the main loop
- *
- */
-int main(void)
-{
+void startup(void){
+
   ztimer_stopwatch_init(ZTIMER_MSEC, &stopwatch);
-  ztimer_stopwatch_init(ZTIMER_MSEC, &loop_stopwatch);
   
   print_build_info();
   print_device_info();
-
-
 
   ztimer_stopwatch_start(&stopwatch);
   sensors_initialize_enabled();
@@ -107,78 +121,96 @@ int main(void)
   LOG_INFO("network initialized\n");
   uint32_t net_init_time = ztimer_stopwatch_reset(&stopwatch);
   network_send_heartbeat();
+
+  // load config
+  configuration_load(&config);
+
   // Initialize global variable environment
   LOG_DEBUG("Startup done. Timings: sensor init: %" PRIu32 " ms, env init: %" PRIu32 " ms, net init: %" PRIu32 " ms\n", sensor_init_time, env_init_time, net_init_time);
+}
 
-  // main loop
-  const uint32_t timeout_ms = EXECUTION_EPOCH_S*1000;
+void run_activities(void){
+  LOG_INFO("Running activities...\n");
+  ztimer_stopwatch_reset(&stopwatch);
+  play_single_blink();
+  uint32_t sync_word_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  network_get_message(&msg);
+  uint32_t listen_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  // Collect measurements
+  LOG_INFO("collecting measurements...\n");
 
+  ztimer_stopwatch_reset(&stopwatch);
+  sensors_collect_into_env(&env);
+  uint32_t sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
+
+  // Execute queries
+  LOG_INFO("Execute Queries...\n");
+  // play_syncword();
+  ztimer_stopwatch_reset(&stopwatch);
+  executeQueries(&msg, &env, &stack);
+  uint32_t exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
   
-  ztimer_stopwatch_start(&loop_stopwatch);
-  configuration_save(&config);
-  while (1)
+  LOG_INFO("Sending Responses if any...\n");
+  if ( out.responses_count > 0)
   {
-    LOG_INFO("Main loop iteration\n");
-    ztimer_stopwatch_reset(&stopwatch);
-    ztimer_stopwatch_reset(&loop_stopwatch);
-    play_single_blink();
-    uint32_t sync_word_time_ms = ztimer_stopwatch_reset(&stopwatch);
-    network_get_message(&msg);
-    uint32_t listen_time_ms = ztimer_stopwatch_reset(&stopwatch);
-    // Collect measurements
-    LOG_INFO("collecting measurements...\n");
-
-    ztimer_stopwatch_reset(&stopwatch);
-    sensors_collect_into_env(&env);
-    uint32_t sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
-
-    // Execute queries
-    LOG_INFO("Execute Queries...\n");
-    // play_syncword();
-    ztimer_stopwatch_reset(&stopwatch);
-    executeQueries(&msg, &env, &stack);
-    uint32_t exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
-    
-    LOG_INFO("Sending Responses if any...\n");
-    if ( out.responses_count > 0)
-    {
-      network_send_message(&out);
-    }
-    else
-    {
-      network_send_heartbeat();
-    }
-    uint32_t send_time_ms = ztimer_stopwatch_reset(&stopwatch);
-    // figure out how long the iteration took and sleep for the remaining time
-    uint32_t end_time_ms = ztimer_stopwatch_reset(&loop_stopwatch);
-    int sleep_time_ms_tmp = timeout_ms - end_time_ms;
-    uint32_t sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
-    LOG_INFO("Done with everything! Playing sync_word!\n");
-    play_single_blink();
-
-    LOG_INFO(
-        "TIMINGS> Loop: %" PRIu32 ", "
-        "Sync: %" PRIu32 " ms, "
-        "Listen: %" PRIu32 " ms, "
-        "Collect: %" PRIu32 " ms, "
-        "Exec: %" PRIu32 " ms, "
-        "Send: %" PRIu32 " ms, "
-        "Sleep: %" PRIu32 " ms, "
-        "Total: %" PRIu32 " ms\n",
-        loop_counter,
-        sync_word_time_ms,
-        listen_time_ms,
-        sensor_collect_time_ms,
-        exec_time_ms,
-        send_time_ms,
-        sleep_time_ms,
-        end_time_ms
-        );
-
-    ztimer_sleep(ZTIMER_MSEC, sleep_time_ms);
-
-    ++loop_counter;
+    network_send_message(&out);
   }
-  return 0;
+  else
+  {
+    network_send_heartbeat();
+  }
+  uint32_t send_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  // figure out how long the iteration took and sleep for the remaining time
+  int sleep_time_ms_tmp = timeout_ms - (sync_word_time_ms + listen_time_ms + sensor_collect_time_ms + exec_time_ms + send_time_ms);
+  sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
+  LOG_INFO("Done with everything! Playing sync_word!\n");
+  play_single_blink();
+
+  LOG_INFO(
+      "TIMINGS> Loop: %" PRIu32 ", "
+      "Sync: %" PRIu32 " ms, "
+      "Listen: %" PRIu32 " ms, "
+      "Collect: %" PRIu32 " ms, "
+      "Exec: %" PRIu32 " ms, "
+      "Send: %" PRIu32 " ms, "
+      "Sleep: %" PRIu32 " ms\n",
+      config.loop_counter,
+      sync_word_time_ms,
+      listen_time_ms,
+      sensor_collect_time_ms,
+      exec_time_ms,
+      send_time_ms,
+      sleep_time_ms
+      );
+
+
+
+  ++config.loop_counter;
+
+}
+
+// static void reboot(void* args){
+//   (void)args;
+//   pm_reboot();
+// }
+
+/**
+ * @brief Main function. Initializes everything and runs the main loop
+ *
+ */
+int main(void)
+{
+ ztimer_acquire(ZTIMER_MSEC);
+ startup();
+ run_activities();
+ ztimer_release(ZTIMER_MSEC);
+ #ifdef MODULE_PM_LAYERED
+ pm_blocker_t blockers = pm_get_blocker();
+ print_blockers(&blockers, PM_NUM_MODES);
+ #endif
+ disable_peripherals();
+ ztimer_sleep(ZTIMER_MSEC, sleep_time_ms);
+ pm_reboot();
+ return 0;
 }
 #endif

@@ -30,7 +30,7 @@ void configuration_save(TerraConfiguration *config)
     pos += eeprom_write(pos, CONFIGURATION_MAGIC, CONFIGURATION_MAGIC_SIZE);
     pos += _write_uint32(pos, config->loop_counter);
     pos += eeprom_write(pos, config->query, CONFIGURATION_QUERY_SIZE);
-#ifndef APPLICATION_RUN_TEST
+#if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
     semtech_loramac_save_config(config->loramac);
 #endif
 }

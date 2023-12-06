@@ -2,6 +2,7 @@
 #include "configuration.h"
 #include "periph/eeprom.h"
 
+#ifdef APPLICATIOn_RUN_TEST
 // useful functions stolen from semtech_loramac.c
 static size_t _read_uint32(size_t pos, uint32_t *value)
 {
@@ -104,7 +105,19 @@ static void tests_load(void)
     configuration_save(&config);
 
     //act
-    TerraConfiguration config_result;
+    TerraProtocol_Message query_result = TerraProtocol_Message_init_zero;
+    semtech_loramac_t loramac_result = {
+        .port = 0,
+        .cnf = false,
+        .deveui =  {0,0,0,0,0,0,0,0},
+        .appeui = {0,0,0,0,0,0,0,0},
+        .appkey = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, 
+    };
+    TerraConfiguration config_result = {
+        .loop_counter = 0,
+        .query = &query_result,
+        .loramac = &loramac_result
+    };
     bool res = configuration_load(&config_result);
     
     //assert
@@ -129,3 +142,4 @@ TestRef tests_configuration(void)
     EMB_UNIT_TESTCALLER(configuration_tests, &tests_SetUp, &tests_TearDown, fixtures);
     return (TestRef) &configuration_tests;
 }
+#endif

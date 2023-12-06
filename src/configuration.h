@@ -2,7 +2,9 @@
 #define CONFIGURATION_H
 
 #include "periph/eeprom.h"
+#ifndef DISABLE_LORA
 #include "semtech_loramac.h"
+#endif
 #include <terraprotocol.pb.h>
 
 #define CONFIGURATION_EEPROM_START 0
@@ -27,7 +29,9 @@
 typedef struct _TerraConfiguration {
     CONFIGURATION_LOOP_COUNTER_TYPE loop_counter;
     TerraProtocol_Message* query;
+#ifndef DISABLE_LORA
     semtech_loramac_t* loramac;
+#endif
 } TerraConfiguration;
 
 void configuration_save( TerraConfiguration* config );

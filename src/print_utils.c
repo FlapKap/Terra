@@ -383,7 +383,7 @@ void print_terraprotocol_output_message(const TerraProtocol_Output *message)
         printf("\n");
     }
 }
-
+#ifdef MODULE_PM_LAYERED
 void print_blockers(pm_blocker_t *blockers, size_t size)
 {
     for (unsigned int i = 0; i < size; i++)
@@ -392,6 +392,7 @@ void print_blockers(pm_blocker_t *blockers, size_t size)
         printf("Power mode: %u, blockers: %d\n", i, (int)blocker_num);
     }
 }
+#endif
 
 void print_device_info(void)
 {
@@ -399,10 +400,13 @@ void print_device_info(void)
     printf("CPU: %s\n", RIOT_CPU);
     printf("Board: %s\n", RIOT_BOARD);
     printf("Riot Version: %s\n", RIOT_VERSION);
+#ifdef MODULE_PM_LAYERED
     printf("Number of power modes: %u\n", PM_NUM_MODES);
+
     printf("current blockers:\n");
     pm_blocker_t blockers = pm_get_blocker();
     print_blockers(&blockers, PM_NUM_MODES);
+#endif
 }
 void print_build_info(void)
 {

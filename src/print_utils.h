@@ -4,8 +4,9 @@
 #include <terraprotocol.pb.h>
 #include "operators.h"
 #include "number.h"
+#ifdef MODULE_PM_LAYERED
 #include "pm_layered.h"
-
+#endif
 
 void print_terraprotocol_expression_instruction(TerraProtocol_ExpressionInstructions instr);
 void print_terraprotocol_data(const TerraProtocol_Data* instr);
@@ -25,9 +26,9 @@ void print_terraprotocol_query(const TerraProtocol_Query* query);
 void print_terraprotocol_message(const TerraProtocol_Message* message);
 void print_terraprotocol_query_response(const TerraProtocol_Output_QueryResponse* response);
 void print_terraprotocol_output_message(const TerraProtocol_Output* message);
-
+#ifdef MODULE_PM_LAYERED
 void print_blockers(pm_blocker_t *blockers, size_t size);
-
+#endif
 void print_device_info(void);
 void print_build_info(void);
 
