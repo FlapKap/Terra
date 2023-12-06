@@ -287,7 +287,7 @@ static void testGT1(void)
   // Arrange
   TerraProtocol_Expression p = TerraProtocol_Expression_init_zero;
   p.instructions[0] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
-  p.instructions[1] = (TerraProtocol_Data) {TerraProtocol_Data__int32_tag, {-3}};
+  p.instructions[1] = (TerraProtocol_Data) {.which_data=TerraProtocol_Data__int32_tag, .data._int32=-3};
   p.instructions[2] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_CONST}};
   p.instructions[3] = (TerraProtocol_Data) {TerraProtocol_Data__uint32_tag, {5}};
   p.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_GT}};
