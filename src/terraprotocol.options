@@ -1,1 +1,1 @@
-terraprotocol.proto long_names:false mangle_names:M_NONE enum_to_string:true
+terraprotocol.proto long_names:false mangle_names:M_NONE enum_to_string:false

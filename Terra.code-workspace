@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../Terra-experiments"
 		}
 	],
 	"settings": {
@@ -32,7 +35,13 @@
 			"expression_tests.h": "c",
 			"stack.h": "c",
 			"operators.h": "c",
-			"number.h": "c"
+			"number.h": "c",
+			"power_sync.h": "c",
+			"uart.h": "c",
+			"gpio.h": "c",
+			"pm_layered.h": "c",
+			"pm.h": "c",
+			"configuration.h": "c"
 		}
 	}
 }

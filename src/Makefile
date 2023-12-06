@@ -70,15 +70,16 @@ USEMODULE += saul_default
 USEMODULE += fmt
 USEMODULE += periph_eeprom
 #USEMODULE += idle_thread
-USEMODULE += pm_layered
+#USEMODULE += pm_layered
+DISABLE_MODULE += pm_layered
 ## Nanopb stuff
 USEPKG += nanopb
 PROTOBUF_PATH = $(CURDIR)/proto
 
 ## Timer stuff
-USEMODULE += ztimer
+USEMODULE += ztimer ztimer_msec
+#USEMODULE += ztimer_ondemand ztimer_ondemand_rtt 
 #USEMODULE += ztimer_sec
-USEMODULE += ztimer_msec
 
 # features
 FEATURES_OPTIONAL += periph_uart
