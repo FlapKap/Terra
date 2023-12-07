@@ -43,7 +43,7 @@ bool lorawan_send_message(uint8_t *serializedData, uint8_t len)
 static void *_recv(void *arg)
 {
     msg_init_queue(_recv_queue, RECV_MSG_QUEUE);
-    
+
     (void)arg; // just to get the compiler to stop complaining
     while (1)
     {
@@ -61,49 +61,55 @@ static void *_recv(void *arg)
 
 int lorawan_initialize_lorawan(void)
 {
-    /* Convert identifiers and keys strings to byte arrays */
-    assert(fmt_hex_bytes(deveui, CONFIG_LORAMAC_DEV_EUI_DEFAULT) > 0); // if deveui is 0 then it is not set
-    assert(fmt_hex_bytes(appeui, CONFIG_LORAMAC_APP_EUI_DEFAULT) > 0); // if appeui is 0 then it is not set
-    assert(fmt_hex_bytes(appkey, CONFIG_LORAMAC_APP_KEY_DEFAULT) > 0); // if appkey is 0 then it is not set
-    
-    semtech_loramac_set_deveui(&loramac, deveui);
-    semtech_loramac_set_appeui(&loramac, appeui);
-    semtech_loramac_set_appkey(&loramac, appkey);
+    if (!semtech_loramac_is_mac_joined(&loramac))
+    {
+        /* Convert identifiers and keys strings to byte arrays */
+        assert(fmt_hex_bytes(deveui, CONFIG_LORAMAC_DEV_EUI_DEFAULT) > 0); // if deveui is 0 then it is not set
+        assert(fmt_hex_bytes(appeui, CONFIG_LORAMAC_APP_EUI_DEFAULT) > 0); // if appeui is 0 then it is not set
+        assert(fmt_hex_bytes(appkey, CONFIG_LORAMAC_APP_KEY_DEFAULT) > 0); // if appkey is 0 then it is not set
 
-    /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
-    semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
+        semtech_loramac_set_deveui(&loramac, deveui);
+        semtech_loramac_set_appeui(&loramac, appeui);
+        semtech_loramac_set_appkey(&loramac, appkey);
+
+        /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
+        semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
+    }
 
     return 0;
 }
 
 void lorawan_print_connection_info(void)
-{   
+{
     // ignoring the bounds-checking errors here. The length of the arrays should be
     // the length of their corresponding bytelengths * 2 + 1 for null termination.
     // This is ensured by the macros.
-    char deveui_str[LORAMAC_DEVEUI_LEN*2+1] = ""; /* Flawfinder: ignore */
-    char appeui_str[LORAMAC_DEVEUI_LEN*2+1] = ""; /* Flawfinder: ignore */
-    char appkey_str[LORAMAC_APPKEY_LEN*2+1] = ""; /* Flawfinder: ignore */
+    char deveui_str[LORAMAC_DEVEUI_LEN * 2 + 1] = ""; /* Flawfinder: ignore */
+    char appeui_str[LORAMAC_DEVEUI_LEN * 2 + 1] = ""; /* Flawfinder: ignore */
+    char appkey_str[LORAMAC_APPKEY_LEN * 2 + 1] = ""; /* Flawfinder: ignore */
     fmt_bytes_hex(deveui_str, loramac.deveui, LORAMAC_DEVEUI_LEN);
     fmt_bytes_hex(appeui_str, loramac.appeui, LORAMAC_DEVEUI_LEN);
     fmt_bytes_hex(appkey_str, loramac.appkey, LORAMAC_APPKEY_LEN);
-    
+
     printf("LoRaWAN Connection info:\n");
     printf("  Device EUI: %s\n", deveui_str);
     printf("  Application EUI: %s\n", appeui_str);
     printf("  Application Key: %s\n", appkey_str);
 }
 
-bool lorawan_receive(void){
+bool lorawan_receive(void)
+{
     /* blocks until some data is received */
     semtech_loramac_recv(&loramac);
     loramac.rx_data.payload[loramac.rx_data.payload_len] = 0;
     if (loramac.rx_data.payload_len > 0)
     {
         LOG_DEBUG("Data received: %s, port: %d\n length: %d\n",
-                    (char *)loramac.rx_data.payload, loramac.rx_data.port, loramac.rx_data.payload_len);
+                  (char *)loramac.rx_data.payload, loramac.rx_data.port, loramac.rx_data.payload_len);
         return true;
-    } else {
+    }
+    else
+    {
         LOG_DEBUG("No data received. I guess this shouldn't happen?\n");
         return false;
     }

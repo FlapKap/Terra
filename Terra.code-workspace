@@ -41,7 +41,10 @@
 			"gpio.h": "c",
 			"pm_layered.h": "c",
 			"pm.h": "c",
-			"configuration.h": "c"
+			"configuration.h": "c",
+			"cstdio": "c",
+			"led.h": "c",
+			"stm32_leds.h": "c"
 		}
 	}
 }

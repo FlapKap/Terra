@@ -25,7 +25,7 @@
 // RIOT includes
 #include "periph/pm.h"
 #include "pm_layered.h"
-#include "periph/rtt.h"
+#include <periph/rtc.h>
 #include "ztimer.h"
 #include "ztimer/stopwatch.h"
 
@@ -70,17 +70,6 @@ static TerraConfiguration config = {
 #endif
 };
 
-
-void disable_peripherals(void)
-{
-    //i2c_deinit_pins(I2C_DEV(0));
-    // spi should automatically be disabled whenever it is not used
-    //uart_poweroff(UART_DEV(0));
-    // TODO: figure out how to handle sensors
-    // TODO: possibly also keep lora network stack turned off until actual usage
-}
-
-
 //static bool valid_msg = false;
 
 static Number stack_memory[20];
@@ -89,7 +78,7 @@ static Number env_memory[20];
 static Env env = { 0 };
 
 static const uint32_t timeout_ms = EXECUTION_EPOCH_S*1000;
-static uint32_t sleep_time_ms = 0;
+static uint32_t sleep_time_s = 0;
 // tracking stuff
 ztimer_stopwatch_t stopwatch = { 0 };
 uint32_t loop_counter = 0;
@@ -120,7 +109,7 @@ void startup(void){
   network_initialize_network();
   LOG_INFO("network initialized\n");
   uint32_t net_init_time = ztimer_stopwatch_reset(&stopwatch);
-  network_send_heartbeat();
+  //network_send_heartbeat();
 
   // load config
   configuration_load(&config);
@@ -162,7 +151,9 @@ void run_activities(void){
   uint32_t send_time_ms = ztimer_stopwatch_reset(&stopwatch);
   // figure out how long the iteration took and sleep for the remaining time
   int sleep_time_ms_tmp = timeout_ms - (sync_word_time_ms + listen_time_ms + sensor_collect_time_ms + exec_time_ms + send_time_ms);
-  sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
+  uint32_t sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
+  // convert sleep_time_ms to second
+  sleep_time_s = sleep_time_ms / 1000;
   LOG_INFO("Done with everything! Playing sync_word!\n");
   play_single_blink();
 
@@ -173,14 +164,14 @@ void run_activities(void){
       "Collect: %" PRIu32 " ms, "
       "Exec: %" PRIu32 " ms, "
       "Send: %" PRIu32 " ms, "
-      "Sleep: %" PRIu32 " ms\n",
+      "Sleep: %" PRIu32 " s\n",
       config.loop_counter,
       sync_word_time_ms,
       listen_time_ms,
       sensor_collect_time_ms,
       exec_time_ms,
       send_time_ms,
-      sleep_time_ms
+      sleep_time_s
       );
 
 
@@ -189,10 +180,24 @@ void run_activities(void){
 
 }
 
-// static void reboot(void* args){
-//   (void)args;
-//   pm_reboot();
-// }
+void disable_peripherals(void)
+{
+    //i2c_release(I2C_DEV(0));
+    
+    // spi should automatically be disabled whenever it is not used
+    
+    uart_poweroff(UART_DEV(0));
+    // TODO: figure out how to handle sensors
+    // TODO: possibly also keep lora network stack turned off until actual usage
+}
+
+
+static void _rtc_alarm(void* arg)
+{
+    (void) arg;
+    pm_reboot();
+    return;
+}
 
 /**
  * @brief Main function. Initializes everything and runs the main loop
@@ -200,17 +205,20 @@ void run_activities(void){
  */
 int main(void)
 {
- ztimer_acquire(ZTIMER_MSEC);
- startup();
- run_activities();
- ztimer_release(ZTIMER_MSEC);
- #ifdef MODULE_PM_LAYERED
- pm_blocker_t blockers = pm_get_blocker();
- print_blockers(&blockers, PM_NUM_MODES);
- #endif
- disable_peripherals();
- ztimer_sleep(ZTIMER_MSEC, sleep_time_ms);
- pm_reboot();
- return 0;
+  struct tm time;
+  
+  ztimer_acquire(ZTIMER_MSEC);
+  startup();
+  run_activities();
+  ztimer_release(ZTIMER_MSEC);
+  puts("sleeping");
+  disable_peripherals();
+  rtc_get_time(&time);
+  time.tm_sec += sleep_time_s;
+  rtc_set_alarm(&time, _rtc_alarm, NULL);
+  pm_set(STM32_PM_STANDBY);
+  puts("sleeping failed");
+
+  return 0;
 }
 #endif
