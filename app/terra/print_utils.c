@@ -1,6 +1,26 @@
 #include "print_utils.h"
 #include <stdio.h>
 #include <inttypes.h>
+#include "lorawan.h"
+
+
+void print_configuration(TerraConfiguration* config){
+    printf(
+            "---Configuration start ---\n"
+            "Loop counter: %" PRIu32 "\n",
+            config->loop_counter
+            );
+
+    if (config->query != NULL) {
+        print_terraprotocol_message(config->query);
+    }
+#if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
+    if (config->loramac != NULL) {
+        lorawan_print_connection_info();
+    }
+#endif
+    printf("---Configuration end ---\n");
+}
 
 // #lizard forgives
 void print_terraprotocol_expression_instruction(TerraProtocol_ExpressionInstructions instr)

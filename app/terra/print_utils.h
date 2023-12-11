@@ -4,10 +4,12 @@
 #include <terraprotocol.pb.h>
 #include "operators.h"
 #include "number.h"
+#include "configuration.h"
 #ifdef MODULE_PM_LAYERED
 #include "pm_layered.h"
 #endif
 
+void print_configuration(TerraConfiguration* config);
 void print_terraprotocol_expression_instruction(TerraProtocol_ExpressionInstructions instr);
 void print_terraprotocol_data(const TerraProtocol_Data* instr);
 void print_terraprotocol_data_array(const TerraProtocol_Data* instruction, size_t size);
