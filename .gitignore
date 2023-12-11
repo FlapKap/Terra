@@ -1,6 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/c,visualstudiocode,git
 # Edit at https://www.toptal.com/developers/gitignore?templates=c,visualstudiocode,git
 
+## stuff
+compile_commands.json
+
 ### C ###
 # Prerequisites
 *.d
