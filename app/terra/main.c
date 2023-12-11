@@ -89,10 +89,12 @@ void startup(void){
   
   print_build_info();
   print_device_info();
-
   ztimer_stopwatch_start(&stopwatch);
+  configuration_load(&config);
+  uint32_t conf_load_time = ztimer_stopwatch_reset(&stopwatch);
+  
   sensors_initialize_enabled();
-  uint32_t sensor_init_time = ztimer_stopwatch_measure(&stopwatch);
+  uint32_t sensor_init_time = ztimer_stopwatch_reset(&stopwatch);
 
   LOG_INFO("enabled sensors\n");
   sensors_print_enabled();
@@ -101,21 +103,24 @@ void startup(void){
   // initialize env and stack
   env_init_env(env_memory, sizeof(Number)/sizeof(env_memory), &env);
   stack_init_stack(stack_memory, sizeof(Number)/sizeof(stack_memory), &stack);
+  uint32_t env_init_time = ztimer_stopwatch_reset(&stopwatch);
   LOG_INFO("environment and stack initialized:\n");
   print_env(&env);
   print_stack(&stack);
-  uint32_t env_init_time = ztimer_stopwatch_reset(&stopwatch);
+  
 
   network_initialize_network();
   LOG_INFO("network initialized\n");
   uint32_t net_init_time = ztimer_stopwatch_reset(&stopwatch);
+
+  
   //network_send_heartbeat();
 
   // load config
-  configuration_load(&config);
+  
 
   // Initialize global variable environment
-  LOG_DEBUG("Startup done. Timings: sensor init: %" PRIu32 " ms, env init: %" PRIu32 " ms, net init: %" PRIu32 " ms\n", sensor_init_time, env_init_time, net_init_time);
+  LOG_DEBUG("Startup done. Timings: config load: %" PRIu32 " ms, sensor init: %" PRIu32 " ms, env init: %" PRIu32 " ms, net init: %" PRIu32 " ms\n", conf_load_time, env_init_time, net_init_time);
 }
 
 void run_activities(void){
