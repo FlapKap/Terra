@@ -31,15 +31,9 @@ int main(void)
         time.tm_sec += 5;
         rtc_set_alarm(&time, _rtc_alarm, NULL);
         uart_poweroff(UART_DEV(0));
-        while (1) {
-        __asm__ __volatile__ (
-            ""
-            : /* no outputs */
-            : /* no inputs */
-            : /* no clobbers */
-        );
+        pm_set(STM32_PM_STANDBY);
     }
-        // pm_set(STM32_PM_STANDBY);
+        
         puts("sleeping failed");
 
     }
