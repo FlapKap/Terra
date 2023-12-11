@@ -80,8 +80,19 @@ static Env env = { 0 };
 static const uint32_t timeout_ms = EXECUTION_EPOCH_S*1000;
 static uint32_t sleep_time_s = 0;
 // tracking stuff
-ztimer_stopwatch_t stopwatch = { 0 };
-uint32_t loop_counter = 0;
+static ztimer_stopwatch_t stopwatch = { 0 };
+
+// timing measurements
+static int32_t conf_load_time_ms = -1;
+static int32_t sensor_init_time_ms = -1;
+static int32_t env_init_time_ms = -1;
+static int32_t net_init_time_ms = -1;
+static int32_t sensor_collect_time_ms = -1;
+static int32_t exec_time_ms = -1;
+static int32_t sync_word_time_ms = -1;
+static int32_t listen_time_ms = -1;
+static int32_t send_time_ms = -1;
+static int32_t conf_save_time_ms = -1;
 
 void startup(void){
 
@@ -90,11 +101,13 @@ void startup(void){
   print_build_info();
   print_device_info();
   ztimer_stopwatch_start(&stopwatch);
+  play_single_blink();
+  sync_word_time_ms = ztimer_stopwatch_reset(&stopwatch);
   configuration_load(&config);
-  uint32_t conf_load_time = ztimer_stopwatch_reset(&stopwatch);
+  conf_load_time_ms = ztimer_stopwatch_reset(&stopwatch);
   
   sensors_initialize_enabled();
-  uint32_t sensor_init_time = ztimer_stopwatch_reset(&stopwatch);
+  sensor_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
   LOG_INFO("enabled sensors\n");
   sensors_print_enabled();
@@ -103,7 +116,7 @@ void startup(void){
   // initialize env and stack
   env_init_env(env_memory, sizeof(Number)/sizeof(env_memory), &env);
   stack_init_stack(stack_memory, sizeof(Number)/sizeof(stack_memory), &stack);
-  uint32_t env_init_time = ztimer_stopwatch_reset(&stopwatch);
+  env_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
   LOG_INFO("environment and stack initialized:\n");
   print_env(&env);
   print_stack(&stack);
@@ -111,38 +124,29 @@ void startup(void){
 
   network_initialize_network();
   LOG_INFO("network initialized\n");
-  uint32_t net_init_time = ztimer_stopwatch_reset(&stopwatch);
+  net_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
   
   //network_send_heartbeat();
-
-  // load config
-  
-
-  // Initialize global variable environment
-  LOG_DEBUG("Startup done. Timings: config load: %" PRIu32 " ms, sensor init: %" PRIu32 " ms, env init: %" PRIu32 " ms, net init: %" PRIu32 " ms\n", conf_load_time, env_init_time, net_init_time);
 }
 
 void run_activities(void){
   LOG_INFO("Running activities...\n");
-  ztimer_stopwatch_reset(&stopwatch);
-  play_single_blink();
-  uint32_t sync_word_time_ms = ztimer_stopwatch_reset(&stopwatch);
   network_get_message(&msg);
-  uint32_t listen_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  listen_time_ms = ztimer_stopwatch_reset(&stopwatch);
   // Collect measurements
   LOG_INFO("collecting measurements...\n");
 
   ztimer_stopwatch_reset(&stopwatch);
   sensors_collect_into_env(&env);
-  uint32_t sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
   // Execute queries
   LOG_INFO("Execute Queries...\n");
   // play_syncword();
   ztimer_stopwatch_reset(&stopwatch);
   executeQueries(&msg, &env, &stack);
-  uint32_t exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
   
   LOG_INFO("Sending Responses if any...\n");
   if ( out.responses_count > 0)
@@ -153,36 +157,17 @@ void run_activities(void){
   {
     network_send_heartbeat();
   }
-  uint32_t send_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  send_time_ms = ztimer_stopwatch_reset(&stopwatch);
   // figure out how long the iteration took and sleep for the remaining time
   int sleep_time_ms_tmp = timeout_ms - (sync_word_time_ms + listen_time_ms + sensor_collect_time_ms + exec_time_ms + send_time_ms);
   uint32_t sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
   // convert sleep_time_ms to second
   sleep_time_s = sleep_time_ms / 1000;
-  LOG_INFO("Done with everything! Playing sync_word!\n");
-  play_single_blink();
-
-  LOG_INFO(
-      "TIMINGS> Loop: %" PRIu32 ", "
-      "Sync: %" PRIu32 " ms, "
-      "Listen: %" PRIu32 " ms, "
-      "Collect: %" PRIu32 " ms, "
-      "Exec: %" PRIu32 " ms, "
-      "Send: %" PRIu32 " ms, "
-      "Sleep: %" PRIu32 " s\n",
-      config.loop_counter,
-      sync_word_time_ms,
-      listen_time_ms,
-      sensor_collect_time_ms,
-      exec_time_ms,
-      send_time_ms,
-      sleep_time_s
-      );
-
-
-
+  LOG_INFO("Done with everything! saving config!\n");
   ++config.loop_counter;
-
+  ztimer_stopwatch_reset(&stopwatch);
+  configuration_save(&config);
+  conf_save_time_ms = ztimer_stopwatch_reset(&stopwatch);
 }
 
 void disable_peripherals(void)
@@ -213,9 +198,39 @@ int main(void)
   struct tm time;
   
   ztimer_acquire(ZTIMER_MSEC);
+  play_single_blink();
   startup();
   run_activities();
+  
   ztimer_release(ZTIMER_MSEC);
+
+  LOG_INFO(
+      "TIMINGS> Loop: %" PRIi32 ", "
+      "Sync: %" PRIi32 " ms, "
+      "Load: %" PRIi32 " ms, "
+      "sensor init: %" PRIi32 " ms, "
+      "env init: %" PRIi32 " ms, "
+      "net init: %" PRIi32 " ms, "
+      "Listen: %" PRIi32 " ms, "
+      "Collect: %" PRIi32 " ms, "
+      "Exec: %" PRIi32 " ms, "
+      "Send: %" PRIi32 " ms, "
+      "save config: %" PRIi32 " ms, "
+      "Sleep: %" PRIu32 " s\n",
+      config.loop_counter-1, //since we already incremented the counter in run_activities
+      sync_word_time_ms,
+      conf_load_time_ms,
+      sensor_init_time_ms,
+      env_init_time_ms,
+      net_init_time_ms,
+      listen_time_ms,
+      sensor_collect_time_ms,
+      exec_time_ms,
+      send_time_ms,
+      conf_save_time_ms,
+      sleep_time_s
+      );
+
   puts("sleeping");
   disable_peripherals();
   rtc_get_time(&time);
