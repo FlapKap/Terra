@@ -31,6 +31,7 @@ static size_t _write_uint32(size_t pos, uint32_t value)
 void configuration_save(TerraConfiguration *config)
 {   
     DEBUG("[configuration.c] Saving configuration\n");
+    DEBUG("SEMTECH_LORAMAC_EEPROM_START: %d\n", SEMTECH_LORAMAC_EEPROM_START);
     uint32_t pos = CONFIGURATION_EEPROM_START;
     pos += eeprom_write(pos, CONFIGURATION_MAGIC, CONFIGURATION_MAGIC_SIZE);
     pos += _write_uint32(pos, config->loop_counter);
