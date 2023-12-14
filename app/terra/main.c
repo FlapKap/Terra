@@ -11,6 +11,7 @@
 #include <inttypes.h>
 
 // Local includes
+#include "configuration.h"
 #include "stack.h"
 #include "environment.h"
 #include "expression.h"
@@ -20,7 +21,7 @@
 #include "network.h"
 #include "sensors.h"
 #include "print_utils.h"
-#include "configuration.h"
+
 
 // RIOT includes
 #include "periph/pm.h"
@@ -64,7 +65,7 @@ static TerraProtocol_Message msg = TerraProtocol_Message_init_zero;
 static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
 static TerraConfiguration config = {
     .loop_counter = 0,
-    .query = &msg,
+    .message = &msg,
 #ifndef DISABLE_LORA
     .loramac = &loramac
 #endif
@@ -101,7 +102,6 @@ void startup(void){
   print_build_info();
   print_device_info();
   ztimer_stopwatch_start(&stopwatch);
-  play_single_blink();
   sync_word_time_ms = ztimer_stopwatch_reset(&stopwatch);
   configuration_load(&config);
   conf_load_time_ms = ztimer_stopwatch_reset(&stopwatch);
@@ -130,25 +130,39 @@ void startup(void){
   //network_send_heartbeat();
 }
 
+void teardown(void){
+  LOG_INFO("teardown\n");
+  ztimer_stopwatch_reset(&stopwatch);
+  configuration_save(&config);
+  conf_save_time_ms = ztimer_stopwatch_reset(&stopwatch);
+}
+
 void run_activities(void){
   LOG_INFO("Running activities...\n");
-  network_get_message(&msg);
-  listen_time_ms = ztimer_stopwatch_reset(&stopwatch);
-  // Collect measurements
-  LOG_INFO("collecting measurements...\n");
-
-  ztimer_stopwatch_reset(&stopwatch);
-  sensors_collect_into_env(&env);
-  sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
-
-  // Execute queries
-  LOG_INFO("Execute Queries...\n");
-  // play_syncword();
-  ztimer_stopwatch_reset(&stopwatch);
-  executeQueries(&msg, &env, &stack);
-  exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
   
+  //if we have queries to execute
+  if (config.message->queries_count > 0)
+  {
+    // Collect measurements
+    LOG_INFO("collecting measurements...\n");
+
+    ztimer_stopwatch_reset(&stopwatch);
+    sensors_collect_into_env(&env);
+    sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
+
+    // Execute queries
+    LOG_INFO("Execute Queries...\n");
+    // play_syncword();
+    ztimer_stopwatch_reset(&stopwatch);
+    executeQueries(&msg, &env, &stack);
+    exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
+    
+
+    send_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  }
   LOG_INFO("Sending Responses if any...\n");
+
+  // if we have responses send them. if not, send heartbeat to make sure we get responses
   if ( out.responses_count > 0)
   {
     network_send_message(&out);
@@ -157,7 +171,9 @@ void run_activities(void){
   {
     network_send_heartbeat();
   }
-  send_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  //check for new messages
+  network_get_message(config.message);
+
   // figure out how long the iteration took and sleep for the remaining time
   int sleep_time_ms_tmp = timeout_ms - (sync_word_time_ms + listen_time_ms + sensor_collect_time_ms + exec_time_ms + send_time_ms);
   uint32_t sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
@@ -165,9 +181,7 @@ void run_activities(void){
   sleep_time_s = sleep_time_ms / 1000;
   LOG_INFO("Done with everything! saving config!\n");
   ++config.loop_counter;
-  ztimer_stopwatch_reset(&stopwatch);
-  configuration_save(&config);
-  conf_save_time_ms = ztimer_stopwatch_reset(&stopwatch);
+
 }
 
 void disable_peripherals(void)
@@ -201,7 +215,7 @@ int main(void)
   play_single_blink();
   startup();
   run_activities();
-  
+  teardown();
   ztimer_release(ZTIMER_MSEC);
 
   LOG_INFO(
@@ -211,7 +225,6 @@ int main(void)
       "sensor init: %" PRIi32 " ms, "
       "env init: %" PRIi32 " ms, "
       "net init: %" PRIi32 " ms, "
-      "Listen: %" PRIi32 " ms, "
       "Collect: %" PRIi32 " ms, "
       "Exec: %" PRIi32 " ms, "
       "Send: %" PRIi32 " ms, "
@@ -223,7 +236,6 @@ int main(void)
       sensor_init_time_ms,
       env_init_time_ms,
       net_init_time_ms,
-      listen_time_ms,
       sensor_collect_time_ms,
       exec_time_ms,
       send_time_ms,

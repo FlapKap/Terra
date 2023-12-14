@@ -11,8 +11,8 @@ void print_configuration(TerraConfiguration* config){
             config->loop_counter
             );
 
-    if (config->query != NULL) {
-        print_terraprotocol_message(config->query);
+    if (config->message != NULL) {
+        print_terraprotocol_message(config->message);
     }
 #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
     if (config->loramac != NULL) {
