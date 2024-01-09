@@ -46,7 +46,8 @@
 			"led.h": "c",
 			"stm32_leds.h": "c",
 			"semtech_loramac.h": "c",
-			"environment.h": "c"
+			"environment.h": "c",
+			"lorawan.h": "c"
 		}
 	}
 }

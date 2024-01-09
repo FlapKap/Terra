@@ -1,11 +1,11 @@
 #include "configuration.h"
+#include "eepreg.h"
 #include "periph/eeprom.h"
 #ifndef DISABLE_LORA
-#include "semtech_loramac.h"
 #include "lorawan.h"
 #endif
 
-#define ENABLE_DEBUG 0
+#define ENABLE_DEBUG 1
 #include "debug.h"
 
 // useful functions stolen from semtech_loramac.c
@@ -28,32 +28,66 @@ static size_t _write_uint32(size_t pos, uint32_t value)
     return eeprom_write(pos, array, sizeof(uint32_t));
 }
 
-void configuration_save(TerraConfiguration *config)
+bool configuration_save(TerraConfiguration *config)
 {   
     DEBUG("[configuration.c] Saving configuration\n");
-    DEBUG("SEMTECH_LORAMAC_EEPROM_START: %d\n", SEMTECH_LORAMAC_EEPROM_START);
-    uint32_t pos = CONFIGURATION_EEPROM_START;
-    pos += eeprom_write(pos, CONFIGURATION_MAGIC, CONFIGURATION_MAGIC_SIZE);
-    pos += _write_uint32(pos, config->loop_counter);
-    pos += eeprom_write(pos, config->message, CONFIGURATION_QUERY_SIZE);
+
+    uint32_t pos;
+    int res = eepreg_add(&pos, CONFIGURATION_MAGIC, CONFIGURATION_TERRA_CONFIGURATION_SIZE);
+    switch (res)
+    {
+    case -EIO:
+        DEBUG("[configuration.c] eepreg: I/O error when saving configuration\n");
+        return false;
+        break;
+    case -ENOSPC:
+        DEBUG("[configuration.c] eepreg: No space error when saving configuration\n");
+        return false;
+        break;
+    case -EADDRINUSE:
+        DEBUG("[configuration.c] eepreg: Address already in use when saving configuration\n");
+        return false;
+    case 0: // success
+        pos += _write_uint32(pos, config->loop_counter);
+        pos += eeprom_write(pos, config->message, CONFIGURATION_QUERY_SIZE);
 #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
-    DEBUG("Saving loramac\n");
-    semtech_loramac_save_config(config->loramac);
-#endif
+        DEBUG("Saving loramac\n");
+        semtech_loramac_save_config(config->loramac);
+#endif  
+        return true;
+        break;
+    default:
+        DEBUG("[configuration.c] eepreg: Unknown error when saving configuration\n");
+        return false;
+    }
+    return true;
 }
 
 bool configuration_load( TerraConfiguration* config )
 {
     DEBUG("[configuration.c] Loading configuration\n");
-    uint32_t pos = CONFIGURATION_EEPROM_START;
-    uint8_t magic[CONFIGURATION_MAGIC_SIZE] = { 0 };
-    pos += eeprom_read(pos, magic, CONFIGURATION_MAGIC_SIZE);
-    if (memcmp(magic, CONFIGURATION_MAGIC, CONFIGURATION_MAGIC_SIZE) != 0) {
-        DEBUG("[configuration.c] Configuration magic string not found!\n");
+    uint32_t pos;
+
+    int res = eepreg_read(&pos, CONFIGURATION_MAGIC);
+    switch (res)
+    {
+    case -ENOENT:
+        DEBUG("[configuration.c] eepreg: No configuration found\n");
+        return false;
+        break;
+    case -EIO:
+        DEBUG("[configuration.c] eepreg: I/O error when loading configuration\n");
+        return false;
+        break;
+    case 0: // success
+        pos += _read_uint32(pos, &config->loop_counter);
+        pos += eeprom_read(pos, config->message, CONFIGURATION_QUERY_SIZE);
+        break;
+    default:
+        DEBUG("[configuration.c] eepreg: Unknown error when loading configuration\n");
         return false;
     }
-    pos += _read_uint32(pos, &config->loop_counter);
-    pos += eeprom_read(pos, config->message, CONFIGURATION_QUERY_SIZE);
+
     //loramac automatically loads
 
     #if ENABLE_DEBUG

@@ -12,7 +12,6 @@
 #include "log.h"
 #ifndef DISABLE_LORA
 #include "lorawan.h"
-#include "semtech_loramac.h"
 extern semtech_loramac_t loramac;
 
 

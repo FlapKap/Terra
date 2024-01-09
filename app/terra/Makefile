@@ -68,6 +68,7 @@ COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
 # PACKAGES
 USEMODULE += saul_default
 USEMODULE += fmt
+USEMODULE += eepreg
 USEMODULE += periph_eeprom
 #USEMODULE += idle_thread
 #USEMODULE += pm_layered
@@ -128,13 +129,13 @@ endif
 ifeq ($(DISABLE_LORA),0)
 
 # Include the Semtech-loramac package
-  CLFAGS+=-DSEMTECH_LORAMAC_EEPROM_START="(CONFIGURATION_EEPROM_START + CONFIGURATION_TERRA_CONFIGURATION_SIZE)"
 #USEMODULE += netdev_default
   DRIVER ?= sx1276
   USEMODULE += $(DRIVER)
   USEPKG += semtech-loramac
   USEMODULE += auto_init_loramac
   USEMODULE += semtech_loramac_rx
+
   FEATURES_REQUIRED += periph_rtt # needed for loramac
 endif
 
