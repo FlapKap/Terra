@@ -96,7 +96,7 @@ static int compare_uint32_with_double(uint32_t n1, double n2) {
 * Returns:
 *     int: -1 if n1 < n2, 0 if n1 == n2, 1 if n1 > n2.
 */
-int compare(Number* n1, Number* n2){
+int compare(const Number* n1, const Number* n2){
     switch(n1->unionCase){
         case NUMBER_UINT32:
             switch(n2->unionCase){
@@ -150,6 +150,6 @@ int compare(Number* n1, Number* n2){
     return 0;
 }
 
-bool is_false(Number* n) {
+bool is_false(const Number* n) {
     return n->type._int == 0 && (n->unionCase == NUMBER_UINT32 || n->unionCase == NUMBER_INT32);
 }

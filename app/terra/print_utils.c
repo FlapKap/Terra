@@ -13,6 +13,7 @@ void print_configuration(TerraConfiguration* config){
 
     if (config->message != NULL) {
         print_terraprotocol_message(config->message);
+        printf("message size: %" PRIu16 "\n", config->message_size);
     }
 #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
     if (config->loramac != NULL) {
@@ -432,6 +433,6 @@ void print_build_info(void)
 {
     printf("Build Information:\n");
     printf("Terra (Build Date: %s, Time of Build: %s)\n", __DATE__, __TIME__);
-    printf("THREAD_STACKSIZE_MAIN: %" PRIiLEAST16 " bytes\n", THREAD_STACKSIZE_MAIN);
-    printf("EXECUTION_EPOCH_S: %" PRIiLEAST16 " seconds\n", EXECUTION_EPOCH_S);
+    printf("THREAD_STACKSIZE_MAIN: %d bytes\n", THREAD_STACKSIZE_MAIN);
+    printf("EXECUTION_EPOCH_S: %d seconds\n", EXECUTION_EPOCH_S);
 }

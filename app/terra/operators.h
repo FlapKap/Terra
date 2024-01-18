@@ -139,10 +139,10 @@ typedef struct _Expression
 //   int amount;
 // } OutputMessage;
 
-Number bin_op(Number n1, Number n2, TerraProtocol_ExpressionInstructions op);
-Number un_op(Number n1, TerraProtocol_ExpressionInstructions op);
+bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionInstructions op, Number* result);
+bool un_op(const Number* n1, const TerraProtocol_ExpressionInstructions op, Number* result);
 
-void copy_number_to_instruction(Number* src, TerraProtocol_Data* dest);
-void copy_instruction_to_number(TerraProtocol_Data* src, Number* dest);
+void copy_number_to_instruction(const Number* src, TerraProtocol_Data* dest);
+void copy_instruction_to_number(const TerraProtocol_Data* src, Number* dest);
 
 #endif

@@ -61,7 +61,7 @@ static void tests_save(void)
     TEST_ASSERT_EQUAL_STRING(magic_result, magic);
     TerraProtocol_Message read_query = TerraProtocol_Message_init_zero;
     uint32_t loop_counter_read = _read_uint32(CONFIGURATION_EEPROM_START + CONFIGURATION_MAGIC_SIZE, &loop_counter_read);
-    eeprom_read(CONFIGURATION_EEPROM_START + CONFIGURATION_MAGIC_SIZE + CONFIGURATION_LOOP_COUNTER_SIZE, &read_query, CONFIGURATION_QUERY_SIZE);
+    eeprom_read(CONFIGURATION_EEPROM_START + CONFIGURATION_MAGIC_SIZE + CONFIGURATION_LOOP_COUNTER_SIZE, &read_query, CONFIGURATION_QUERY_MAX_SIZE);
     TEST_ASSERT_EQUAL_INT(1                                         , read_query.queries_count);
     TEST_ASSERT_EQUAL_INT(1                                         , read_query.queries[0].operations_count);
     TEST_ASSERT_EQUAL_INT(TerraProtocol_Operation_map_tag           , read_query.queries[0].operations[0].which_operation);

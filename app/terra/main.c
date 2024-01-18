@@ -66,6 +66,7 @@ static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
 static TerraConfiguration config = {
     .loop_counter = 0,
     .message = &msg,
+    .message_size = UINT8_MAX,
 #ifndef DISABLE_LORA
     .loramac = &loramac
 #endif
@@ -97,12 +98,10 @@ static int32_t conf_save_time_ms = -1;
 
 void startup(void){
 
-  ztimer_stopwatch_init(ZTIMER_MSEC, &stopwatch);
-  
+  ztimer_stopwatch_reset(&stopwatch);
   print_build_info();
   print_device_info();
-  ztimer_stopwatch_start(&stopwatch);
-  sync_word_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  
   configuration_load(&config);
   conf_load_time_ms = ztimer_stopwatch_reset(&stopwatch);
   
@@ -156,9 +155,6 @@ void run_activities(void){
     ztimer_stopwatch_reset(&stopwatch);
     executeQueries(&msg, &env, &stack);
     exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
-    
-
-    send_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
   LOG_INFO("Sending Responses if any...\n");
 
@@ -171,8 +167,9 @@ void run_activities(void){
   {
     network_send_heartbeat();
   }
+  send_time_ms = ztimer_stopwatch_reset(&stopwatch);
   //check for new messages
-  network_get_message(config.message);
+  network_get_message(config.message, &config.message_size);
 
   // figure out how long the iteration took and sleep for the remaining time
   int sleep_time_ms_tmp = timeout_ms - (sync_word_time_ms + listen_time_ms + sensor_collect_time_ms + exec_time_ms + send_time_ms);
@@ -212,7 +209,11 @@ int main(void)
   struct tm time;
   
   ztimer_acquire(ZTIMER_MSEC);
+  ztimer_stopwatch_init(ZTIMER_MSEC, &stopwatch);
+  ztimer_stopwatch_start(&stopwatch);
   play_single_blink();
+  play_single_blink();
+  sync_word_time_ms = ztimer_stopwatch_reset(&stopwatch);
   startup();
   run_activities();
   teardown();

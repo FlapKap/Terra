@@ -40,8 +40,8 @@ static void _AND(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
-
-    Number val = bin_op(left, right, TerraProtocol_AND);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_AND, &val);
 
     stack_push(e->stack, val);
 }
@@ -50,8 +50,8 @@ static void _OR(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
-    
-    Number val = bin_op(left, right, TerraProtocol_OR);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_OR, &val);
 
     stack_push(e->stack, val);
 }
@@ -59,7 +59,8 @@ static void _OR(Expression *e)
 static void _NOT(Expression *e)
 {
     Number left = stack_pop(e->stack);
-    Number val = un_op(left, TerraProtocol_NOT);
+    Number val;
+    un_op(&left, TerraProtocol_NOT, &val);
     stack_push(e->stack, val);
 }
 
@@ -67,8 +68,8 @@ static void _LT(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
-
-    Number val = bin_op(left, right, TerraProtocol_LT);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_LT, &val);
 
     stack_push(e->stack, val);
 }
@@ -78,7 +79,8 @@ static void _GT(Expression *e)
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
     
-    Number val = bin_op(left, right, TerraProtocol_GT);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_GT, &val);
     stack_push(e->stack, val);
 }
 
@@ -87,56 +89,53 @@ static void _EQ(Expression *e)
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
     
-
-    Number val = bin_op(left, right, TerraProtocol_EQ);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_EQ, &val);
     
     stack_push(e->stack, val);
 }
 
 static void _ADD(Expression *e)
-{
-    Number val;
-    
+{   
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
 
-    val = bin_op(left, right, TerraProtocol_ADD);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_ADD, &val);
     
     stack_push(e->stack, val);
 }
 
 static void _SUB(Expression *e)
 {
-    Number val;
     
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
 
-    val = bin_op(left, right, TerraProtocol_SUB);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_SUB, &val);
 
     stack_push(e->stack, val);
 }
 
 static void _MUL(Expression *e)
 {
-    Number val;
-    
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
 
-    val = bin_op(left, right, TerraProtocol_MUL);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_MUL, &val);
 
     stack_push(e->stack, val);
 }
 
 static void _DIV(Expression *e)
 {
-    Number val;
-    
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
 
-    val = bin_op(left, right, TerraProtocol_DIV);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_DIV, &val);
 
     stack_push(e->stack, val);
 }
@@ -146,7 +145,8 @@ static void _MOD(Expression *e)
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
 
-    Number val = bin_op(left, right, TerraProtocol_MOD);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_MOD, &val);
 
     stack_push(e->stack, val);
 }
@@ -154,57 +154,65 @@ static void _MOD(Expression *e)
 static void _LOG(Expression *e)
 {
     Number left = stack_pop(e->stack);
-    Number res = un_op(left, TerraProtocol_LOG);
-    stack_push(e->stack, res);
+    Number val;
+    un_op(&left, TerraProtocol_LOG, &val);
+    stack_push(e->stack, val);
 }
 
 static void _POW(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
-    Number res = bin_op(left, right, TerraProtocol_POW);
-    stack_push(e->stack, res);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_POW, &val);
+    stack_push(e->stack, val);
 }
 
 static void _SQRT(Expression *e)
 {
     Number left = stack_pop(e->stack);
-    Number val = un_op(left, TerraProtocol_SQRT);
+    Number val;
+    un_op(&left, TerraProtocol_SQRT, &val);
     stack_push(e->stack, val);
 }
 
 static void _EXP(Expression *e)
 {
     Number left = stack_pop(e->stack);
-    Number val = un_op(left, TerraProtocol_EXP);
+    Number val;
+    un_op(&left, TerraProtocol_EXP, &val);
     stack_push(e->stack, val);
 }
 
 static void _CEIL(Expression *e)
 {
     Number left = stack_pop(e->stack);
-    Number val = un_op(left, TerraProtocol_CEIL);
+    Number val;
+    un_op(&left, TerraProtocol_CEIL, &val);
     stack_push(e->stack, val);
 }
 
 static void _FLOOR(Expression *e)
 {
     Number left = stack_pop(e->stack);
-    Number val = un_op(left, TerraProtocol_FLOOR);
+    Number val;
+    un_op(&left, TerraProtocol_FLOOR, &val);
     stack_push(e->stack, val);
 }
 
 static void _ROUND(Expression *e)
 {
     Number left = stack_pop(e->stack);
-    Number val = un_op(left, TerraProtocol_ROUND);
+    Number val;
+    un_op(&left, TerraProtocol_ROUND, &val);
     stack_push(e->stack, val);
 }
 
 static void _ABS(Expression *e)
 {
     Number left = stack_pop(e->stack);
-    Number val = un_op(left, TerraProtocol_ABS);
+    Number val;
+    un_op(&left, TerraProtocol_ABS, &val);
     stack_push(e->stack, val);
 }
 
@@ -213,7 +221,8 @@ static void _LTEQ(Expression *e)
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
     
-    Number val = bin_op(left, right, TerraProtocol_LTEQ);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_LTEQ, &val);
 
     stack_push(e->stack, val);
 }
@@ -223,7 +232,8 @@ static void _GTEQ(Expression *e)
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
 
-    Number val = bin_op(left, right, TerraProtocol_GTEQ);
+    Number val;
+    bin_op(&left, &right, TerraProtocol_GTEQ, &val);
 
     stack_push(e->stack, val);
 }

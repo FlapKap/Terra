@@ -48,8 +48,9 @@ bool configuration_save(TerraConfiguration *config)
         DEBUG("[configuration.c] eepreg: Address already in use when saving configuration\n");
         return false;
     case 0: // success
+        pos += eeprom_write(pos, &config->message_size, sizeof(config->message_size));
+        pos += eeprom_write(pos, config->message, config->message_size);
         pos += _write_uint32(pos, config->loop_counter);
-        pos += eeprom_write(pos, config->message, CONFIGURATION_QUERY_SIZE);
 #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
         DEBUG("Saving loramac\n");
         semtech_loramac_save_config(config->loramac);
@@ -80,9 +81,14 @@ bool configuration_load( TerraConfiguration* config )
         return false;
         break;
     case 0: // success
+    {
+        uint8_t message_size;
+        pos += eeprom_read(pos, &message_size, sizeof(message_size));
+        pos += eeprom_read(pos, config->message, message_size);
         pos += _read_uint32(pos, &config->loop_counter);
-        pos += eeprom_read(pos, config->message, CONFIGURATION_QUERY_SIZE);
         break;
+    }
+
     default:
         DEBUG("[configuration.c] eepreg: Unknown error when loading configuration\n");
         return false;

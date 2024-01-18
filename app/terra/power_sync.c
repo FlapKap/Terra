@@ -40,8 +40,8 @@ __attribute__((unused)) static inline void toggle_all_leds(void){
     LED7_TOGGLE;
 }
 /**
- * @brief Runs a single blink where it turns all LED's on for BIT_SPEED_MS and then off for BIT_SPEED_MS.
- * This function takes 2*BIT_SPEED_MS to run
+ * @brief Runs a single blink where it waits for WAIT_SPEED_MS and turns all LED's on for BIT_SPEED_MS and then off and wait for WAIT_SPEED_MS.
+ * This function takes 2*WAIT_SPEED_MS + BIT_SPEED_MS to run.
  * @param  
  */
 void play_single_blink(void){

@@ -23,7 +23,7 @@ typedef struct {
 } Number;
 
 
-int compare(Number* n1, Number* n2);
-bool is_false(Number*);
+int compare(const Number* n1, const Number* n2);
+bool is_false(const Number*);
 
 #endif /* NUMBER_H */
