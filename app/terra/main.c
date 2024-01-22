@@ -159,6 +159,9 @@ void run_activities(void){
   LOG_INFO("Sending Responses if any...\n");
 
   // if we have responses send them. if not, send heartbeat to make sure we get responses
+  //TODO: I dont actually fill out the out message with responses. I should do that. Requires i go through
+  // env to find set values. I dont mark values as set or not set, so might need to rewrite that.
+
   if ( out.responses_count > 0)
   {
     network_send_message(&out);

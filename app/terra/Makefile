@@ -20,7 +20,7 @@ $(error "Number of SENSOR_NAMES and SENSOR_TYPES must be the same")
 endif
 
 ## EXECUTE INTERVAL
-EXECUTION_EPOCH_S ?= 5
+EXECUTION_EPOCH_S ?= 20
 ## LORA
 #DISABLE_LORA ?= 0
 ACTIVATION_MODE ?= otaa # only otaa is supported

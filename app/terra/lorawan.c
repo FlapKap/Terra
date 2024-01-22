@@ -20,7 +20,8 @@
 
 static msg_t _recv_queue[RECV_MSG_QUEUE];
 static char _recv_stack[THREAD_STACKSIZE_DEFAULT];
-
+static kernel_pid_t _recv_pid;
+static kernel_pid_t _main_pid;
 extern semtech_loramac_t loramac;
 
 static uint8_t deveui[LORAMAC_DEVEUI_LEN];
@@ -49,7 +50,8 @@ static void *_recv(void *arg)
     {
         /* blocks until some data is received */
         semtech_loramac_recv(&loramac);
-        loramac.rx_data.payload[loramac.rx_data.payload_len] = 0;
+
+        loramac.rx_data.payload[loramac.rx_data.payload_len] = 0; //set end to null to be able to print
         if (loramac.rx_data.payload_len > 0)
         {
             LOG_DEBUG("Data received: %s, port: %d\n length: %d\n",
@@ -189,8 +191,9 @@ int lorawan_connect_lorawan(void)
     }
     LOG_INFO("Join procedure succeeded\n");
     // semtech_loramac_save();
+    _main_pid = thread_getpid();
     LOG_INFO("creating recv thread\n");
-    thread_create(_recv_stack, sizeof(_recv_stack),
+    _recv_pid = thread_create(_recv_stack, sizeof(_recv_stack),
                   THREAD_PRIORITY_MAIN - 1, 0, _recv, NULL, "recv thread");
     // printf("ret: %d\n", ret);
     //  /* trigger the first send */

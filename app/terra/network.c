@@ -78,17 +78,18 @@ bool network_initialize_network(void){
 
 bool network_get_message(TerraProtocol_Message* out, uint8_t* msg_len){
   // Check for received messages
+  if (loramac.rx_data.payload_len == 0) {
+    return false;
+  }
   pb_istream_t istream = pb_istream_from_buffer(loramac.rx_data.payload, loramac.rx_data.payload_len);
   bool res = pb_decode(&istream, TerraProtocol_Message_fields, out);
   if (res)
   {
     *msg_len = loramac.rx_data.payload_len;
     LOG_DEBUG("[network.c] Got message of length %d\n", loramac.rx_data.payload_len);
-    if (LOG_LEVEL <= LOG_DEBUG)
-    {
-      print_terraprotocol_message(out);
-    }
+    print_terraprotocol_message(out);
     
+    loramac.rx_data.payload_len = 0; // clear the payload buffer after we have read the message
   }
   
   return res;
