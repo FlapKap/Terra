@@ -132,6 +132,7 @@ void startup(void){
 void teardown(void){
   LOG_INFO("teardown\n");
   ztimer_stopwatch_reset(&stopwatch);
+  LOG_INFO("saving config\n");
   configuration_save(&config);
   conf_save_time_ms = ztimer_stopwatch_reset(&stopwatch);
 }
@@ -175,11 +176,12 @@ void run_activities(void){
   network_get_message(config.message, &config.message_size);
 
   // figure out how long the iteration took and sleep for the remaining time
+  // Note: since the default values are negative, they might subtract from the total if not set. however -1 ms is negligible so it is ignored
   int sleep_time_ms_tmp = timeout_ms - (sync_word_time_ms + listen_time_ms + sensor_collect_time_ms + exec_time_ms + send_time_ms);
   uint32_t sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
   // convert sleep_time_ms to second
   sleep_time_s = sleep_time_ms / 1000;
-  LOG_INFO("Done with everything! saving config!\n");
+  LOG_INFO("Done with everything\n");
   ++config.loop_counter;
 
 }

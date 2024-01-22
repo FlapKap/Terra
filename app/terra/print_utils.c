@@ -421,13 +421,13 @@ void print_device_info(void)
     printf("CPU: %s\n", RIOT_CPU);
     printf("Board: %s\n", RIOT_BOARD);
     printf("Riot Version: %s\n", RIOT_VERSION);
-#ifdef MODULE_PM_LAYERED
-    printf("Number of power modes: %u\n", PM_NUM_MODES);
+// #ifdef MODULE_PM_LAYERED
+//     printf("Number of power modes: %u\n", PM_NUM_MODES);
 
-    printf("current blockers:\n");
-    pm_blocker_t blockers = pm_get_blocker();
-    print_blockers(&blockers, PM_NUM_MODES);
-#endif
+//     printf("current blockers:\n");
+//     pm_blocker_t blockers = pm_get_blocker();
+//     print_blockers(&blockers, PM_NUM_MODES);
+// #endif
 }
 void print_build_info(void)
 {

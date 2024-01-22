@@ -35,7 +35,27 @@ bool lorawan_send_message(uint8_t *serializedData, uint8_t len)
     uint8_t ret = semtech_loramac_send(&loramac, serializedData, len);
     if (ret != SEMTECH_LORAMAC_TX_DONE)
     {
-        LOG_ERROR("Cannot send message, ret code: %d\n", ret);
+        switch (ret)
+        {
+        case SEMTECH_LORAMAC_NOT_JOINED:
+            LOG_ERROR("[lorawan.c] send_message: Not joined\n");
+            break;
+        case SEMTECH_LORAMAC_BUSY:
+            LOG_ERROR("[lorawan.c] send_message: Busy. Join or tx already in progress\n");
+            break;
+        case SEMTECH_LORAMAC_DUTYCYCLE_RESTRICTED:
+            LOG_ERROR("[lorawan.c] send_message: Duty cycle restricted\n");
+            break;
+        case SEMTECH_LORAMAC_TX_ERROR:
+            LOG_ERROR("[lorawan.c] send_message: TX error. Probably invalid paramater given\n");
+            break;
+        case SEMTECH_LORAMAC_TX_CNF_FAILED:
+            LOG_ERROR("[lorawan.c] send_message: Message was transmitted but no ACK was received\n");
+            break;
+        default:
+            LOG_ERROR("Cannot send message, ret code: %d\n", ret);
+            break;
+        }
         return false;
     }
     return true;
