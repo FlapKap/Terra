@@ -1,5 +1,5 @@
-from EndDeviceProtocol import *
-from EndDeviceProtocol import ExpressionInstructions as Einstr
+from TerraProtocol import *
+from TerraProtocol import ExpressionInstructions as Einstr
 import base64
 import shlex
 
