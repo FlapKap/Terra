@@ -76,7 +76,7 @@ USEMODULE += periph_eeprom
 # DISABLE_MODULE += auto_init
 ## Nanopb stuff
 USEPKG += nanopb
-PROTOBUF_PATH = $(CURDIR)/proto
+#PROTOBUF_PATH = $(PROJECT_BASE)/proto
 
 ## Timer stuff
 USEMODULE += ztimer ztimer_msec

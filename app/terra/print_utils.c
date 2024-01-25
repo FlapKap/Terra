@@ -221,17 +221,6 @@ void print_stack(const Stack *stack)
     }
 }
 
-void print_env(const Env *env)
-{
-    printf("Env (size: %d):\n", env->size);
-    printf(" Array:\n");
-    for (int i = 0; i < env->size; i++)
-    {
-        printf("   %d. ", i + 1);
-        print_number_value_and_ucase(env->memory[i]);
-        printf("\n");
-    }
-}
 
 void print_expression(const Expression *expression)
 {
@@ -240,14 +229,7 @@ void print_expression(const Expression *expression)
     print_terraprotocol_data_array(expression->program->instructions, expression->program->instructions_count);
     printf("\n");
     printf("      Environment:\n");
-    if (expression->env != NULL)
-    {
-        print_env(expression->env);
-    }
-    else
-    {
-        printf("       NULL\n");
-    }
+    env_print_env();
 
     printf("      Stack:\n");
     if (expression->stack != NULL)

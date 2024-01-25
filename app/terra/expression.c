@@ -9,9 +9,8 @@
 #include "print_utils.h"
 #include "log.h"
 
-void expression_init_expression(Expression* e, TerraProtocol_Expression* program, Env* env, Stack* stack) {
+void expression_init_expression(Expression* e, TerraProtocol_Expression* program, Stack* stack) {
     e->program = program;
-    e->env = env;
     e->stack = stack;
 }
 
@@ -32,7 +31,11 @@ static void _VAR(Expression *e)
 {
     //TODO: assert data is an uint
     uint32_t index = e->program->instructions[++e->pc].data._uint32;
-    Number val = env_get_value(e->env, index);
+    Number val;
+    bool valid = env_get_value(index, &val);
+    if(!valid){
+        LOG_ERROR("[expression.c] _VAR: Invalid variable index: %" PRIu32 "", index);
+    }
     stack_push(e->stack, val);
 }
 

@@ -9,6 +9,7 @@
 #include <fmt.h>
 #include <macros/utils.h>
 #include <inttypes.h>
+#include <container.h>
 
 // Local includes
 #include "configuration.h"
@@ -76,8 +77,6 @@ static TerraConfiguration config = {
 
 static Number stack_memory[20];
 static Stack stack = { 0 };
-static Number env_memory[20];
-static Env env = { 0 };
 
 static const uint32_t timeout_ms = EXECUTION_EPOCH_S*1000;
 static uint32_t sleep_time_s = 0;
@@ -112,20 +111,20 @@ void startup(void){
   sensors_print_enabled();
 
   ztimer_stopwatch_reset(&stopwatch);
-  // initialize env and stack
-  env_init_env(env_memory, sizeof(Number)/sizeof(env_memory), &env);
-  stack_init_stack(stack_memory, sizeof(Number)/sizeof(stack_memory), &stack);
+  // initialize stack
+  stack_init_stack(stack_memory, ARRAY_SIZE(stack_memory), &stack);
   env_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
   LOG_INFO("environment and stack initialized:\n");
-  print_env(&env);
+  env_print_env();
   print_stack(&stack);
   
 
   network_initialize_network();
   LOG_INFO("network initialized\n");
   net_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
-
   
+  LOG_INFO("Startup complete. Loaded config\n");
+  print_configuration(&config);
   //network_send_heartbeat();
 }
 
@@ -147,22 +146,59 @@ void run_activities(void){
     LOG_INFO("collecting measurements...\n");
 
     ztimer_stopwatch_reset(&stopwatch);
-    sensors_collect_into_env(&env);
-    sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
+    // array to store sensor reads
+    Number arr[SENSORS_ARRAY_LENGTH];
 
+    sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
+    sensors_collect_into_array(arr, ARRAY_SIZE(arr));
     // Execute queries
     LOG_INFO("Execute Queries...\n");
     // play_syncword();
     ztimer_stopwatch_reset(&stopwatch);
-    executeQueries(&msg, &env, &stack);
+
+    // for each query
+    // 1. clear stack
+    // 2. clear env and copy sensor values into env
+    // 3. execute
+    // 4. copy values from env into output
+    for (size_t query_id = 0; query_id < config.message->queries_count; query_id++)
+    {
+      // 1.
+      stack_clear_stack(&stack);
+      // 2. 
+      env_clear_env();
+      for (size_t j = 0; j < ARRAY_SIZE(arr); j++)
+      {
+        env_set_value(j, arr[j]);
+      }
+      // 3.
+      bool finished = executeQuery(&config.message->queries[query_id], &stack);
+
+      if (finished)
+      {
+        TerraProtocol_Output_QueryResponse* resp = &out.responses[query_id];
+        resp->id = query_id;
+        // 4.
+        for (size_t env_idx = 0; env_idx < ENVIRONMENT_LEN; env_idx++)
+        {
+          Number num;
+          if (env_get_value(env_idx, &num))
+          {
+            copy_number_to_instruction(&num, &resp->response[resp->response_count]);
+            ++resp->response_count;
+          }
+        }
+      }
+    }
+    
     exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
   LOG_INFO("Sending Responses if any...\n");
 
-  // if we have responses send them. if not, send heartbeat to make sure we get responses
+  // if we have responses send them. if not, send heartbeat to make sure we have an opportunity to receive new messages
   //TODO: I dont actually fill out the out message with responses. I should do that. Requires i go through
   // env to find set values. I dont mark values as set or not set, so might need to rewrite that.
-
+  
   if ( out.responses_count > 0)
   {
     network_send_message(&out);
@@ -171,6 +207,7 @@ void run_activities(void){
   {
     network_send_heartbeat();
   }
+  thread_yield_higher();
   send_time_ms = ztimer_stopwatch_reset(&stopwatch);
   //check for new messages
   network_get_message(config.message, &config.message_size);

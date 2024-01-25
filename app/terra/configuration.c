@@ -96,9 +96,7 @@ bool configuration_load( TerraConfiguration* config )
 
     //loramac automatically loads
 
-    #if ENABLE_DEBUG
-    lorawan_print_connection_info();
-    #endif
+
     
     return true;
 }

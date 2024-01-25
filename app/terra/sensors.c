@@ -48,29 +48,33 @@ bool sensors_initialize_enabled(void)
     return true;
 }
 
-bool sensors_collect_into_env(Env *env)
+bool sensors_collect_into_array(Number* arr, size_t arr_size)
 {
+    assert(arr != NULL);
+    assert(arr_size <= SENSORS_ARRAY_LENGTH);
+
     for (size_t i = 0; i < SENSORS_ARRAY_LENGTH; i++)
     {
         LOG_INFO("collecting data from sensor %s\n", sensors[i]->name);
         phydat_t data;
-        Number num;
         //DEBUG("is the function pointer null: %d", sensors[i]->driver->read == NULL);
         sensors[i]->driver->read(sensors[i]->dev, &data);
         double val = data.val[0] * 1 / pow(10, data.scale);
+
+        Number* num = &arr[i];
         if (ceil(val) == val)
         {
             if (val > 0)
             {
-                num.type._uint32 = (uint32_t)val;
-                num.unionCase = NUMBER_UINT32;
-                LOG_DEBUG("Read value %" PRIu32 " from Sensor %s. Saving in env position %d\n", (uint32_t)val, sensors[i]->name, i);
+                num->type._uint32 = (uint32_t)val;
+                num->unionCase = NUMBER_UINT32;
+                LOG_DEBUG("Read value %" PRIu32 " from Sensor %s. Saving in array position %d\n", (uint32_t)val, sensors[i]->name, i);
             }
             else
             {
-                num.type._int = (int)val;
-                num.unionCase = NUMBER_INT32;
-                LOG_DEBUG("Read value %d from Sensor %s. Saving in env position %d\n", (int)val, sensors[i]->name, i);
+                num->type._int = (int)val;
+                num->unionCase = NUMBER_INT32;
+                LOG_DEBUG("Read value %d from Sensor %s. Saving in array position %d\n", (int)val, sensors[i]->name, i);
             }
         }
         else
@@ -80,18 +84,16 @@ bool sensors_collect_into_env(Env *env)
             if (tmp == val)
             {
                 // we can tore it as a float
-                num.type._float = val;
-                num.unionCase = NUMBER_FLOAT;
+                num->type._float = val;
+                num->unionCase = NUMBER_FLOAT;
             }
             else
             {
-                num.type._double = val;
-                num.unionCase = NUMBER_DOUBLE;
+                num->type._double = val;
+                num->unionCase = NUMBER_DOUBLE;
             }
             LOG_DEBUG("Read value %f from Sensor %s. Saving in env position %d\n", val, sensors[i]->name, i);
         }
-
-        env_set_value(env, i, num);
     }
     return true;
 }

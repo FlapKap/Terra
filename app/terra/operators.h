@@ -64,7 +64,6 @@ typedef struct _Expression
 {
     TerraProtocol_Expression* program;
     int pc;
-    Env *env;
     Stack *stack;
 } Expression;
 

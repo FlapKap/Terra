@@ -5,11 +5,8 @@
 #include "expression.h"
 static Expression exp;
 
-void executeQuery(TerraProtocol_Query *query, Env *env, Stack *stack)
+bool executeQuery(TerraProtocol_Query *query, Stack *stack)
 {
-  stack_clear_stack(stack);
-  //env_clear_env(env);
-
   bool filter_triggered = false;
   for (int i = 0; i < query->operations_count && !filter_triggered; i++)
   {
@@ -20,19 +17,19 @@ void executeQuery(TerraProtocol_Query *query, Env *env, Stack *stack)
     {
       // map
       TerraProtocol_MapOperation *map = &query->operations[i].operation.map;
-      expression_init_expression(&exp, &(map->function), env, stack);
+      expression_init_expression(&exp, &(map->function), stack);
 
       Number number = expression_call(&exp);
 
       // Set env value
-      env_set_value(env, map->attribute, number);
+      env_set_value(map->attribute, number);
       break;
     }
     case TerraProtocol_Operation_filter_tag:
     {
       // filter
       TerraProtocol_FilterOperation *filter = &query->operations[i].operation.filter;
-      expression_init_expression(&exp, &(filter->predicate), env, stack);
+      expression_init_expression(&exp, &(filter->predicate), stack);
       Number number = expression_call(&exp);
 
       if (is_false(&number))
@@ -55,12 +52,5 @@ void executeQuery(TerraProtocol_Query *query, Env *env, Stack *stack)
     // empty stack after maps. Possible one after filter
     assert(stack->size == 0 || stack->size == 1);
   }
-}
-
-void executeQueries(TerraProtocol_Message *message, Env *env, Stack *stack)
-{
-  for (int i = 0; i < message->queries_count; i++)
-  {
-    executeQuery(&message->queries[i], env, stack);
-  }
+  return filter_triggered;
 }

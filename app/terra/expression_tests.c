@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "embUnit.h"
-
+#include <container.h>
 #include "stack.h"
 #include "environment.h"
 #include "expression.h"
@@ -14,22 +14,17 @@
 static Expression expres;
 static Number stack_memory[20];
 static Stack stack;
-static Number env_memory[20];
-static Env env;
 
 static void setUp(void)
 {
-  
-  env_init_env(env_memory,sizeof(Number)/sizeof(env_memory), &env);
-  stack_init_stack(stack_memory, sizeof(Number)/sizeof(stack_memory), &stack);
-  expres.env = &env;
+  stack_init_stack(stack_memory, ARRAY_SIZE(stack_memory), &stack);
+  env_clear_env();
   expres.stack = &stack;
   expres.pc = 0;
 }
 
 static void tearDown(void)
 {
-  env_clear_env(expres.env);
   stack_clear_stack(expres.stack);
 
 }
@@ -62,7 +57,7 @@ static void testPushVarToStack(void)
   expres.program = &p;
 
   Number val = {{10}, NUMBER_INT32};
-  env_set_value(expres.env, 0, val);
+  env_set_value( 0, val);
 
   // Act
   Number popped = expression_call(&expres);
@@ -793,7 +788,7 @@ static void test_execute_query_with_result(void)
   envVal.type._int = 4;
   envVal.unionCase = NUMBER_INT32;
 
-  env_set_value(expres.env, 0, envVal);
+  env_set_value(0, envVal);
 
   TerraProtocol_Query query = TerraProtocol_Query_init_zero;
 
@@ -808,13 +803,14 @@ static void test_execute_query_with_result(void)
   query.operations[0].operation.map.function.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_MUL}};
 
   // Action
-  executeQuery(&query, expres.env, expres.stack);
+  executeQuery(&query, expres.stack);
 
   // Assert
   // that the environment has the result
-
-  TEST_ASSERT(NUMBER_INT32 == expres.env->memory[1].unionCase);
-  TEST_ASSERT_EQUAL_INT(8, expres.env->memory[1].type._int);
+  Number num1;
+  TEST_ASSERT(env_get_value(1, &num1));
+  TEST_ASSERT(NUMBER_INT32 == num1.unionCase);
+  TEST_ASSERT_EQUAL_INT(8, num1.type._int);
 
   TEST_ASSERT_EQUAL_INT(-1, expres.stack->top); // stack should be empty
 }
@@ -825,7 +821,7 @@ static void test_execute_query_without_result(void)
   envVal.type._int = 4;
   envVal.unionCase = NUMBER_INT32;
 
-  env_set_value(expres.env, 0, envVal);
+  env_set_value(0, envVal);
 
   TerraProtocol_Query query = TerraProtocol_Query_init_zero;
 
@@ -847,7 +843,7 @@ static void test_execute_query_without_result(void)
   query.operations[1].operation.filter.predicate.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_LT}};
   
   // Action
-  executeQuery(&query, expres.env, expres.stack);
+  executeQuery(&query, expres.stack);
 
   // Assert
   TEST_ASSERT(NUMBER_INT32 == expres.stack->stack_memory[0].unionCase);
@@ -861,7 +857,7 @@ static void test_execute_query_with_multiple_results(void)
   envVal.type._int = 4;
   envVal.unionCase = NUMBER_INT32;
 
-  env_set_value(expres.env, 0, envVal);
+  env_set_value(0, envVal);
 
 
   TerraProtocol_Query query = TerraProtocol_Query_init_zero;
@@ -886,17 +882,21 @@ static void test_execute_query_with_multiple_results(void)
   query.operations[1].operation.map.function.instructions[4] = (TerraProtocol_Data) {TerraProtocol_Data_instruction_tag, {TerraProtocol_ADD}};
   
 
-  executeQuery(&query, expres.env, expres.stack);
+  executeQuery(&query, expres.stack);
 
   // Assert
 
   // output of query 1
-  TEST_ASSERT_EQUAL_INT(8, env.memory[1].type._int);
-  TEST_ASSERT_EQUAL_INT(NUMBER_INT32, env.memory[1].unionCase);
+  Number num1;
+  TEST_ASSERT(env_get_value(1, &num1));
+  TEST_ASSERT_EQUAL_INT(8, num1.type._int);
+  TEST_ASSERT_EQUAL_INT(NUMBER_INT32, num1.unionCase);
 
   //output of query 2
-  TEST_ASSERT_EQUAL_INT(10, env.memory[2].type._int);
-  TEST_ASSERT_EQUAL_INT(NUMBER_INT32, env.memory[1].unionCase);
+  Number num2;
+  TEST_ASSERT(env_get_value(2, &num2));
+  TEST_ASSERT_EQUAL_INT(10, num2.type._int);
+  TEST_ASSERT_EQUAL_INT(NUMBER_INT32, num2.unionCase);
 
   //check that stack is empty
   TEST_ASSERT_EQUAL_INT(-1, expres.stack->top);

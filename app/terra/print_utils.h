@@ -16,7 +16,6 @@ void print_terraprotocol_data_array(const TerraProtocol_Data* instruction, size_
 void print_number_value(Number val);
 void print_number_value_and_ucase(Number number);
 void print_stack(const Stack* stack);
-void print_env(const Env* env);
 void print_expression(const Expression* expression);
 void print_terraprotocol_map(const TerraProtocol_MapOperation* map);
 void print_terraprotocol_filter(const TerraProtocol_FilterOperation* filter);

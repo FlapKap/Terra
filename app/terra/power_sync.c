@@ -1,4 +1,4 @@
-
+#include <container.h>
 #include "ztimer.h"
 #include "led.h"
 #include "log.h"
@@ -55,7 +55,7 @@ void play_single_blink(void){
 
 void play_syncword(void){
     LOG_INFO("Running sync word...\n");
-    for (size_t i = 0; i < (sizeof(BLINK) / sizeof(BLINK[0])); i++)
+    for (size_t i = 0; i < ARRAY_SIZE(BLINK); i++)
     {
         if (BLINK[i])
         {

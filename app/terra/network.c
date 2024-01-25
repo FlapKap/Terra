@@ -3,7 +3,7 @@
 #include "network.h"
 
 #include "operators.h"
-
+#include "environment.h"
 #include "terraprotocol.pb.h"
 #include "pb_common.h"
 #include "pb_encode.h"
@@ -13,9 +13,6 @@
 #ifndef DISABLE_LORA
 #include "lorawan.h"
 extern semtech_loramac_t loramac;
-
-
-
 #endif
 
 // we provide two implementations: one for lora, and one with a default message defined

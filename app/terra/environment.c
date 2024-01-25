@@ -1,31 +1,52 @@
 #include <stdlib.h>
 
 #include "environment.h"
-
-void env_init_env(Number* memory, size_t memory_size, Env* out)
+#include "print_utils.h"
+typedef struct _EnvUnit
 {
-    out->memory = memory;
-    out->size = memory_size;
-    env_clear_env(out);
-}
+    Number number;
+    bool valid;
+} EnvEntry;
 
-void env_clear_env(Env *env)
+
+static EnvEntry envMemory[ENVIRONMENT_LEN];
+
+
+void env_clear_env(void)
 {
-    for (int i = 0; i < env->size; i++)
+    for (int i = 0; i < ENVIRONMENT_LEN; i++)
     {
-        Number number;
-        number.type._uint32 = 0;
-        number.unionCase = NUMBER_UINT32;
-        env->memory[i] = number;
+        envMemory[i].valid = false;
     }
 }
 
-Number env_get_value(Env *env, int index)
+bool env_get_value(int index, Number* out)
 {
-    return env->memory[index];
+    assert(index >= 0 && index < ENVIRONMENT_LEN);
+    if (!envMemory[index].valid){
+        return false;
+    }
+    else {
+        *out = envMemory[index].number;
+    }
+    return true;
 }
 
-void env_set_value(Env *env, int index, Number val)
+void env_set_value(int index, Number val)
 {
-    env->memory[index] = val;
+    assert(index >= 0 && index < ENVIRONMENT_LEN);
+    envMemory[index].number = val;
+    envMemory[index].valid = true;
+}
+
+void env_print_env(void){
+    printf("Environment (size: %d): \n", ENVIRONMENT_LEN);
+    for (int i = 0; i < ENVIRONMENT_LEN; i++)
+    {
+        if (envMemory[i].valid)
+        {
+            printf("  %d: ", i);
+            print_number_value_and_ucase(envMemory[i].number);
+        }
+    }
 }
