@@ -11,9 +11,11 @@ void print_configuration(TerraConfiguration* config){
             config->loop_counter
             );
 
-    if (config->message != NULL) {
-        print_terraprotocol_message(config->message);
+    if (config->message.queries_count > 0) {
+        print_terraprotocol_message(&(config->message));
         printf("message size: %" PRIu16 "\n", config->message_size);
+    } else {
+        printf("Empty message\n");
     }
 #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
     if (config->loramac != NULL) {

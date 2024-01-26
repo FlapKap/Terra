@@ -62,12 +62,11 @@ int main(void)
   return 0;
 }
 #else
-static TerraProtocol_Message msg = TerraProtocol_Message_init_zero;
 static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
 static TerraConfiguration config = {
+    .message_size = 0,
+    .message = TerraProtocol_Message_init_zero,
     .loop_counter = 0,
-    .message = &msg,
-    .message_size = UINT8_MAX,
 #ifndef DISABLE_LORA
     .loramac = &loramac
 #endif
@@ -128,19 +127,11 @@ void startup(void){
   //network_send_heartbeat();
 }
 
-void teardown(void){
-  LOG_INFO("teardown\n");
-  ztimer_stopwatch_reset(&stopwatch);
-  LOG_INFO("saving config\n");
-  configuration_save(&config);
-  conf_save_time_ms = ztimer_stopwatch_reset(&stopwatch);
-}
-
 void run_activities(void){
   LOG_INFO("Running activities...\n");
   
   //if we have queries to execute
-  if (config.message->queries_count > 0)
+  if (config.message.queries_count > 0)
   {
     // Collect measurements
     LOG_INFO("collecting measurements...\n");
@@ -161,7 +152,7 @@ void run_activities(void){
     // 2. clear env and copy sensor values into env
     // 3. execute
     // 4. copy values from env into output
-    for (size_t query_id = 0; query_id < config.message->queries_count; query_id++)
+    for (size_t query_id = 0; query_id < config.message.queries_count; query_id++)
     {
       // 1.
       stack_clear_stack(&stack);
@@ -172,7 +163,7 @@ void run_activities(void){
         env_set_value(j, arr[j]);
       }
       // 3.
-      bool finished = executeQuery(&config.message->queries[query_id], &stack);
+      bool finished = executeQuery(&config.message.queries[query_id], &stack);
 
       if (finished)
       {
@@ -210,7 +201,7 @@ void run_activities(void){
   thread_yield_higher();
   send_time_ms = ztimer_stopwatch_reset(&stopwatch);
   //check for new messages
-  network_get_message(config.message, &config.message_size);
+  network_get_message(&(config.message), &(config.message_size));
 
   // figure out how long the iteration took and sleep for the remaining time
   // Note: since the default values are negative, they might subtract from the total if not set. however -1 ms is negligible so it is ignored
@@ -221,6 +212,14 @@ void run_activities(void){
   LOG_INFO("Done with everything\n");
   ++config.loop_counter;
 
+}
+
+void teardown(void){
+  LOG_INFO("teardown\n");
+  ztimer_stopwatch_reset(&stopwatch);
+  LOG_INFO("saving config\n");
+  configuration_save(&config);
+  conf_save_time_ms = ztimer_stopwatch_reset(&stopwatch);
 }
 
 void disable_peripherals(void)

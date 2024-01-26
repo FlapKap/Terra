@@ -1,6 +1,8 @@
 #include "configuration.h"
 #include "eepreg.h"
 #include "periph/eeprom.h"
+
+
 #ifndef DISABLE_LORA
 #include "lorawan.h"
 #endif
@@ -49,7 +51,7 @@ bool configuration_save(TerraConfiguration *config)
         return false;
     case 0: // success
         pos += eeprom_write(pos, &config->message_size, sizeof(config->message_size));
-        pos += eeprom_write(pos, config->message, config->message_size);
+        pos += eeprom_write(pos, &config->message, config->message_size);
         pos += _write_uint32(pos, config->loop_counter);
 #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
         DEBUG("Saving loramac\n");
@@ -82,9 +84,8 @@ bool configuration_load( TerraConfiguration* config )
         break;
     case 0: // success
     {
-        uint8_t message_size;
-        pos += eeprom_read(pos, &message_size, sizeof(message_size));
-        pos += eeprom_read(pos, config->message, message_size);
+        pos += eeprom_read(pos, &(config->message_size), sizeof(config->message_size));
+        pos += eeprom_read(pos, &config->message, config->message_size);
         pos += _read_uint32(pos, &config->loop_counter);
         break;
     }

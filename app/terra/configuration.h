@@ -17,12 +17,17 @@
 #ifndef DISABLE_LORA 
 #include "semtech_loramac.h"
 #endif
+
+#ifdef DISABLE_LORA
+#define LORAWAN_APP_DATA_MAX_SIZE 242 // Since we dont have the semtech_loramac.h where it normally is
+#endif
+
 #include <terraprotocol.pb.h>
 
 
 typedef struct _TerraConfiguration {
     CONFIGURATION_LOOP_COUNTER_TYPE loop_counter;
-    TerraProtocol_Message* message;
+    uint8_t raw_message[LORAWAN_APP_DATA_MAX_SIZE];
     uint8_t message_size;
 #ifndef DISABLE_LORA
     semtech_loramac_t* loramac;
