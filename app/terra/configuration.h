@@ -27,8 +27,8 @@
 
 typedef struct _TerraConfiguration {
     CONFIGURATION_LOOP_COUNTER_TYPE loop_counter;
-    uint8_t raw_message[LORAWAN_APP_DATA_MAX_SIZE];
-    uint8_t message_size;
+    uint8_t raw_message_buffer[LORAWAN_APP_DATA_MAX_SIZE];
+    uint8_t raw_message_size;
 #ifndef DISABLE_LORA
     semtech_loramac_t* loramac;
 #endif

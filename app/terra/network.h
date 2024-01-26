@@ -10,7 +10,7 @@ bool network_is_connected(void);
 
 //bool network_has_valid_message(void);
 
-bool network_get_message(TerraProtocol_Message*, uint8_t* msg_len);
-bool network_send_message(TerraProtocol_Output*);
+bool network_get_message(uint8_t* out, const size_t out_len, uint8_t* bytes_written);
+bool network_send_message(uint8_t* msg, const size_t msg_len);
 bool network_send_heartbeat(void);
 

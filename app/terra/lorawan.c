@@ -16,6 +16,8 @@
 
 #include "log.h"
 
+#include <assert.h>
+
 #define RECV_MSG_QUEUE (4U)
 
 static msg_t _recv_queue[RECV_MSG_QUEUE];
@@ -29,7 +31,9 @@ static uint8_t appeui[LORAMAC_APPEUI_LEN];
 static uint8_t appkey[LORAMAC_APPKEY_LEN];
 
 bool lorawan_send_message(uint8_t *serializedData, uint8_t len)
-{
+{   
+    assert(len <= LORAWAN_APP_DATA_MAX_SIZE);
+    
     LOG_INFO("Sending: %s\n", serializedData);
     /* Try to send the message */
     uint8_t ret = semtech_loramac_send(&loramac, serializedData, len);
