@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include "lorawan.h"
-
+#include "serialization.h"
 
 void print_configuration(TerraConfiguration* config){
     printf(
@@ -10,13 +10,16 @@ void print_configuration(TerraConfiguration* config){
             "Loop counter: %" PRIu32 "\n",
             config->loop_counter
             );
-
-    if (config->message.queries_count > 0) {
-        print_terraprotocol_message(&(config->message));
-        printf("message size: %" PRIu16 "\n", config->message_size);
-    } else {
-        printf("Empty message\n");
+    if(config->raw_message_size > 0) {
+        TerraProtocol_Message message = TerraProtocol_Message_init_zero;
+        serialization_deserialize_message(config->raw_message_buffer, config->raw_message_size, &message);
+        if (message.queries_count > 0) {
+            print_terraprotocol_message(&message);
+        } else {
+            printf("Empty message\n");
+        }
     }
+
 #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
     if (config->loramac != NULL) {
         lorawan_print_connection_info();

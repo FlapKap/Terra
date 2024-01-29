@@ -50,7 +50,7 @@ bool executeQuery(TerraProtocol_Query *query, Stack *stack)
 
     // after each execution the stack should be empty or 1
     // empty stack after maps. Possible one after filter
-    assert(stack->size == 0 || stack->size == 1);
+    assert(stack->top == -1 || stack->top == 0 || stack->top == 1);
   }
   return filter_triggered;
 }

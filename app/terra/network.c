@@ -80,7 +80,9 @@ bool network_get_message(uint8_t* out, const size_t out_len, uint8_t* bytes_writ
   // TODO: implement this
   assert(out != NULL);
   assert(bytes_written != NULL);
-  assert(loramac.rx_data.payload_len > 0);
+  if (loramac.rx_data.payload_len == 0){
+    return false;
+  }
   assert(loramac.rx_data.payload_len <= out_len);
   // Check for received messages
 

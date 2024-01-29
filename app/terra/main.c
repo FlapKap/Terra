@@ -204,9 +204,9 @@ void run_activities(void){
   {
     LOG_INFO("Sending Responses...\n");
     uint8_t buffer[LORAWAN_APP_DATA_MAX_SIZE] = { 0 };
-    uint8_t bytes_written;
-    serialization_serialize_message(&out, buffer, sizeof(buffer), &bytes_written);
-    network_send_message(&out, bytes_written);
+    size_t bytes_written;
+    serialization_serialize_output(&out, buffer, sizeof(buffer), &bytes_written);
+    network_send_message(buffer, bytes_written);
   }
   else
   {
@@ -215,7 +215,7 @@ void run_activities(void){
   thread_yield_higher();
   send_time_ms = ztimer_stopwatch_reset(&stopwatch);
   //check for new messages
-  network_get_message(&config.raw_message_buffer, sizeof(config.raw_message_buffer), &(config.raw_message_size));
+  network_get_message(config.raw_message_buffer, sizeof(config.raw_message_buffer), &(config.raw_message_size));
 
   // figure out how long the iteration took and sleep for the remaining time
   // Note: since the default values are negative, they might subtract from the total if not set. however -1 ms is negligible so it is ignored

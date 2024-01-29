@@ -3,6 +3,7 @@
 #include "pb_encode.h"
 #include "pb_common.h"
 #include <assert.h>
+#include "print_utils.h"
 
 #define ENABLE_DEBUG 1
 #include "debug.h"
@@ -28,6 +29,19 @@ bool serialization_serialize_message(const TerraProtocol_Message *msg, uint8_t *
   if (res)
   {
     DEBUG("[serialization.c] serialized message of length %d\n", ostream.bytes_written);
+  }
+  assert(ostream.bytes_written <= dest_len);
+  *bytes_written = ostream.bytes_written;
+  return res;
+}
+
+bool serialization_serialize_output(const TerraProtocol_Output *out, uint8_t *dest_data, const size_t dest_len, size_t *bytes_written)
+{
+  pb_ostream_t ostream = pb_ostream_from_buffer(dest_data, dest_len);
+  bool res = pb_encode(&ostream, TerraProtocol_Output_fields, out);
+  if (res)
+  {
+    DEBUG("[serialization.c] serialized output of length %d\n", ostream.bytes_written);
   }
   assert(ostream.bytes_written <= dest_len);
   *bytes_written = ostream.bytes_written;
