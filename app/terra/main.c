@@ -172,7 +172,7 @@ void run_activities(void){
       }
       // 3.
       bool finished = executeQuery(&msg.queries[query_id], &stack);
-
+      printf("finished: %s\n", finished ? "true" : "false");
       if (finished)
       {
         TerraProtocol_Output_QueryResponse* resp = &out.responses[query_id];
@@ -187,9 +187,13 @@ void run_activities(void){
             ++resp->response_count;
           }
         }
+      // add result to response 
+      out.responses[query_id] = *resp;
+      out.responses_count++;
       }
+
     }
-    
+
     exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
   }

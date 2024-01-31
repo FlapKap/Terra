@@ -52,5 +52,5 @@ bool executeQuery(TerraProtocol_Query *query, Stack *stack)
     // empty stack after maps. Possible one after filter
     assert(stack->top == -1 || stack->top == 0 || stack->top == 1);
   }
-  return filter_triggered;
+  return !filter_triggered;
 }
