@@ -50,7 +50,23 @@
 			"lorawan.h": "c",
 			"log.h": "c",
 			"cpu.h": "c",
-			"loramac.h": "c"
+			"loramac.h": "c",
+			"ztimer.h": "c",
+			"atomic": "c",
+			"bitset": "c",
+			"chrono": "c",
+			"cmath": "c",
+			"complex": "c",
+			"string": "c",
+			"unordered_map": "c",
+			"unordered_set": "c",
+			"random": "c",
+			"fstream": "c",
+			"limits": "c",
+			"optional": "c",
+			"sstream": "c",
+			"tuple": "c",
+			"variant": "c"
 		}
 	}
 }

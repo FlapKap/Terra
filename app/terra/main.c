@@ -132,7 +132,7 @@ void run_activities(void){
   
   if (config.raw_message_size > 0)
   {
-    TerraProtocol_Message msg = { 0 };
+    TerraProtocol_Message msg = TerraProtocol_Message_init_default;
     bool res = serialization_deserialize_message(config.raw_message_buffer, config.raw_message_size, &msg);
     if (!res)
     {
@@ -216,8 +216,10 @@ void run_activities(void){
   {
     network_send_heartbeat();
   }
-  thread_yield_higher();
   send_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  
+  thread_yield_higher();
+  ztimer_sleep(ZTIMER_MSEC, 2000);
   //check for new messages
   network_get_message(config.raw_message_buffer, sizeof(config.raw_message_buffer), &(config.raw_message_size));
 

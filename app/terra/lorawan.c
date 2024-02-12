@@ -74,12 +74,10 @@ static void *_recv(void *arg)
     {
         /* blocks until some data is received */
         semtech_loramac_recv(&loramac);
-
-        loramac.rx_data.payload[loramac.rx_data.payload_len] = 0; //set end to null to be able to print
         if (loramac.rx_data.payload_len > 0)
         {
-            LOG_DEBUG("Data received: %s, port: %d\n length: %d\n",
-                      (char *)loramac.rx_data.payload, loramac.rx_data.port, loramac.rx_data.payload_len);
+            LOG_DEBUG("Data received of length %d on port: %d\n",
+                    loramac.rx_data.payload_len, loramac.rx_data.port);
         }
     }
     return NULL;
@@ -186,8 +184,8 @@ bool lorawan_receive(void)
     loramac.rx_data.payload[loramac.rx_data.payload_len] = 0;
     if (loramac.rx_data.payload_len > 0)
     {
-        LOG_DEBUG("Data received: %s, port: %d\n length: %d\n",
-                  (char *)loramac.rx_data.payload, loramac.rx_data.port, loramac.rx_data.payload_len);
+        LOG_DEBUG("Data received of length %d on port: %d\n",
+                   loramac.rx_data.payload_len, loramac.rx_data.port);
         return true;
     }
     else

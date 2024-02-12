@@ -50,6 +50,70 @@ if __name__ == "__main__":
             )
         ]
     )
+    messages["semi_long_msg"] = Message(
+        queries=[
+            Query(
+                operations=[
+                    Operation(
+                        MapOperation(
+                            Expression(
+                                [Data(Einstr.VAR), Data(_uint8=0), Data(Einstr.CONST), Data(_uint8=8), Data(Einstr.MUL),
+                                 Data(Einstr.VAR), Data(_uint8=1), Data(Einstr.DIV), Data(Einstr.CONST), Data(_uint8=2), Data(Einstr.ADD),
+                                 Data(Einstr.ABS),
+                                 Data(Einstr.CONST), Data(_int8=50), Data(Einstr.SUB),
+                                 Data(Einstr.CONST), Data(_int8=2), Data(Einstr.MOD),
+                                 Data(Einstr.CONST), Data(_int8=2), Data(Einstr.EXP),
+                                 Data(Einstr.FLOOR),
+                                 Data(Einstr.CONST), Data(_int8=2), Data(Einstr.DIV)]
+                            ),
+                            attribute=2,
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+    messages["long_msg"] = Message(
+        queries=[
+            Query(
+                operations=[
+                    Operation(
+                        MapOperation(
+                            Expression(
+                                [Data(Einstr.VAR), Data(_uint8=0), Data(Einstr.CONST), Data(_uint8=8), Data(Einstr.MUL),
+                                 Data(Einstr.VAR), Data(_uint8=1), Data(Einstr.DIV), Data(_uint8=2), Data(Einstr.ADD),
+                                 Data(Einstr.ABS),
+                                 Data(Einstr.CONST), Data(_int8=50), Data(Einstr.SUB),
+                                 Data(Einstr.CONST), Data(_int8=2), Data(Einstr.MOD),
+                                 Data(Einstr.CEIL),
+                                 Data(Einstr.CONST), Data(_int8=2), Data(Einstr.EXP),
+                                 Data(Einstr.FLOOR),
+                                 Data(Einstr.CONST), Data(_int8=2), Data(Einstr.DIV)]
+                            ),
+                            attribute=2,
+                        )
+                    ),
+                    Operation(
+                        filter=FilterOperation(
+                            predicate=Expression([
+                                Data(Einstr.CONST), Data(_int8=1),
+                                Data(Einstr.CONST), Data(_int8=1),
+                                Data(Einstr.CONST), Data(_int8=1),
+                                Data(Einstr.CONST), Data(_int8=1),
+                                Data(Einstr.CONST), Data(_int8=1),
+                                Data(Einstr.CONST), Data(_int8=1),
+                                Data(Einstr.CONST), Data(_int8=1),
+                                Data(Einstr.ADD),Data(Einstr.ADD),Data(Einstr.ADD),Data(Einstr.ADD),Data(Einstr.ADD),Data(Einstr.ADD),Data(Einstr.ADD),
+                                Data(Einstr.CONST), Data(_int8=1),
+                                Data(Einstr.LT)
+                            ]
+                            )
+                        )
+                    )
+                ]
+            )
+        ]
+    )
 
     messages["filter_msg"] = Message(
         queries=[

@@ -32,7 +32,7 @@ Number stack_pop(Stack *stack)
 {
     DEBUG("pop from stack with size before: %d. top: %d\n", stack->size, stack->top);
     if(stack->top == -1) {
-        printf("Stack is empty\n");
+        printf("[stack.c] ERROR: Stack is empty\n");
         return (Number){{NUMBER_UINT32}, 2};
     }
     return stack->stack_memory[stack->top--];
