@@ -21,7 +21,7 @@ static void _CONST(Expression *e)
     // push the next value from program as data to the stack
     Number val = { 0 };
     TerraProtocol_Data* nextInstruction = &(e->program->instructions[++(e->pc)]);
-
+    assert(nextInstruction->which_data != TerraProtocol_Data_instruction_tag); // data is an instruction and not a valid value
     copy_instruction_to_number(nextInstruction, &val);
     
     stack_push(e->stack, val);
@@ -29,9 +29,14 @@ static void _CONST(Expression *e)
 
 static void _VAR(Expression *e)
 {
-    //TODO: assert data is an uint
-    uint32_t index = e->program->instructions[++e->pc].data._uint32;
-    Number val;
+    TerraProtocol_Data* nextInstruction = &(e->program->instructions[++(e->pc)]);
+    //assert next instruction is uint
+    assert(nextInstruction->which_data == TerraProtocol_Data__uint8_tag ||
+           nextInstruction->which_data == TerraProtocol_Data__uint16_tag ||
+           nextInstruction->which_data == TerraProtocol_Data__uint32_tag);
+
+    uint32_t index = nextInstruction->data._uint32;
+    Number val = { 0 };
     bool valid = env_get_value(index, &val);
     if(!valid){
         LOG_ERROR("[expression.c] _VAR: Invalid variable index: %" PRIu32 "", index);
@@ -245,9 +250,10 @@ static void execute_next(Expression *e)
 {
     if (LOG_LEVEL >= LOG_DEBUG) {
         print_terraprotocol_data(&e->program->instructions[e->pc]);
-        puts("\n");
     }
-    switch (e->program->instructions[e->pc].data.instruction)
+    TerraProtocol_Data* instruction = &e->program->instructions[e->pc];
+    assert(instruction->which_data == TerraProtocol_Data_instruction_tag); //ensure this is an instruction, not a value
+    switch (instruction->data.instruction)
     {
     case TerraProtocol_CONST:
         _CONST(e);
