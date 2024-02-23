@@ -8,6 +8,10 @@ EXTERNAL_MODULE_DIRS += $(PROJECT_BASE)/modules
 EXTERNAL_BOARD_DIRS += $(PROJECT_BASE)/boards
 #USEMODULE += x_nucleo_iks01a3
 
+FEATURES_REQUIRED += periph_rtc
+FEATURES_REQUIRED_ANY += periph_eeprom|backup_ram
+FEATURES_OPTIONAL += periph_rtc_mem
+
 # APPLICATION SPECIFIC CONFIGURATION ENTRIES
 ##SENSORS (ONLY APPLIED FOR NON-NATIVE BUILDS)
 ## to handle sensor boards with multiple sensors, we need both name and type, as they are defined in RIOT
@@ -68,8 +72,26 @@ COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
 # PACKAGES
 USEMODULE += saul_default
 USEMODULE += fmt
-USEMODULE += eepreg
-USEMODULE += periph_eeprom
+USEMODULE += shell
+
+
+# DB for persistent storage
+# select the MTD backend
+USEMODULE += flashdb_mtd
+# enable time series database
+#USEMODULE += flashdb_tsdb
+# enable key-value database
+USEMODULE += flashdb_kvdb
+
+CFLAGS += -DFAL_PART0_LABEL=\"/fdb_conf\"
+CFLAGS += -DFAL_PART0_LENGTH=8*1024
+
+
+## if periph_eeprom is avalaible, use it
+# ifeq ($(FEATURES_PROVIDED),$(filter periph_eeprom,$(FEATURES_PROVIDED)))
+#   USEMODULE += eepreg
+#   USEMODULE += periph_eeprom
+# endif
 #USEMODULE += idle_thread
 #USEMODULE += pm_layered
 # DISABLE_MODULE += pm_layered
@@ -84,8 +106,6 @@ USEMODULE += periph_rtc
 #USEMODULE += ztimer_ondemand ztimer_ondemand_rtt ztimer_msec
 #USEMODULE += ztimer_sec
 
-# features
-FEATURES_OPTIONAL += periph_uart
 
 ifeq ($(APPLICATION_BUILD_OPTIMIZED),1)
   CFLAGS += -O3
@@ -99,8 +119,8 @@ else
   VERBOSE_ASSERT = 1
   CFLAGS += -fstack-protector-all
   CFLAGS += -g3 -Og # unoptimized and with debug symbols
-  CFLAGS += -Wall -Werror -Wextra -Wformat -Wformat-nonliteral -Werror=format-security -Werror=array-bounds -Wpedantic # extra warnings
-
+  CFLAGS += -Wall -Werror -Wextra -Werror=array-bounds -Wpedantic # extra warnings
+  #CFLAGS += -Wformat -Wformat-nonliteral -Werror=format-security ##gives errors when using flashdb
 endif
 
 ifeq (1,$(APPLICATION_RUN_TEST))

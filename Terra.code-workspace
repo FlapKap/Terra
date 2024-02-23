@@ -66,7 +66,13 @@
 			"optional": "c",
 			"sstream": "c",
 			"tuple": "c",
-			"variant": "c"
+			"variant": "c",
+			"eeprom.h": "c",
+			"rtc_mem.h": "c",
+			"flashdb.h": "c",
+			"fal_cfg.h": "c",
+			"fdb_cfg.h": "c",
+			"mtd.h": "c"
 		}
 	}
 }

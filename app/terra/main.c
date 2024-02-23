@@ -11,6 +11,20 @@
 #include <inttypes.h>
 #include <container.h>
 
+// RIOT includes
+#include "periph/pm.h"
+#include "pm_layered.h"
+#include <periph/rtc.h>
+#include "ztimer.h"
+#include "ztimer/stopwatch.h"
+
+#include "periph/i2c.h"
+#include "periph/spi.h"
+#include "periph/uart.h"
+#include "periph/gpio.h"
+
+#include "shell.h"
+
 // Local includes
 #include "configuration.h"
 #include "stack.h"
@@ -24,17 +38,6 @@
 #include "print_utils.h"
 #include "serialization.h"
 
-// RIOT includes
-#include "periph/pm.h"
-#include "pm_layered.h"
-#include <periph/rtc.h>
-#include "ztimer.h"
-#include "ztimer/stopwatch.h"
-
-#include "periph/i2c.h"
-#include "periph/spi.h"
-#include "periph/uart.h"
-#include "periph/gpio.h"
 
 // Power tracking
 #include "power_sync.h"
@@ -92,12 +95,14 @@ static int32_t listen_time_ms = -1;
 static int32_t send_time_ms = -1;
 static int32_t conf_save_time_ms = -1;
 
+
+
 void startup(void){
 
   ztimer_stopwatch_reset(&stopwatch);
   print_build_info();
   print_device_info();
-  
+  configuration_init();
   configuration_load(&config);
   conf_load_time_ms = ztimer_stopwatch_reset(&stopwatch);
   

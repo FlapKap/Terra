@@ -33,7 +33,7 @@ typedef struct _TerraConfiguration {
     semtech_loramac_t* loramac;
 #endif
 } TerraConfiguration;
-
+bool configuration_init(void);
 bool configuration_save( TerraConfiguration* config );
 bool configuration_load( TerraConfiguration* config );
 #endif // CONFIGURATION_H
