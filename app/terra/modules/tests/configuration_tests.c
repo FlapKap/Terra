@@ -1,8 +1,9 @@
 #include "configuration_tests.h"
 #include "configuration.h"
+
 #include "periph/eeprom.h"
 
-#ifdef APPLICATIOn_RUN_TEST
+#ifdef APPLICATION_RUN_TEST
 // useful functions stolen from semtech_loramac.c
 static size_t _read_uint32(size_t pos, uint32_t *value)
 {
