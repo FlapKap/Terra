@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "configuration.h"
 #include "fmt.h"
-
+#include "macros/math.h"
 
 #ifndef DISABLE_LORA
 #include "lorawan.h"
@@ -10,6 +10,8 @@
 #define ENABLE_DEBUG 1
 #include "debug.h"
 
+#include "mtd_flashpage.h"
+#define FAL_MTD mtd_aux
 #include <flashdb.h>
 #include "fal_cfg.h"
 
@@ -70,6 +72,10 @@ bool configuration_init(void){
     uint32_t db_size = sec_size*8; //these are just default values from examples. Might need to be tweaked
     
     fdb_mtd_init(FAL_MTD);
+
+    size_t size = FAL_MTD->pages_per_sector * FAL_MTD->page_size;
+    /* scale hardware sector size to minimum required virtual sector size */
+    size = DIV_ROUND_UP((CONFIG_FLASHDB_MIN_SECTOR_SIZE_DEFAULT_KiB * KiB(1)), size) * size;
 
     mutex_init(&kvdb_lock);
 
@@ -154,44 +160,44 @@ bool configuration_load( TerraConfiguration* config )
     size_t return_size;
     return_size = fdb_kv_get_blob(&kvdb, "loop_counter", fdb_blob_make(&blob, &config->loop_counter, sizeof(config->loop_counter)));
     if(return_size != sizeof(config->loop_counter)){
-        DEBUG("[configuration.c] loading loop_counter error\n");
+        DEBUG("[configuration.c] loading loop_counter error. return_size: %d, expected: %d\n", return_size, sizeof(config->loop_counter));
         return false;
     }
 
     return_size = fdb_kv_get_blob(&kvdb, "raw_message_size", fdb_blob_make(&blob, &config->raw_message_size, sizeof(config->raw_message_size)));
     if(return_size != sizeof(config->raw_message_size)){
-        DEBUG("[configuration.c] loading raw_message_size error\n");
+        DEBUG("[configuration.c] loading raw_message_size error. return_size: %d, expected: %d\n", return_size, sizeof(config->raw_message_size));
         return false;
     }
 
     return_size = fdb_kv_get_blob(&kvdb, "raw_message_buffer", fdb_blob_make(&blob, config->raw_message_buffer, config->raw_message_size));
     if(return_size != config->raw_message_size){
-        DEBUG("[configuration.c] loading raw_message_buffer error\n");
+        DEBUG("[configuration.c] loading raw_message_buffer error. return_size: %d, expected: %d\n", return_size, config->raw_message_size);
         return false;
     }
 
     return_size = fdb_kv_get_blob(&kvdb, "deveui", fdb_blob_make(&blob, config->loramac->deveui, LORAMAC_DEVEUI_LEN));
     if(return_size != sizeof(config->loramac->deveui)){
-        DEBUG("[configuration.c] loading deveui error\n");
+        DEBUG("[configuration.c] loading deveui error. return_size: %d, expected: %d\n", return_size, sizeof(config->loramac->deveui));
         return false;
     }
 
     return_size = fdb_kv_get_blob(&kvdb, "appeui", fdb_blob_make(&blob, config->loramac->appeui, LORAMAC_APPEUI_LEN));
     if(return_size != sizeof(config->loramac->appeui)){
-        DEBUG("[configuration.c] loading appeui error\n");
+        DEBUG("[configuration.c] loading appeui error. return_size: %d, expected: %d\n", return_size, sizeof(config->loramac->appeui));
         return false;
     }
 
     return_size = fdb_kv_get_blob(&kvdb, "appkey", fdb_blob_make(&blob, config->loramac->appkey, LORAMAC_APPKEY_LEN));
     if(return_size != sizeof(config->loramac->appkey)){
-        DEBUG("[configuration.c] loading appkey error\n");
+        DEBUG("[configuration.c] loading appkey error. return_size: %d, expected: %d\n", return_size, sizeof(config->loramac->appkey));
         return false;
     }
 
     uint32_t uplink_counter;
     return_size = fdb_kv_get_blob(&kvdb, "uplink_counter", fdb_blob_make(&blob, &uplink_counter, sizeof(uplink_counter)));
     if(return_size != sizeof(uplink_counter)){
-        DEBUG("[configuration.c] loading uplink_counter error\n");
+        DEBUG("[configuration.c] loading uplink_counter error. return_size: %d, expected: %d\n", return_size, sizeof(uplink_counter));
         return false;
     }
     semtech_loramac_set_uplink_counter(config->loramac, uplink_counter);

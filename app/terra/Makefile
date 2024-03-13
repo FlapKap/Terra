@@ -73,7 +73,8 @@ COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
 USEMODULE += saul_default
 USEMODULE += fmt
 USEMODULE += shell
-
+USEMODULE += mtd_flashpage
+SLOT_AUX_LEN := 0x8000
 
 # DB for persistent storage
 # select the MTD backend
@@ -84,7 +85,7 @@ USEMODULE += flashdb_mtd
 USEMODULE += flashdb_kvdb
 
 CFLAGS += -DFAL_PART0_LABEL=\"/fdb_conf\"
-CFLAGS += -DFAL_PART0_LENGTH=8*1024
+CFLAGS += -DFAL_PART0_LENGTH=16*1024
 
 
 ## if periph_eeprom is avalaible, use it

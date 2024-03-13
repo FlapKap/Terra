@@ -72,7 +72,14 @@
 			"flashdb.h": "c",
 			"fal_cfg.h": "c",
 			"fdb_cfg.h": "c",
-			"mtd.h": "c"
+			"mtd.h": "c",
+			"mtd_flashpage.h": "c",
+			"mutex.h": "c",
+			"fmt.h": "c",
+			"math.h": "c",
+			"math_helper.h": "c",
+			"stat.h": "c",
+			"fal.h": "c"
 		}
 	}
 }
