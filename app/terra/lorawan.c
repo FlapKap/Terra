@@ -85,7 +85,7 @@ static void *_recv(void *arg)
 
 int lorawan_initialize_lorawan(void)
 {
-    if (!semtech_loramac_is_mac_joined(&loramac))
+    if (!semtech_loramac_get_join_state(&loramac))
     {
         /* Convert identifiers and keys strings to byte arrays */
         assert(fmt_hex_bytes(deveui, CONFIG_LORAMAC_DEV_EUI_DEFAULT) > 0); // if deveui is 0 then it is not set
@@ -145,7 +145,7 @@ void lorawan_print_connection_info(void)
 
     uint32_t uplink_counter = semtech_loramac_get_uplink_counter(&loramac);
 
-    bool joined = semtech_loramac_is_mac_joined(&loramac);
+    bool joined = semtech_loramac_get_join_state(&loramac);
 
     loramac_class_t class = semtech_loramac_get_class(&loramac);
     char class_str = (char) class + 65;
@@ -199,7 +199,7 @@ int lorawan_connect_lorawan(void)
 {
     LOG_INFO("trying to join network\n");
     /* Join the network if not already joined */
-    while (!semtech_loramac_is_mac_joined(&loramac))
+    while (!semtech_loramac_get_join_state(&loramac))
     {
         /* Start the Over-The-Air Activation (OTAA) procedure to retrieve the
          * generated device address and to get the network and application session

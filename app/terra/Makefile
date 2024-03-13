@@ -68,8 +68,11 @@ COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
 # PACKAGES
 USEMODULE += saul_default
 USEMODULE += fmt
-USEMODULE += eepreg
-USEMODULE += periph_eeprom
+#USEMODULE += eepreg
+#USEMODULE += periph_eeprom
+USEMODULE += mtd_flashpage
+#USEMODULE += mtd_write_page
+SLOT_AUX_LEN := 0x8000
 #USEMODULE += idle_thread
 #USEMODULE += pm_layered
 # DISABLE_MODULE += pm_layered
@@ -83,7 +86,7 @@ USEMODULE += ztimer ztimer_msec
 USEMODULE += periph_rtc
 #USEMODULE += ztimer_ondemand ztimer_ondemand_rtt ztimer_msec
 #USEMODULE += ztimer_sec
-
+DISABLE_MODULE += periph_eeprom
 # features
 FEATURES_OPTIONAL += periph_uart
 
@@ -136,7 +139,7 @@ ifeq ($(DISABLE_LORA),0)
   USEMODULE += auto_init_loramac
   USEMODULE += semtech_loramac_rx
 
-  FEATURES_REQUIRED += periph_rtt # needed for loramac
+  #FEATURES_REQUIRED += periph_rtt # needed for loramac
 endif
 
 

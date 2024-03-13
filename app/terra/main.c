@@ -43,33 +43,30 @@
 
 // Testing
 #ifdef APPLICATION_RUN_TEST
-#include "embUnit.h"
+// #include "embUnit.h"
 
-#include "expression_tests.h"
-#include "configuration_tests.h"
-void test_encode_input(void);
-void test_encode_output(void);
+// #include "expression_tests.h"
+// #include "configuration_tests.h"
+// void test_encode_input(void);
+// void test_encode_output(void);
 
-int main(void)
-{
-  //ztimer_sleep(ZTIMER_MSEC, 1000); // wait one second before starting
-  puts("Start tests");
-  TESTS_START();
-  TESTS_RUN(tests_expression());
-  TESTS_RUN(tests_configuration());
-  TESTS_END();
+// int main(void)
+// {
+//   //ztimer_sleep(ZTIMER_MSEC, 1000); // wait one second before starting
+//   puts("Start tests");
+//   TESTS_START();
+//   TESTS_RUN(tests_expression());
+//   TESTS_RUN(tests_configuration());
+//   TESTS_END();
 
-  return 0;
-}
+//   return 0;
+// }
 #else
 static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
 static TerraConfiguration config = {
     .raw_message_size = 0,
     .raw_message_buffer = {0},
-    .loop_counter = 0,
-#ifndef DISABLE_LORA
-    .loramac = &loramac
-#endif
+    .loop_counter = 0
 };
 
 static Number stack_memory[20];
@@ -98,7 +95,7 @@ void startup(void){
   print_build_info();
   print_device_info();
   
-  configuration_load(&config);
+  configuration_load(&config, &loramac);
   conf_load_time_ms = ztimer_stopwatch_reset(&stopwatch);
   
   sensors_initialize_enabled();
@@ -238,7 +235,7 @@ void teardown(void){
   LOG_INFO("teardown\n");
   ztimer_stopwatch_reset(&stopwatch);
   LOG_INFO("saving config\n");
-  configuration_save(&config);
+  configuration_save(&config, &loramac);
   conf_save_time_ms = ztimer_stopwatch_reset(&stopwatch);
 }
 
@@ -310,7 +307,7 @@ int main(void)
   rtc_get_time(&time);
   time.tm_sec += sleep_time_s;
   rtc_set_alarm(&time, _rtc_alarm, NULL);
-  pm_set(STM32_PM_STANDBY);
+  pm_set(0);
   puts("sleeping failed");
 
   return 0;

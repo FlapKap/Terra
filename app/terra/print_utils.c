@@ -21,9 +21,8 @@ void print_configuration(TerraConfiguration* config){
     }
 
 #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
-    if (config->loramac != NULL) {
-        lorawan_print_connection_info();
-    }
+    lorawan_print_connection_info();
+    
 #endif
     printf("---Configuration end ---\n");
 }
