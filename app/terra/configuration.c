@@ -118,27 +118,13 @@ bool configuration_load(TerraConfiguration *config, semtech_loramac_t *loramac)
 #define CONFIGURATION_MTD_DEVICE mtd_aux
 #endif
 
-typedef struct _loramac_settings
-{
-    uint8_t deveui[LORAMAC_DEVEUI_LEN];   /**< device EUI */
-    uint8_t appeui[LORAMAC_APPEUI_LEN];   /**< application EUI */
-    uint8_t appkey[LORAMAC_APPKEY_LEN];   /**< application key */
-    uint8_t nwkskey[LORAMAC_NWKSKEY_LEN]; /**< network session key */
-    uint8_t appskey[LORAMAC_APPSKEY_LEN]; /**< application session key */
-    uint8_t devaddr[LORAMAC_DEVADDR_LEN]; /**< device address */
-    uint32_t rx2_freq;
-    uint8_t rx2_dr;
-    bool joined;
-} loramac_settings_t;
+uint8_t config_buffer[CONFIGURATION_SIZE] __attribute__((aligned(FLASHPAGE_WRITE_BLOCK_ALIGNMENT)));
 
-static loramac_settings_t loramac_settings;
-static char config_buffer[CONFIGURATION_MAGIC_SIZE + sizeof(TerraConfiguration) + sizeof(loramac_settings_t)] __attribute__((aligned(FLASHPAGE_WRITE_BLOCK_ALIGNMENT)));
-
-static inline unsigned int _get_number_of_sectors_for_buffer(void)
+static inline uint32_t _get_number_of_sectors_for_buffer(void)
 {
-    unsigned int num_sectors = sizeof(config_buffer) / (CONFIGURATION_MTD_DEVICE->pages_per_sector * CONFIGURATION_MTD_DEVICE->page_size);
+    uint32_t num_sectors = sizeof(config_buffer) / (CONFIGURATION_MTD_DEVICE->pages_per_sector * CONFIGURATION_MTD_DEVICE->page_size);
     assert(num_sectors > 0 && num_sectors <= CONFIGURATION_MTD_DEVICE->sector_count);
-    printf("num_sectors: %d\n", num_sectors);
+    printf("num sectors: %" PRIdSIZE " / ( %" PRIu32 " * %" PRIu32 ") %" PRIu32 "\n", sizeof(config_buffer), CONFIGURATION_MTD_DEVICE->pages_per_sector, CONFIGURATION_MTD_DEVICE->page_size, num_sectors);
     return num_sectors;
 }
 
@@ -158,43 +144,65 @@ bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac_c
     assert(sizeof(config_buffer) < CONFIGURATION_MTD_DEVICE->sector_count * CONFIGURATION_MTD_DEVICE->pages_per_sector * CONFIGURATION_MTD_DEVICE->page_size);
     assert(CONFIGURATION_MTD_DEVICE->sector_count > CONFIGURATION_MTD_SECTOR);
 
-    // create the buffer. Make sure its aligned
-
-    // create the loramac_settings struct
-
-    semtech_loramac_get_deveui(loramac_config, loramac_settings.deveui);
-    semtech_loramac_get_appeui(loramac_config, loramac_settings.appeui);
-    semtech_loramac_get_appkey(loramac_config, loramac_settings.appkey);
-    semtech_loramac_get_nwkskey(loramac_config, loramac_settings.nwkskey);
-    semtech_loramac_get_appskey(loramac_config, loramac_settings.appskey);
-    semtech_loramac_get_devaddr(loramac_config, loramac_settings.devaddr);
-    loramac_settings.rx2_freq = semtech_loramac_get_rx2_freq(loramac_config);
-    loramac_settings.rx2_dr = semtech_loramac_get_rx2_dr(loramac_config);
-    loramac_settings.joined = semtech_loramac_get_join_state(loramac_config);
-
+    uint8_t* config_bufferPtr = config_buffer;
     // copy magic word into buffer
-    if (strcpy(config_buffer, CONFIGURATION_MAGIC) == NULL)
+    if (strcpy((char *) config_bufferPtr, CONFIGURATION_MAGIC) == NULL)
     {
         DEBUG("[configuration.c] Failed to copy magic word to buffer\n");
         return false;
     };
+    config_bufferPtr += CONFIGURATION_MAGIC_SIZE;
 
     // copy terraconfig into the buffer
-    if (memcpy(&config_buffer[CONFIGURATION_MAGIC_SIZE], config, sizeof(*config)) == NULL)
-    {
-        DEBUG("[configuration.c] Failed to copy terraconfig to buffer\n");
-        return false;
-    };
-    // copy loramac settings into the buffer
-    if (memcpy(&config_buffer[sizeof(*config)], &loramac_settings, sizeof(loramac_settings)) == NULL)
-    {
-        DEBUG("[configuration.c] Failed to copy loramac settings to buffer\n");
-        return false;
-    };
+    semtech_loramac_get_deveui(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_DEVEUI_LEN;
+
+    semtech_loramac_get_appeui(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_APPEUI_LEN;
+
+    semtech_loramac_get_appkey(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_APPKEY_LEN;
+
+    semtech_loramac_get_nwkskey(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_NWKSKEY_LEN;
+
+    semtech_loramac_get_appskey(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_APPSKEY_LEN;
+
+    semtech_loramac_get_devaddr(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_DEVADDR_LEN;
+
+    uint32_t rx2_freq = semtech_loramac_get_rx2_freq(loramac_config);
+    *config_bufferPtr++ = (rx2_freq >> 24) & 0xFF;
+    *config_bufferPtr++ = (rx2_freq >> 16) & 0xFF;
+    *config_bufferPtr++ = (rx2_freq >> 8) & 0xFF;
+    *config_bufferPtr++ = rx2_freq & 0xFF;
+
+    uint8_t rx2_dr = semtech_loramac_get_rx2_dr(loramac_config);
+    *config_bufferPtr++ = rx2_dr;
+
+    bool joined = semtech_loramac_get_join_state(loramac_config);
+    *config_bufferPtr++ = joined;
+
+    // copy terraconfig into the buffer
+    uint32_t loop_counter = config->loop_counter;
+    *config_bufferPtr++ = (loop_counter >> 24) & 0xFF;
+    *config_bufferPtr++ = (loop_counter >> 16) & 0xFF;
+    *config_bufferPtr++ = (loop_counter >> 8) & 0xFF;
+    *config_bufferPtr++ = loop_counter & 0xFF;
+
+    *config_bufferPtr++ = config->raw_message_size;
+
+    memcpy(config_bufferPtr, config->raw_message_buffer, config->raw_message_size);
+
     // write the buffer and handle any return errors
     int res = mtd_write_sector(CONFIGURATION_MTD_DEVICE, config_buffer, CONFIGURATION_MTD_SECTOR, _get_number_of_sectors_for_buffer());
     switch (res)
     {
+    case 0:
+        DEBUG("[configuration.c] mtd: Configuration saved successfully\n");
+        return true;
+        break;
     case -ENODEV:
         DEBUG("[configuration.c] mtd: is not a valid device error when saving configuration\n");
         return false;
@@ -220,16 +228,6 @@ bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac_c
         {
             DEBUG("[configuration.c] mtd: Unknown error when saving configuration. Error code: %d\n", res);
             return false;
-        }
-        else if (res != sizeof(config_buffer))
-        {
-            DEBUG("[configuration.c] mtd: Partial write error when saving configuration. saved %d bytes instead of %d\n", res, sizeof(config_buffer));
-            return false;
-        }
-        else
-        {
-            DEBUG("[configuration.c] mtd: Configuration saved successfully\n");
-            return true;
         }
     }
     return true;
@@ -265,45 +263,63 @@ bool configuration_load(TerraConfiguration *config, semtech_loramac_t *loramac_c
             DEBUG("[configuration.c] mtd: Unknown error when loading configuration\n");
             return false;
         }
-        else if (res != sizeof(config_buffer))
-        {
-            DEBUG("[configuration.c] mtd: read of configuration was incomplete. Read %" PRIiLEAST8 " bytes instead of %" PRIxSIZE "\n", res, sizeof(config_buffer));
-            return false;
-        }
     }
-
+    uint8_t* config_bufferPtr = config_buffer;
     // verify magic word
-    if (memcmp(config_buffer, CONFIGURATION_MAGIC, CONFIGURATION_MAGIC_SIZE) != 0)
+    if (memcmp(config_bufferPtr, CONFIGURATION_MAGIC, CONFIGURATION_MAGIC_SIZE) != 0)
     {
         DEBUG("[configuration.c] Failed to verify magic word\n");
         return false;
     }
-
+    config_bufferPtr += CONFIGURATION_MAGIC_SIZE;
     // copy the buffer into the config structs
-    // first the TerraConfiguration
-    if (memcpy(config, config_buffer, sizeof(*config)) == NULL)
-    {
-        DEBUG("[configuration.c] Failed to copy buffer to terraconfig\n");
-        return false;
-    };
+    // first the LoRaWAN Config
 
-    // Then the loramac settings
-    if (memcpy(&loramac_settings, &config_buffer[sizeof(*config)], sizeof(loramac_settings)) == NULL)
-    {
-        DEBUG("[configuration.c] Failed to copy buffer to loramac settings\n");
-        return false;
-    };
+    semtech_loramac_set_deveui(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_DEVEUI_LEN;
 
-    // Use the loramac settings to fill out the semtech_loramac conf
-    semtech_loramac_set_deveui(loramac_config, loramac_settings.deveui);
-    semtech_loramac_set_appeui(loramac_config, loramac_settings.appeui);
-    semtech_loramac_set_appkey(loramac_config, loramac_settings.appkey);
-    semtech_loramac_set_nwkskey(loramac_config, loramac_settings.nwkskey);
-    semtech_loramac_set_appskey(loramac_config, loramac_settings.appskey);
-    semtech_loramac_set_devaddr(loramac_config, loramac_settings.devaddr);
-    semtech_loramac_set_rx2_dr(loramac_config, loramac_settings.rx2_dr);
-    semtech_loramac_set_join_state(loramac_config, loramac_settings.joined);
-    semtech_loramac_set_rx2_freq(loramac_config, loramac_settings.rx2_freq);
+    semtech_loramac_set_appeui(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_APPEUI_LEN;
+
+    semtech_loramac_set_appkey(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_APPKEY_LEN;
+
+    semtech_loramac_set_nwkskey(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_NWKSKEY_LEN;
+
+    semtech_loramac_set_appskey(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_APPSKEY_LEN;
+
+    semtech_loramac_set_devaddr(loramac_config, config_bufferPtr);
+    config_bufferPtr += LORAMAC_DEVADDR_LEN;
+
+    uint32_t rx2_freq = (uint32_t) (*config_bufferPtr) << 24 | 
+        (uint32_t) (*(config_bufferPtr+1)) << 16 |
+        (uint32_t) (*(config_bufferPtr+2)) << 8  |
+        (uint32_t) (*(config_bufferPtr+3));
+
+    semtech_loramac_set_rx2_freq(loramac_config, rx2_freq); //TODO: this is being set or read wrong
+    config_bufferPtr += LORAMAC_RX2_FREQ_LEN;
+
+    semtech_loramac_set_rx2_dr(loramac_config, *config_bufferPtr);
+    config_bufferPtr += LORAMAC_RX2_DR_LEN;
+
+    semtech_loramac_set_join_state(loramac_config, config_bufferPtr);
+    config_bufferPtr += sizeof(bool);
+
+    //then the terra configuration
+    config->loop_counter = (
+        (uint32_t) (*config_bufferPtr) << 24 | 
+        (uint32_t) (*(config_bufferPtr+1)) << 16 |
+        (uint32_t) (*(config_bufferPtr+2)) << 8  |
+        (uint32_t) (*(config_bufferPtr+3))
+        );
+
+    config_bufferPtr += CONFIGURATION_LOOP_COUNTER_SIZE;
+    
+    config->raw_message_size = *config_bufferPtr++;
+
+    memcpy(config->raw_message_buffer, config_bufferPtr, config->raw_message_size);
 
     return true;
 }

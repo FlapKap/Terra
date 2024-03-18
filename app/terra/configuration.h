@@ -10,9 +10,27 @@
 #define CONFIGURATION_LOOP_COUNTER_SIZE sizeof(CONFIGURATION_LOOP_COUNTER_TYPE)
 #define CONFIGURATION_QUERY_MAX_SIZE TerraProtocol_Message_size
 
+#define CONFIGURATION_LORAWAN_CONFIG_SIZE  (\
+        LORAMAC_DEVEUI_LEN +               \
+        LORAMAC_APPEUI_LEN +               \
+        LORAMAC_APPKEY_LEN +               \
+        LORAMAC_APPSKEY_LEN +              \
+        LORAMAC_NWKSKEY_LEN +              \
+        LORAMAC_DEVADDR_LEN +              \
+        LORAMAC_UPLINK_COUNTER_LEN +       \
+        LORAMAC_RX2_FREQ_LEN +             \
+        LORAMAC_RX2_DR_LEN +               \
+        sizeof(bool)) // join_state
+
 #define CONFIGURATION_TERRA_CONFIGURATION_SIZE (\
     CONFIGURATION_LOOP_COUNTER_SIZE +\
-    CONFIGURATION_QUERY_MAX_SIZE)
+    CONFIGURATION_QUERY_MAX_SIZE +\
+    sizeof(uint32_t)) // raw_message_size
+
+#define CONFIGURATION_SIZE (\
+    CONFIGURATION_MAGIC_SIZE +\
+    CONFIGURATION_TERRA_CONFIGURATION_SIZE +\
+    CONFIGURATION_LORAWAN_CONFIG_SIZE)
 
 #ifndef DISABLE_LORA 
 #include "semtech_loramac.h"
@@ -27,8 +45,8 @@
 
 typedef struct _TerraConfiguration {
     CONFIGURATION_LOOP_COUNTER_TYPE loop_counter;
-    uint8_t raw_message_buffer[LORAWAN_APP_DATA_MAX_SIZE];
     uint8_t raw_message_size;
+    uint8_t raw_message_buffer[LORAWAN_APP_DATA_MAX_SIZE];
 } TerraConfiguration;
 
 bool configuration_save( TerraConfiguration* config, semtech_loramac_t* loramac_config );
