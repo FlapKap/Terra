@@ -2,6 +2,7 @@
 #include <mtd.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <errno.h>
 
 #ifndef CONFIGURATION_MTD_DEVICE
 #define CONFIGURATION_MTD_DEVICE mtd_aux
