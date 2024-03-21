@@ -126,7 +126,8 @@ ifeq ($(strip $(BOARD)),native)
   DISABLE_LORA = 1
 else
 ## add configured sensors
-  USEMODULE += $(sort $(SENSOR_NAMES))
+
+  USEMODULE += $(filter $(wildcard $(RIOTBASE)/drivers/*/),$(sort $(SENSOR_NAMES)))
   CFLAGS += -DSENSORS_ARRAY=$(SENSORS_ARRAY) -DSENSORS_ARRAY_LENGTH=$(SENSORS_ARRAY_LENGTH) -DSENSORS_TYPES_ARRAY=$(SENSORS_TYPES_ARRAY)
   DISABLE_LORA ?= 0
 endif
