@@ -309,10 +309,10 @@ bool configuration_load(TerraConfiguration *config, semtech_loramac_t *loramac_c
 
     //then the terra configuration
     config->loop_counter = (
-        (uint32_t) (*config_bufferPtr) << 24 | 
-        (uint32_t) (*(config_bufferPtr+1)) << 16 |
-        (uint32_t) (*(config_bufferPtr+2)) << 8  |
-        (uint32_t) (*(config_bufferPtr+3))
+        ((uint32_t) (*config_bufferPtr)) << 24 | 
+        ((uint32_t) (*(config_bufferPtr+1))) << 16 |
+        ((uint32_t) (*(config_bufferPtr+2))) << 8  |
+        ((uint32_t) (*(config_bufferPtr+3)))
         );
 
     config_bufferPtr += CONFIGURATION_LOOP_COUNTER_SIZE;
