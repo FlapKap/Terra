@@ -21,7 +21,7 @@ SENSOR_TYPES ?= SAUL_SENSE_TEMP SAUL_SENSE_HUM
 endif
 
 ifeq ($(strip $(BOARD)),samr34-xpro)
-SENSOR_NAMES ?= "Button(SW0) Button(SW0)"
+SENSOR_NAMES ?= "Button(SW0)" "Button(SW0)"
 SENSOR_TYPES ?= SAUL_SENSE_BTN SAUL_SENSE_BTN
 endif
 ifneq ($(words SENSOR_NAMES),$(words SENSOR_TYPES))
@@ -126,8 +126,13 @@ ifeq ($(strip $(BOARD)),native)
   DISABLE_LORA = 1
 else
 ## add configured sensors
-
-  USEMODULE += $(filter $(wildcard $(RIOTBASE)/drivers/*/),$(sort $(SENSOR_NAMES)))
+  ## all drivers goes through all folders in the drivers subfolder and extracts the folder names in a single list. I.e. ALL_DRIVERS contain a list like ad7746 adcxx1c ads101x
+  ALL_DRIVERS = $(notdir $(patsubst %/,%,$(dir $(wildcard $(RIOTBASE)/drivers/*/))))
+  SENSOR_NAMES_UNIQUE = $(sort $(SENSOR_NAMES))
+  # $(info SENSOR_NAMES_UNIQUE = $(SENSOR_NAMES_UNIQUE))
+  # $(info ALL_DRIVERS = $(ALL_DRIVERS))
+  # $(info filtered = $(filter $(ALL_DRIVERS),$(SENSOR_NAMES_UNIQUE)))
+  USEMODULE += $(filter $(ALL_DRIVERS),$(SENSOR_NAMES_UNIQUE))
   CFLAGS += -DSENSORS_ARRAY=$(SENSORS_ARRAY) -DSENSORS_ARRAY_LENGTH=$(SENSORS_ARRAY_LENGTH) -DSENSORS_TYPES_ARRAY=$(SENSORS_TYPES_ARRAY)
   DISABLE_LORA ?= 0
 endif
