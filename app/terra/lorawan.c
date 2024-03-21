@@ -7,6 +7,8 @@
 #ifndef DISABLE_LORA
 #include "lorawan.h"
 
+#include "ztimer.h"
+
 #include "thread.h"
 #include "msg.h"
 #include "fmt.h"
@@ -208,7 +210,8 @@ int lorawan_connect_lorawan(void)
         LOG_INFO("Starting join procedure\n");
         if (semtech_loramac_join(&loramac, LORAMAC_JOIN_OTAA) != SEMTECH_LORAMAC_JOIN_SUCCEEDED)
         {
-            LOG_WARNING("Join procedure failed. Trying again\n");
+            LOG_WARNING("Join procedure failed. Trying again after 10 seconds...\n");
+            ztimer_sleep(ZTIMER_MSEC, 10000);
         }
     }
     LOG_INFO("Join procedure succeeded\n");
