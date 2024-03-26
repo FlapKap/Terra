@@ -3,10 +3,11 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <terraprotocol.pb.h>
 #include "number.h"
 #include "stack.h"
 #include "environment.h"
-#include <terraprotocol.pb.h>
+
 
 // struct Operator {
 //   int (*call) (int *func);

@@ -1,9 +1,13 @@
 #include <math.h>
 #include <stdio.h>
 #include <inttypes.h>
-#include "expression.h"
-#include "stack.h"
 #include "operators.h"
+#include "expression.h"
+
+#include <terraprotocol.pb.h>
+
+#include "stack.h"
+
 #include "environment.h"
 #include "number.h"
 #include "print_utils.h"
@@ -16,7 +20,7 @@ void expression_init_expression(Expression* e, TerraProtocol_Expression* program
 
 // TODO: add debug statements to the code
 
-static void _CONST(Expression *e)
+static void expression_CONST(Expression* e)
 {
     // push the next value from program as data to the stack
     Number val = { 0 };
@@ -27,7 +31,7 @@ static void _CONST(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _VAR(Expression *e)
+static void expression_VAR(Expression* e)
 {
     TerraProtocol_Data* nextInstruction = &(e->program->instructions[++(e->pc)]);
     //assert next instruction is uint
@@ -44,7 +48,7 @@ static void _VAR(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _AND(Expression *e)
+static void expression_AND(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -54,7 +58,7 @@ static void _AND(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _OR(Expression *e)
+static void expression_OR(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -64,7 +68,7 @@ static void _OR(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _NOT(Expression *e)
+static void expression_NOT(Expression *e)
 {
     Number left = stack_pop(e->stack);
     Number val;
@@ -72,7 +76,7 @@ static void _NOT(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _LT(Expression *e)
+static void expression_LT(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -82,7 +86,7 @@ static void _LT(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _GT(Expression *e)
+static void expression_GT(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -92,7 +96,7 @@ static void _GT(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _EQ(Expression *e)
+static void expression_EQ(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -103,7 +107,7 @@ static void _EQ(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _ADD(Expression *e)
+static void expression_ADD(Expression *e)
 {   
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -114,7 +118,7 @@ static void _ADD(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _SUB(Expression *e)
+static void expression_SUB(Expression *e)
 {
     
     Number right = stack_pop(e->stack);
@@ -126,7 +130,7 @@ static void _SUB(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _MUL(Expression *e)
+static void expression_MUL(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -137,7 +141,7 @@ static void _MUL(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _DIV(Expression *e)
+static void expression_DIV(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -148,7 +152,7 @@ static void _DIV(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _MOD(Expression *e)
+static void expression_MOD(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -159,7 +163,7 @@ static void _MOD(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _LOG(Expression *e)
+static void expression_LOG(Expression *e)
 {
     Number left = stack_pop(e->stack);
     Number val;
@@ -167,7 +171,7 @@ static void _LOG(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _POW(Expression *e)
+static void expression_POW(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -176,7 +180,7 @@ static void _POW(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _SQRT(Expression *e)
+static void expression_SQRT(Expression *e)
 {
     Number left = stack_pop(e->stack);
     Number val;
@@ -184,7 +188,7 @@ static void _SQRT(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _EXP(Expression *e)
+static void expression_EXP(Expression *e)
 {
     Number left = stack_pop(e->stack);
     Number val;
@@ -192,7 +196,7 @@ static void _EXP(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _CEIL(Expression *e)
+static void expression_CEIL(Expression *e)
 {
     Number left = stack_pop(e->stack);
     Number val;
@@ -200,7 +204,7 @@ static void _CEIL(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _FLOOR(Expression *e)
+static void expression_FLOOR(Expression *e)
 {
     Number left = stack_pop(e->stack);
     Number val;
@@ -208,7 +212,7 @@ static void _FLOOR(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _ROUND(Expression *e)
+static void expression_ROUND(Expression *e)
 {
     Number left = stack_pop(e->stack);
     Number val;
@@ -216,7 +220,7 @@ static void _ROUND(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _ABS(Expression *e)
+static void expression_ABS(Expression *e)
 {
     Number left = stack_pop(e->stack);
     Number val;
@@ -224,7 +228,7 @@ static void _ABS(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _LTEQ(Expression *e)
+static void expression_LTEQ(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -235,7 +239,7 @@ static void _LTEQ(Expression *e)
     stack_push(e->stack, val);
 }
 
-static void _GTEQ(Expression *e)
+static void expression_GTEQ(Expression *e)
 {
     Number right = stack_pop(e->stack);
     Number left = stack_pop(e->stack);
@@ -256,76 +260,77 @@ static void execute_next(Expression *e)
     switch (instruction->data.instruction)
     {
     case TerraProtocol_CONST:
-        _CONST(e);
+        expression_CONST(e);
         break;
     case TerraProtocol_VAR:
-        _VAR(e);
+        expression_VAR(e);
         break;
     case TerraProtocol_AND:
-        _AND(e);
+        expression_AND(e);
         break;
     case TerraProtocol_OR:
-        _OR(e);
+        expression_OR(e);
         break;
     case TerraProtocol_NOT:
-        _NOT(e);
+        expression_NOT(e);
         break;
     case TerraProtocol_LT:
-        _LT(e);
+        expression_LT(e);
         break;
     case TerraProtocol_GT:
-        _GT(e);
+        expression_GT(e);
         break;
     case TerraProtocol_EQ:
-        _EQ(e);
+        expression_EQ(e);
         break;
     case TerraProtocol_ADD:
-        _ADD(e);
+        expression_ADD(e);
         break;
     case TerraProtocol_SUB:
-        _SUB(e);
+        expression_SUB(e);
         break;
     case TerraProtocol_MUL: 
-        _MUL(e);
+        expression_MUL(e);
         break;
     case TerraProtocol_DIV:
-        _DIV(e);
+        expression_DIV(e);
         break;
     case TerraProtocol_MOD:
-        _MOD(e);
+        expression_MOD(e);
         break;
     case TerraProtocol_LOG:
-        _LOG(e);
+        expression_LOG(e);
         break;
     case TerraProtocol_POW:
-        _POW(e);
+        expression_POW(e);
         break;
     case TerraProtocol_SQRT:
-        _SQRT(e);
+        expression_SQRT(e);
         break;
     case TerraProtocol_EXP:
-        _EXP(e);
+        expression_EXP(e);
         break;
     case TerraProtocol_CEIL:
-        _CEIL(e);
+        expression_CEIL(e);
         break;
     case TerraProtocol_FLOOR:
-        _FLOOR(e);
+        expression_FLOOR(e);
         break;
     case TerraProtocol_ROUND:
-        _ROUND(e);
+        expression_ROUND(e);
         break;
     case TerraProtocol_ABS:
-        _ABS(e);
+        expression_ABS(e);
         break;
     case TerraProtocol_LTEQ:
-        _LTEQ(e);
+        expression_LTEQ(e);
         break;
     case TerraProtocol_GTEQ:
-        _GTEQ(e);
+        expression_GTEQ(e);
         break;
     }
 }
+
 
 Number expression_call(Expression *e)
 {

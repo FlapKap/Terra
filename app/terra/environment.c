@@ -1,5 +1,5 @@
 #include <stdlib.h>
-
+#include <stdio.h>
 #include "environment.h"
 #include "print_utils.h"
 typedef struct _EnvUnit
