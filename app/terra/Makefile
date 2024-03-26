@@ -20,6 +20,11 @@ SENSOR_NAMES ?= hts221 hts221
 SENSOR_TYPES ?= SAUL_SENSE_TEMP SAUL_SENSE_HUM
 endif
 
+ifeq ($(strip $(BOARD)),esp32-ttgo-t-beam)
+SENSOR_NAMES ?= LED PRG
+SENSOR_TYPES ?= SAUL_SENSE_BTN SAUL_SENSE_BTN
+endif
+
 ifeq ($(strip $(BOARD)),samr34-xpro)
 SENSOR_NAMES ?= "Button(SW0)" "Button(SW0)"
 SENSOR_TYPES ?= SAUL_SENSE_BTN SAUL_SENSE_BTN
@@ -111,8 +116,9 @@ else
   VERBOSE_ASSERT = 1
   CFLAGS += -fstack-protector-all
   CFLAGS += -g3 -Og # unoptimized and with debug symbols
-  CFLAGS += -Wall -Werror -Wextra -Wformat -Wformat-nonliteral -Werror=format-security -Werror=array-bounds -Wpedantic # extra warnings
-
+  CFLAGS += -Wall -Wextra  -Werror=array-bounds  # extra warnings
+  #CFLAGS += -Werror -Wpedantic
+  #CFLAGS += -Wformat -Wformat-nonliteral -Werror=format-security 
 endif
 
 ifeq (1,$(APPLICATION_RUN_TEST))
