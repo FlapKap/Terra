@@ -5,12 +5,64 @@
 #include "semtech_loramac.h"
 #endif
 
-#define ENABLE_DEBUG 1
+#define ENABLE_DEBUG 0
 #include "debug.h"
 
 #include "assert.h"
 
-#ifdef MODULE_EEPREG
+#ifdef CPU_ESP32
+static TerraConfiguration config_stored __attribute__((section(".rtc.bss")));
+// loramac config values
+static uint8_t  loramac_deveui[LORAMAC_DEVEUI_LEN] __attribute__((section(".rtc.bss")));
+static uint8_t loramac_appeui[LORAMAC_APPEUI_LEN] __attribute__((section(".rtc.bss")));
+static uint8_t loramac_appkey[LORAMAC_APPKEY_LEN] __attribute__((section(".rtc.bss")));
+static uint8_t loramac_appskey[LORAMAC_APPSKEY_LEN] __attribute__((section(".rtc.bss")));
+static uint8_t loramac_nwkskey[LORAMAC_NWKSKEY_LEN] __attribute__((section(".rtc.bss")));
+static uint8_t loramac_devaddr[LORAMAC_DEVADDR_LEN] __attribute__((section(".rtc.bss")));
+static uint32_t loramac_uplink_counter __attribute__((section(".rtc.bss")));
+static uint32_t loramac_rx2_freq __attribute__((section(".rtc.bss")));
+static uint8_t loramac_rx2_dr __attribute__((section(".rtc.bss")));
+static bool loramac_join_state __attribute__((section(".rtc.bss")));
+
+
+bool configuration_load(TerraConfiguration *config, semtech_loramac_t *loramac)
+{
+    DEBUG("[configuration.c] Loading configuration\n");
+    memcpy(config, &config_stored, sizeof(TerraConfiguration));
+
+    // loramac config values
+    semtech_loramac_set_deveui(loramac, loramac_deveui);
+    semtech_loramac_set_appeui(loramac, loramac_appeui);
+    semtech_loramac_set_appkey(loramac, loramac_appkey);
+    semtech_loramac_set_appskey(loramac, loramac_appskey);
+    semtech_loramac_set_nwkskey(loramac, loramac_nwkskey);
+    semtech_loramac_set_devaddr(loramac, loramac_devaddr);
+    semtech_loramac_set_uplink_counter(loramac, loramac_uplink_counter);
+    semtech_loramac_set_rx2_freq(loramac, loramac_rx2_freq);
+    semtech_loramac_set_rx2_dr(loramac, loramac_rx2_dr);
+    semtech_loramac_set_join_state(loramac, loramac_join_state);
+    return true;
+}
+
+bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac)
+{
+    DEBUG("[configuration.c] Saving configuration\n");
+    memcpy(&config_stored, config, sizeof(TerraConfiguration));
+    // loramac config values
+    semtech_loramac_get_deveui(loramac, loramac_deveui);
+    semtech_loramac_get_appeui(loramac, loramac_appeui);
+    semtech_loramac_get_appkey(loramac, loramac_appkey);
+    semtech_loramac_get_appskey(loramac, loramac_appskey);
+    semtech_loramac_get_nwkskey(loramac, loramac_nwkskey);
+    semtech_loramac_get_devaddr(loramac, loramac_devaddr);
+    loramac_uplink_counter =semtech_loramac_get_uplink_counter(loramac);
+    loramac_rx2_freq = semtech_loramac_get_rx2_freq(loramac);
+    loramac_rx2_dr = semtech_loramac_get_rx2_dr(loramac);
+    loramac_join_state = semtech_loramac_get_join_state(loramac);
+    return true;
+}
+
+#elif defined(MODULE_EEPREG)
 #include "eepreg.h"
 #include "periph/eeprom.h"
 // useful functions stolen from semtech_loramac.c
@@ -69,7 +121,7 @@ bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac)
     return true;
 }
 
-bool configuration_load(TerraConfiguration *config, semtech_loramac_t *loramac)
+bool configuration_load(TerraConfiguration *config, __attribute__((unused)) semtech_loramac_t *loramac)
 {
     DEBUG("[configuration.c] Loading configuration\n");
     uint32_t pos;
@@ -98,7 +150,6 @@ bool configuration_load(TerraConfiguration *config, semtech_loramac_t *loramac)
         return false;
     }
     // loramac automatically loads if eepreg is there
-
     return true;
 }
 

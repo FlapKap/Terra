@@ -94,9 +94,11 @@ void startup(void){
   ztimer_stopwatch_reset(&stopwatch);
   print_build_info();
   print_device_info();
-  
   configuration_load(&config, &loramac);
   conf_load_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  
+  // print available sensors:
+  sensors_print_available();
   
   sensors_initialize_enabled();
   sensor_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
@@ -307,7 +309,11 @@ int main(void)
   rtc_get_time(&time);
   time.tm_sec += sleep_time_s;
   rtc_set_alarm(&time, _rtc_alarm, NULL);
+  #ifdef CPU_ESP32
+  pm_set(ESP_PM_DEEP_SLEEP);
+  #else
   pm_set(0);
+  #endif
   puts("sleeping failed");
 
   return 0;
