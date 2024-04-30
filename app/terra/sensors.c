@@ -37,7 +37,7 @@ void sensors_print_enabled(void)
 
 bool sensors_initialize_enabled(void)
 {
-    LOG_INFO("Initializing enabled sensors...");
+    LOG_INFO("Initializing enabled sensors...\n");
     for (size_t i = 0; i < SENSORS_ARRAY_LENGTH; i++)
     {
         sensors[i] = saul_reg_find_type_and_name(sensor_types[i], sensor_names[i]);

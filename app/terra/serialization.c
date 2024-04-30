@@ -5,7 +5,7 @@
 #include <assert.h>
 #include "print_utils.h"
 
-#define ENABLE_DEBUG 1
+#define ENABLE_DEBUG 0
 #include "debug.h"
 
 bool serialization_deserialize_message(const uint8_t *data, const size_t len, TerraProtocol_Message *dest_msg)
