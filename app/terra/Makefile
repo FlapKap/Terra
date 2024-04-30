@@ -8,26 +8,57 @@ EXTERNAL_MODULE_DIRS += $(PROJECT_BASE)/modules
 EXTERNAL_BOARD_DIRS += $(PROJECT_BASE)/boards
 #USEMODULE += x_nucleo_iks01a3
 
+# MODULES
+USEMODULE += saul_default
+USEMODULE += fmt
+
+## Timer stuff
+USEMODULE += ztimer ztimer_msec
+USEMODULE += periph_rtc
+#USEMODULE += ztimer_ondemand ztimer_ondemand_rtt ztimer_msec
+#USEMODULE += ztimer_sec
+
+#USEMODULE += idle_thread
+#USEMODULE += pm_layered
+# DISABLE_MODULE += pm_layered
+# DISABLE_MODULE += auto_init
+
+# PACKAGES
+## Nanopb stuff
+USEPKG += nanopb
+#PROTOBUF_PATH = $(PROJECT_BASE)/proto
+
 # APPLICATION SPECIFIC CONFIGURATION ENTRIES
 ##SENSORS (ONLY APPLIED FOR NON-NATIVE BUILDS)
 ## to handle sensor boards with multiple sensors, we need both name and type, as they are defined in RIOT
 ## The easiest way to find this is to search for the sensor at https://doc.riot-os.org/. The first part of the header files is the module name
 ## for the sensor driver, and if you enter the <sensor_name>_saul.c file in the source code, you can see which types are defined
 
-## we define below per board just because different boards have different sensors available
+## we define below per board settings like sensors and modules available just because different boards have different sensors available
 ifeq ($(strip $(BOARD)),b-l072z-lrwan1)
+
 SENSOR_NAMES ?= hts221 hts221 
 SENSOR_TYPES ?= SAUL_SENSE_TEMP SAUL_SENSE_HUM
+FEATURES_REQUIRED += periph_eeprom 
+USEMODULE += periph_eeprom eepreg
 endif
 
 ifeq ($(strip $(BOARD)),esp32-ttgo-t-beam)
+
 SENSOR_NAMES ?= LED PRG
-SENSOR_TYPES ?= SAUL_SENSE_BTN SAUL_SENSE_BTN
+SENSOR_TYPES ?= SAUL_ACT_SWITCH SAUL_SENSE_BTN
+
+USEMODULE += ztimer_no_periph_rtt
+SLOT_AUX_LEN := 0x8000
+PORT ?= "/dev/ttyACM0"
 endif
 
 ifeq ($(strip $(BOARD)),samr34-xpro)
 SENSOR_NAMES ?= "Button(SW0)" "Button(SW0)"
 SENSOR_TYPES ?= SAUL_SENSE_BTN SAUL_SENSE_BTN
+FEATURES_REQUIRED += periph_flashpage_aux
+USEMODULE += mtd_flashpage mtd_write_page periph_flashpage_aux 
+SLOT_AUX_LEN := 0x8000
 endif
 ifneq ($(words SENSOR_NAMES),$(words SENSOR_TYPES))
 $(error "Number of SENSOR_NAMES and SENSOR_TYPES must be the same")
@@ -77,32 +108,6 @@ CFLAGS += -DTHREAD_STACKSIZE_MAIN=$(MAIN_STACKSIZE)
 # Set the compile_commands.json file to a known location
 COMPILE_COMMANDS_PATH = $(CURDIR)/bin/compile_commands.json
 
-
-
-# PACKAGES
-USEMODULE += saul_default
-USEMODULE += fmt
-#USEMODULE += eepreg
-#USEMODULE += periph_eeprom
-USEMODULE += mtd_flashpage
-#USEMODULE += mtd_write_page
-SLOT_AUX_LEN := 0x8000
-#USEMODULE += idle_thread
-#USEMODULE += pm_layered
-# DISABLE_MODULE += pm_layered
-# DISABLE_MODULE += auto_init
-## Nanopb stuff
-USEPKG += nanopb
-#PROTOBUF_PATH = $(PROJECT_BASE)/proto
-
-## Timer stuff
-USEMODULE += ztimer ztimer_msec
-USEMODULE += periph_rtc
-#USEMODULE += ztimer_ondemand ztimer_ondemand_rtt ztimer_msec
-#USEMODULE += ztimer_sec
-DISABLE_MODULE += periph_eeprom
-# features
-FEATURES_OPTIONAL += periph_uart
 
 ifeq ($(APPLICATION_BUILD_OPTIMIZED),1)
   CFLAGS += -O3
@@ -173,10 +178,7 @@ ifneq (,$(filter semtech-loramac,$(USEPKG)))
   CFLAGS += -DUSE_OTAA
 endif
 
-
-
 include $(RIOTBASE)/Makefile.include
-
 ## add IOT_LAB Support
 IOTLAB_NODES ?= 1
 IOTLAB_DURATION ?= 5 # minutes
