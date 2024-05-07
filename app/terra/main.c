@@ -111,8 +111,8 @@ void startup(void){
   stack_init_stack(stack_memory, ARRAY_SIZE(stack_memory), &stack);
   env_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
   LOG_INFO("environment and stack initialized:\n");
-  env_print_env();
-  print_stack(&stack);
+  //env_print_env();
+  //print_stack(&stack);
   
 
   network_initialize_network();
@@ -159,6 +159,7 @@ void run_activities(void){
     // 2. clear env and copy sensor values into env
     // 3. execute
     // 4. copy values from env into output
+    size_t response_id = 0;
     for (size_t query_id = 0; query_id < msg.queries_count; query_id++)
     {
       // 1.
@@ -174,21 +175,23 @@ void run_activities(void){
       printf("finished: %s\n", finished ? "true" : "false");
       if (finished)
       {
-        TerraProtocol_Output_QueryResponse* resp = &out.responses[query_id];
-        resp->id = query_id;
-        // 4.
+        // get first free response field from output.
+        TerraProtocol_Output_QueryResponse resp = out.responses[response_id];
+        resp.id = query_id;
+        
+        // 4. for each env value copy into response
         for (size_t env_idx = 0; env_idx < ENVIRONMENT_LEN; env_idx++)
         {
           Number num;
           if (env_get_value(env_idx, &num))
           {
-            copy_number_to_instruction(&num, &resp->response[resp->response_count]);
-            ++resp->response_count;
+            copy_number_to_instruction(&num, &(resp.response[resp.response_count]));
+            ++resp.response_count;
           }
         }
-      // add result to response 
-      out.responses[query_id] = *resp;
+      //increment response count
       out.responses_count++;
+      response_id++;
       }
 
     }

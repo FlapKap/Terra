@@ -66,7 +66,20 @@
 			"optional": "c",
 			"sstream": "c",
 			"tuple": "c",
-			"variant": "c"
+			"variant": "c",
+			"esp_err.h": "c",
+			"saul.h": "c",
+			"periph.h": "c",
+			"u8g2.h": "c",
+			"dht_params.h": "c",
+			"dht.h": "c",
+			"sds011_params.h": "c",
+			"cpu_conf.h": "c",
+			"sps30_params.h": "c",
+			"xtimer.h": "c",
+			"scd30_params.h": "c",
+			"sps30.h": "c",
+			"scd30_internal.h": "c"
 		}
 	}
 }
