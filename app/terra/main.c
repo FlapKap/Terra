@@ -214,7 +214,8 @@ void run_activities(void){
     serialization_serialize_output(&out, buffer, sizeof(buffer), &bytes_written);
     network_send_message(buffer, bytes_written);
   }
-  else
+  // if no responses, send heartbeat if we haven't sent one for 10 loops.
+  else if(config.loop_counter % 10 == 0)
   {
     network_send_heartbeat();
   }
