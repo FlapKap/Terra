@@ -44,10 +44,13 @@ bool configuration_load(TerraConfiguration *config, semtech_loramac_t *loramac)
     return true;
 }
 
-bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac)
+bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac, bool raw_message_changed)
 {
     DEBUG("[configuration.c] Saving configuration\n");
-    memcpy(&config_stored, config, sizeof(TerraConfiguration));
+    if (raw_message_changed)
+    {
+        memcpy(&config_stored, config, sizeof(TerraConfiguration));
+    }
     // loramac config values
     semtech_loramac_get_deveui(loramac, loramac_deveui);
     semtech_loramac_get_appeui(loramac, loramac_appeui);
@@ -85,7 +88,7 @@ static size_t _write_uint32(size_t pos, uint32_t value)
     return eeprom_write(pos, array, sizeof(uint32_t));
 }
 
-bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac)
+bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac, bool raw_message_changed)
 {
     DEBUG("[configuration.c] Saving configuration\n");
 
@@ -105,8 +108,12 @@ bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac)
         DEBUG("[configuration.c] eepreg: Address already in use when saving configuration\n");
         return false;
     case 0: // success
+    if (raw_message_changed) {
         pos += eeprom_write(pos, &config->raw_message_size, sizeof(config->raw_message_size));
         pos += eeprom_write(pos, &config->raw_message_buffer, config->raw_message_size);
+    } else {
+            pos += sizeof(config->raw_message_size) + config->raw_message_size;
+        }
         pos += _write_uint32(pos, config->loop_counter);
 #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
         DEBUG("Saving loramac\n");
@@ -179,14 +186,7 @@ static inline uint32_t _get_number_of_sectors_for_buffer(void)
     return num_sectors;
 }
 
-/**
- * @brief
- * @param config
- * @param loramac_config
- * @return true if the save was successful. False otherwise
- * @note this saves to flash. This causes wear so use it as little as possible
- */
-bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac_config)
+bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac_config, bool raw_message_changed)
 {
     static_assert(sizeof(*config) == sizeof(TerraConfiguration), "config doesnt have type of TerraConfiguration"); // just sanitycheck that if we change the type of config we also need to change the type of config_buffer
     // take both app config and loramac config and write to mtd flash. Need to take care of flash page boundaries. Possibly also the erase state of bytes
@@ -243,10 +243,11 @@ bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac_c
     *config_bufferPtr++ = loop_counter & 0xFF;
 
     *config_bufferPtr++ = config->raw_message_size;
+    if (raw_message_changed) {
+        memcpy(config_bufferPtr, config->raw_message_buffer, config->raw_message_size);
+    }
 
-    memcpy(config_bufferPtr, config->raw_message_buffer, config->raw_message_size);
-
-    // write the buffer and handle any return errors
+    // write the buffer and handle any return errors TODO: make this raw_message_changed_aware
     int res = mtd_write_sector(CONFIGURATION_MTD_DEVICE, config_buffer, CONFIGURATION_MTD_SECTOR, _get_number_of_sectors_for_buffer());
     switch (res)
     {

@@ -66,16 +66,17 @@ static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
 static TerraConfiguration config = {
     .raw_message_size = 0,
     .raw_message_buffer = {0},
-    .loop_counter = 0
-};
+    .loop_counter = 0};
+
+static bool raw_message_changed = false;
 
 static Number stack_memory[20];
-static Stack stack = { 0 };
+static Stack stack = {0};
 
-static const uint32_t timeout_ms = EXECUTION_EPOCH_S*1000;
+static const uint32_t timeout_ms = EXECUTION_EPOCH_S * 1000;
 static uint32_t sleep_time_s = 0;
 // tracking stuff
-static ztimer_stopwatch_t stopwatch = { 0 };
+static ztimer_stopwatch_t stopwatch = {0};
 
 // timing measurements
 static int32_t conf_load_time_ms = -1;
@@ -89,17 +90,18 @@ static int32_t listen_time_ms = -1;
 static int32_t send_time_ms = -1;
 static int32_t conf_save_time_ms = -1;
 
-void startup(void){
+void startup(void)
+{
 
   ztimer_stopwatch_reset(&stopwatch);
   print_build_info();
   print_device_info();
   configuration_load(&config, &loramac);
   conf_load_time_ms = ztimer_stopwatch_reset(&stopwatch);
-  
+
   // print available sensors:
   sensors_print_available();
-  
+
   sensors_initialize_enabled();
   sensor_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
@@ -111,24 +113,24 @@ void startup(void){
   stack_init_stack(stack_memory, ARRAY_SIZE(stack_memory), &stack);
   env_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
   LOG_INFO("environment and stack initialized:\n");
-  //env_print_env();
-  //print_stack(&stack);
-  
+  // env_print_env();
+  // print_stack(&stack);
 
   network_initialize_network();
   LOG_INFO("network initialized\n");
   net_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
-  
+
   LOG_INFO("Startup complete. Loaded config\n");
   print_configuration(&config);
-  //network_send_heartbeat();
+  // network_send_heartbeat();
 }
 
-void run_activities(void){
+void run_activities(void)
+{
   LOG_INFO("Running activities...\n");
-  
+
   LOG_INFO("Deserialize message...\n");
-  
+
   if (config.raw_message_size > 0)
   {
     TerraProtocol_Message msg = TerraProtocol_Message_init_default;
@@ -139,92 +141,88 @@ void run_activities(void){
     }
 
     if (msg.queries_count > 0)
-  {
-    // Collect measurements
-    LOG_INFO("collecting measurements...\n");
-
-    ztimer_stopwatch_reset(&stopwatch);
-    // array to store sensor reads
-    Number arr[SENSORS_ARRAY_LENGTH];
-
-    sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
-    sensors_collect_into_array(arr, ARRAY_SIZE(arr));
-    // Execute queries
-    LOG_INFO("Execute Queries...\n");
-    // play_syncword();
-    ztimer_stopwatch_reset(&stopwatch);
-
-    // for each query
-    // 1. clear stack
-    // 2. clear env and copy sensor values into env
-    // 3. execute
-    // 4. copy values from env into output
-    size_t response_id = 0;
-    for (size_t query_id = 0; query_id < msg.queries_count; query_id++)
     {
-      // 1.
-      stack_clear_stack(&stack);
-      // 2. 
-      env_clear_env();
-      for (size_t j = 0; j < ARRAY_SIZE(arr); j++)
+      // Collect measurements
+      LOG_INFO("collecting measurements...\n");
+
+      ztimer_stopwatch_reset(&stopwatch);
+      // array to store sensor reads
+      Number arr[SENSORS_ARRAY_LENGTH];
+
+      sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
+      sensors_collect_into_array(arr, ARRAY_SIZE(arr));
+      // Execute queries
+      LOG_INFO("Execute Queries...\n");
+      // play_syncword();
+      ztimer_stopwatch_reset(&stopwatch);
+
+      // for each query
+      // 1. clear stack
+      // 2. clear env and copy sensor values into env
+      // 3. execute
+      // 4. copy values from env into output
+      size_t response_id = 0;
+      for (size_t query_id = 0; query_id < msg.queries_count; query_id++)
       {
-        env_set_value(j, arr[j]);
-      }
-      // 3.
-      bool finished = executeQuery(&msg.queries[query_id], &stack);
-      printf("finished: %s\n", finished ? "true" : "false");
-      if (finished)
-      {
-        // get first free response field from output.
-        TerraProtocol_Output_QueryResponse resp = out.responses[response_id];
-        resp.id = query_id;
-        
-        // 4. for each env value copy into response
-        for (size_t env_idx = 0; env_idx < ENVIRONMENT_LEN; env_idx++)
+        // 1.
+        stack_clear_stack(&stack);
+        // 2.
+        env_clear_env();
+        for (size_t j = 0; j < ARRAY_SIZE(arr); j++)
         {
-          Number num;
-          if (env_get_value(env_idx, &num))
-          {
-            copy_number_to_instruction(&num, &(resp.response[resp.response_count]));
-            ++resp.response_count;
-          }
+          env_set_value(j, arr[j]);
         }
-      //increment response count
-      out.responses_count++;
-      response_id++;
+        // 3.
+        bool finished = executeQuery(&msg.queries[query_id], &stack);
+        printf("finished: %s\n", finished ? "true" : "false");
+        if (finished)
+        {
+          // get first free response field from output.
+          TerraProtocol_Output_QueryResponse resp = out.responses[response_id];
+          resp.id = query_id;
+
+          // 4. for each env value copy into response
+          for (size_t env_idx = 0; env_idx < ENVIRONMENT_LEN; env_idx++)
+          {
+            Number num;
+            if (env_get_value(env_idx, &num))
+            {
+              copy_number_to_instruction(&num, &(resp.response[resp.response_count]));
+              ++resp.response_count;
+            }
+          }
+          // increment response count and id
+          out.responses_count++;
+          response_id++;
+        }
       }
 
+      exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
     }
-
-    exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
-  }
   }
 
   LOG_INFO("Sending Responses if any...\n");
 
   // if we have responses send them. if not, send heartbeat to make sure we have an opportunity to receive new messages
-  //TODO: I dont actually fill out the out message with responses. I should do that. Requires i go through
-  // env to find set values. I dont mark values as set or not set, so might need to rewrite that.
-  
-  if ( out.responses_count > 0)
+  if (out.responses_count > 0)
   {
     LOG_INFO("Sending Responses...\n");
-    uint8_t buffer[LORAWAN_APP_DATA_MAX_SIZE] = { 0 };
+    uint8_t buffer[LORAWAN_APP_DATA_MAX_SIZE] = {0};
     size_t bytes_written;
     serialization_serialize_output(&out, buffer, sizeof(buffer), &bytes_written);
     network_send_message(buffer, bytes_written);
   }
-  // if no responses, send heartbeat if we haven't sent one for 10 loops.
-  else if(config.loop_counter % 10 == 0)
+  // if no responses, send heartbeat if we haven't sent one for n loops.
+  else if (config.loop_counter % FORCED_LISTEN_EVERY_N_LOOP == 0)
   {
     network_send_heartbeat();
   }
   send_time_ms = ztimer_stopwatch_reset(&stopwatch);
-  
+
   thread_yield_higher();
   ztimer_sleep(ZTIMER_MSEC, 2000);
-  //check for new messages
-  network_get_message(config.raw_message_buffer, sizeof(config.raw_message_buffer), &(config.raw_message_size));
+  // check for new messages
+  raw_message_changed = network_get_message(config.raw_message_buffer, sizeof(config.raw_message_buffer), &(config.raw_message_size));
 
   // figure out how long the iteration took and sleep for the remaining time
   // Note: since the default values are negative, they might subtract from the total if not set. however -1 ms is negligible so it is ignored
@@ -234,34 +232,33 @@ void run_activities(void){
   sleep_time_s = sleep_time_ms / 1000;
   LOG_INFO("Done with everything\n");
   ++config.loop_counter;
-
 }
 
-void teardown(void){
+void teardown(void)
+{
   LOG_INFO("teardown\n");
   ztimer_stopwatch_reset(&stopwatch);
   LOG_INFO("saving config\n");
-  configuration_save(&config, &loramac);
+  configuration_save(&config, &loramac, raw_message_changed);
   conf_save_time_ms = ztimer_stopwatch_reset(&stopwatch);
 }
 
 void disable_peripherals(void)
 {
-    //i2c_release(I2C_DEV(0));
-    
-    // spi should automatically be disabled whenever it is not used
-    
-    uart_poweroff(UART_DEV(0));
-    // TODO: figure out how to handle sensors
-    // TODO: possibly also keep lora network stack turned off until actual usage
+  // i2c_release(I2C_DEV(0));
+
+  // spi should automatically be disabled whenever it is not used
+
+  uart_poweroff(UART_DEV(0));
+  // TODO: figure out how to handle sensors
+  // TODO: possibly also keep lora network stack turned off until actual usage
 }
 
-
-static void _rtc_alarm(void* arg)
+static void _rtc_alarm(void *arg)
 {
-    (void) arg;
-    pm_reboot();
-    return;
+  (void)arg;
+  pm_reboot();
+  return;
 }
 
 /**
@@ -271,7 +268,7 @@ static void _rtc_alarm(void* arg)
 int main(void)
 {
   struct tm time;
-  
+
   ztimer_acquire(ZTIMER_MSEC);
   ztimer_stopwatch_init(ZTIMER_MSEC, &stopwatch);
   ztimer_stopwatch_start(&stopwatch);
@@ -295,7 +292,7 @@ int main(void)
       "Send: %" PRIi32 " ms, "
       "save config: %" PRIi32 " ms, "
       "Sleep: %" PRIu32 " s\n",
-      config.loop_counter-1, //since we already incremented the counter in run_activities
+      config.loop_counter - 1, // since we already incremented the counter in run_activities
       sync_word_time_ms,
       conf_load_time_ms,
       sensor_init_time_ms,
@@ -305,19 +302,18 @@ int main(void)
       exec_time_ms,
       send_time_ms,
       conf_save_time_ms,
-      sleep_time_s
-      );
+      sleep_time_s);
 
   puts("sleeping");
   disable_peripherals();
   rtc_get_time(&time);
   time.tm_sec += sleep_time_s;
   rtc_set_alarm(&time, _rtc_alarm, NULL);
-  #ifdef CPU_ESP32
+#ifdef CPU_ESP32
   pm_set(ESP_PM_DEEP_SLEEP);
-  #else
+#else
   pm_set(0);
-  #endif
+#endif
   puts("sleeping failed");
 
   return 0;

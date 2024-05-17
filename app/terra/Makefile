@@ -66,6 +66,9 @@ endif
 
 ## EXECUTE INTERVAL
 EXECUTION_EPOCH_S ?= 20
+
+## FORCED LISTEN: send a heartbeat every N loop to guarantee a listen for incoming packets
+FORCED_LISTEN_EVERY_N_LOOP ?= 3
 ## LORA
 #DISABLE_LORA ?= 0
 ACTIVATION_MODE ?= otaa # only otaa is supported
@@ -101,6 +104,7 @@ QUIET ?= 1
 ## Apply configuration
 
 CFLAGS += -DEXECUTION_EPOCH_S=$(EXECUTION_EPOCH_S)
+CFLAGS += -DFORCED_LISTEN_EVERY_N_LOOP=$(FORCED_LISTEN_EVERY_N_LOOP)
 CFLAGS += -DTHREAD_STACKSIZE_MAIN=$(MAIN_STACKSIZE)
 
 
