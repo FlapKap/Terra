@@ -1,21 +1,20 @@
 #include <stdio.h>
-#include "model_leak_group7_train_node_7.h"
-
-#include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/micro/micro_interpreter.h"
-#include "tensorflow/lite/micro/micro_log.h"
-#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
-#include "tensorflow/lite/micro/micro_profiler.h"
-#include "tensorflow/lite/micro/recording_micro_interpreter.h"
-#include "tensorflow/lite/micro/system_setup.h"
-#include "tensorflow/lite/schema/schema_generated.h"
-
+#include <inttypes.h>
+#include "tflite_model/tflite_model.h"
+#include "tflite_model/data.h"
 int main(void)
 {
-    puts("Hello World! tflite-micro test");
-    puts(__TIME__);
-    printf("length: %ud\n", model_leak_group7_train_node_7_tflite_len);
+    printf("Hello, World!\n");
 
+    tflite_model_init();
+    float output[1] = { 0 };
+    for(size_t i = 0; i < DATA_LEN; i++) {
+        tflite_model_run(data[i], 38, output, 1);
+        printf("Output: %f\n", output[0]);
+    }
+
+    //print output
+    printf("done!\n");
 
     return 0;
 }
