@@ -1,0 +1,2 @@
+FEATURES_REQUIRED += cpp
+USEPKG += tflite-micro

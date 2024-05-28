@@ -1,12 +1,16 @@
-# RIOT Stuff
+# RIOT APPLICATION INFORMATION
 APPLICATION = Terra
 PROJECT_BASE = $(CURDIR)/../../
 BOARD ?= b-l072z-lrwan1
 RIOTBASE ?= $(PROJECT_BASE)/RIOT
 
-EXTERNAL_MODULE_DIRS += $(PROJECT_BASE)/modules
+EXTERNAL_MODULE_DIRS += $(PROJECT_BASE)/modules $(CURDIR)/
 EXTERNAL_BOARD_DIRS += $(PROJECT_BASE)/boards
 #USEMODULE += x_nucleo_iks01a3
+
+# TFLITE MICRO
+## if a tflite micro model is wished to be used, add it in the tflite_model module and set USEMODULE += tflite_model
+USEMODULE += tflite_model
 
 # MODULES
 USEMODULE += saul_default

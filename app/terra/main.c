@@ -41,6 +41,11 @@
 
 #include "log.h"
 
+// tflite
+#if MODULE_TFLITE_MODEL
+#include "tflite_model/tflite_model.h"
+#endif
+
 // Testing
 #ifdef APPLICATION_RUN_TEST
 // #include "embUnit.h"
@@ -63,6 +68,7 @@
 // }
 #else
 static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
+static TerraProtocol_Message msg = TerraProtocol_Message_init_default;
 static TerraConfiguration config = {
     .raw_message_size = 0,
     .raw_message_buffer = {0},
@@ -70,6 +76,12 @@ static TerraConfiguration config = {
 
 static bool raw_message_changed = false;
 
+//tflite model memory
+#if MODULE_TFLITE_MODEL
+static Number tflite_output[1];
+#endif
+
+static Number sensor_reads[SENSORS_ARRAY_LENGTH];
 static Number stack_memory[20];
 static Stack stack = {0};
 
@@ -115,10 +127,18 @@ void startup(void)
   LOG_INFO("environment and stack initialized:\n");
   // env_print_env();
   // print_stack(&stack);
-
+#if MODULE_TFLITE_MODEL    
+  LOG_INFO("Initialize TFLITE model...\n");
+  if (!tflite_model_init())
+  {
+    LOG_DEBUG("Failed to initialize TFLITE model\n");
+  }
+#endif
   network_initialize_network();
   LOG_INFO("network initialized\n");
   net_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
+
+
 
   LOG_INFO("Startup complete. Loaded config\n");
   print_configuration(&config);
@@ -129,49 +149,73 @@ void run_activities(void)
 {
   LOG_INFO("Running activities...\n");
 
-  LOG_INFO("Deserialize message...\n");
-
-  if (config.raw_message_size > 0)
+  LOG_INFO("Deserialize message if any...\n");
+  if (config.raw_message_size > 0 )
   {
-    TerraProtocol_Message msg = TerraProtocol_Message_init_default;
+    LOG_INFO("Message there! Deserializing...\n");
     bool res = serialization_deserialize_message(config.raw_message_buffer, config.raw_message_size, &msg);
     if (!res)
     {
       LOG_ERROR("Failed to deserialize message\n");
     }
+  }
 
-    if (msg.queries_count > 0)
+  LOG_INFO("if any queries, or tflite model, collect measurements...\n");
+  if (msg.queries_count > 0 ) {
+    LOG_INFO("queries there!");
+  }
+  if (IS_ACTIVE(MODULE_TFLITE_MODEL)) {
+    LOG_INFO("tflite model there!");
+  }
+
+
+  if (msg.queries_count > 0 || IS_ACTIVE(MODULE_TFLITE_MODEL))
+  {
+    // Collect measurements
+    LOG_INFO("collecting measurements...\n");
+
+    ztimer_stopwatch_reset(&stopwatch);
+
+
+    sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
+    sensors_collect_into_array(sensor_reads, ARRAY_SIZE(sensor_reads));
+  
+
+
+  }
+    // Execute tflite model if there
+  if (IS_ACTIVE(MODULE_TFLITE_MODEL)) {
+    LOG_DEBUG("Running TFLITE model...\n");
+    tflite_model_run(sensor_reads, ARRAY_SIZE(sensor_reads), tflite_output, ARRAY_SIZE(tflite_output));
+    for (size_t j = ARRAY_SIZE(sensor_reads); j < ARRAY_SIZE(sensor_reads) + ARRAY_SIZE(tflite_output); j++) {
+      env_set_value(j, tflite_output[j - ARRAY_SIZE(sensor_reads)]);
+    }
+
+  }
+
+  if (msg.queries_count > 0)
+  {
+    // Execute queries
+    LOG_INFO("Execute Queries...\n");
+    // play_syncword();
+    ztimer_stopwatch_reset(&stopwatch);
+
+    // for each query
+    // 1. clear stack
+    // 2. clear env and copy sensor values into env
+    // 3. execute
+    // 4. copy values from env into output
+    size_t response_id = 0;
+    for (size_t query_id = 0; query_id < msg.queries_count; query_id++)
     {
-      // Collect measurements
-      LOG_INFO("collecting measurements...\n");
-
-      ztimer_stopwatch_reset(&stopwatch);
-      // array to store sensor reads
-      Number arr[SENSORS_ARRAY_LENGTH];
-
-      sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
-      sensors_collect_into_array(arr, ARRAY_SIZE(arr));
-      // Execute queries
-      LOG_INFO("Execute Queries...\n");
-      // play_syncword();
-      ztimer_stopwatch_reset(&stopwatch);
-
-      // for each query
-      // 1. clear stack
-      // 2. clear env and copy sensor values into env
-      // 3. execute
-      // 4. copy values from env into output
-      size_t response_id = 0;
-      for (size_t query_id = 0; query_id < msg.queries_count; query_id++)
+      // 1.
+      stack_clear_stack(&stack);
+      // 2.
+      env_clear_env();
+      for (size_t j = 0; j < ARRAY_SIZE(sensor_reads); j++)
       {
-        // 1.
-        stack_clear_stack(&stack);
-        // 2.
-        env_clear_env();
-        for (size_t j = 0; j < ARRAY_SIZE(arr); j++)
-        {
-          env_set_value(j, arr[j]);
-        }
+        env_set_value(j, sensor_reads[j]);
+      }
         // 3.
         bool finished = executeQuery(&msg.queries[query_id], &stack);
         printf("finished: %s\n", finished ? "true" : "false");
@@ -198,7 +242,6 @@ void run_activities(void)
       }
 
       exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
-    }
   }
 
   LOG_INFO("Sending Responses if any...\n");
