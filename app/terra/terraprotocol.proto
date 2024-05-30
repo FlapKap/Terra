@@ -38,26 +38,43 @@ message Data {
         uint32 _uint8 = 2;
         uint32 _uint16 = 3;
         uint32 _uint32 = 4;
-        //uint64 _uint64 = 5;
+        uint64 _uint64 = 5;
         sint32 _int8 = 6;
         sint32 _int16 = 7;
         sint32 _int32 = 8;
-        //sint64 _int64 = 9;
+        sint64 _int64 = 9;
         float _float = 10;
         double _double = 11;
     }
 }
 
-message Output {
-    message QueryResponse {
-        int32 id = 1;
-        repeated Data response = 2 [(nanopb).max_count = 5];
+message ScalarResponse {
+    Data value = 1;
+}
+
+message WindowResponse {
+    Data firstValue = 1;
+    Data lastValue = 2;
+    Data aggregate = 3;
+}
+
+message ResponseValue {
+    oneof value {
+        ScalarResponse scalarValue = 1;
+        WindowResponse windowValue = 2;
     }
+}
+message QueryResponse {
+    uint32 queryId = 1;
+    repeated ResponseValue response = 2 [(nanopb).max_count = 5];
+}
+
+message Output {
     repeated QueryResponse responses = 1 [(nanopb).max_count = 1];
 }
 
 message Expression {
-    repeated Data instructions = 1 [(nanopb).max_count = 25];
+    repeated Data instructions = 1 [(nanopb).max_count = 16];
 }
 
 message MapOperation {
@@ -69,27 +86,40 @@ message FilterOperation {
     Expression predicate = 1;
 }
 
-enum WindowAggregationType {
+enum WindowAggregationFunction {
     MIN = 0;
     MAX = 1;
     SUM = 2;
     AVG = 3;
     COUNT = 4;
+    PRODUCT = 5;
 }
 
-enum WindowSizeType {
-    TIMEBASED = 0;
-    COUNTBASED = 1;
+message WindowOperationTumbling {
+    uint32 size_ms = 1;
+}
+
+message WindowOperationSliding {
+    uint32 size_ms = 1;
+    uint32 slide_ms = 2;
+}
+
+message WindowOperationThreshold {
+    Expression predicate = 1;
+    uint32 minimumSize_ms = 2; 
 }
 
 message WindowOperation {
-    int32 size = 1;
-    WindowSizeType sizeType = 2;
-    WindowAggregationType aggregationType = 3;
-    int32 startAttribute = 4;
-    int32 endAttribute = 5;
-    int32 resultAttribute = 6;
-    int32 readAttribute = 7;
+    WindowAggregationFunction aggregationFunction = 1;
+    int32 startAttribute = 2;
+    int32 endAttribute = 3;
+    int32 resultAttribute = 4;
+    int32 readAttribute = 5;
+    oneof window {
+        WindowOperationTumbling tumbling = 6;
+        WindowOperationSliding sliding = 7;
+        WindowOperationThreshold threshold = 8;
+    }
 }
 
 message Operation {
@@ -101,7 +131,6 @@ message Operation {
 }
 
 message Query {
-    //bytes resultType = 2; //For some reason minipb breaks if I make this a repeated enum or int32
     repeated Operation operations = 1 [(nanopb).max_count = 2];   
 }
 
