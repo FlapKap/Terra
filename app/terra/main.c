@@ -82,7 +82,7 @@ static Number tflite_output[1];
 #endif
 
 static Number sensor_reads[SENSORS_ARRAY_LENGTH];
-static Number stack_memory[5];
+static Number stack_memory[RUNTIME_STACK_MEMORY];
 static Stack stack = {0};
 
 static const uint32_t timeout_ms = EXECUTION_EPOCH_S * 1000;

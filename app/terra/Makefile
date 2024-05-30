@@ -6,7 +6,37 @@ RIOTBASE ?= $(PROJECT_BASE)/RIOT
 
 EXTERNAL_MODULE_DIRS += $(PROJECT_BASE)/modules $(CURDIR)/
 EXTERNAL_BOARD_DIRS += $(PROJECT_BASE)/boards
-#USEMODULE += x_nucleo_iks01a3
+
+MAIN_STACKSIZE ?= 4096 # change stack size
+
+# Terra APPLICATION CONFIGURATION
+
+EXECUTION_EPOCH_S ?= 20 # EXECUTE INTERVAL
+RUNTIME_STACK_MEMORY ?= 10 # RUNTIME STACK SIZE. Amount of Number's in the stack
+FORCED_LISTEN_EVERY_N_LOOP ?= 3 # FORCED LISTEN: send a heartbeat every N loop to guarantee a listen for incoming packets
+
+
+## LORA
+#DISABLE_LORA ?= 0
+ACTIVATION_MODE ?= otaa # only otaa is supported
+LORA_REGION ?= EU868
+APPEUI ?= 0000000000000000
+DEVEUI ?= 70B3D57ED005EA59
+APPKEY ?= 385794DDE70CE2EAB5B5B12A4807822C
+
+
+LOG_LEVEL ?= LOG_ALL
+
+# Different build configurations. Optimized builds run without any debug symbols and with o3 optimizations
+APPLICATION_BUILD_OPTIMIZED = 0
+
+# Application run tests instead of the normal "main" function
+APPLICATION_RUN_TEST ?= 0
+
+
+# Default query to run if network is disabled
+DEFAULT_QUERY_AS_PB_CHAR_ARRAY ?={0xa,0x14,0xa,0x12,0xa,0x10,0xa,0xc,0xa,0x2,0x8,0x0,0xa,0x2,0x10,0x8,0xa,0x2,0x8,0xa,0x10,0x1}
+
 
 # TFLITE MICRO
 ## if a tflite micro model is wished to be used, add it in the tflite_model module and set USEMODULE += tflite_model
@@ -32,7 +62,7 @@ USEMODULE += periph_rtc
 USEPKG += nanopb
 #PROTOBUF_PATH = $(PROJECT_BASE)/proto
 
-# APPLICATION SPECIFIC CONFIGURATION ENTRIES
+# BOARD SPECIFIC CONFIGURATION ENTRIES
 ##SENSORS (ONLY APPLIED FOR NON-NATIVE BUILDS)
 ## to handle sensor boards with multiple sensors, we need both name and type, as they are defined in RIOT
 ## The easiest way to find this is to search for the sensor at https://doc.riot-os.org/. The first part of the header files is the module name
@@ -68,32 +98,6 @@ ifneq ($(words SENSOR_NAMES),$(words SENSOR_TYPES))
 $(error "Number of SENSOR_NAMES and SENSOR_TYPES must be the same")
 endif
 
-## EXECUTE INTERVAL
-EXECUTION_EPOCH_S ?= 20
-
-## FORCED LISTEN: send a heartbeat every N loop to guarantee a listen for incoming packets
-FORCED_LISTEN_EVERY_N_LOOP ?= 3
-## LORA
-#DISABLE_LORA ?= 0
-ACTIVATION_MODE ?= otaa # only otaa is supported
-LORA_REGION ?= EU868
-APPEUI ?= 0000000000000000
-DEVEUI ?= 70B3D57ED005EA59
-APPKEY ?= 385794DDE70CE2EAB5B5B12A4807822C
-# change stack size
-MAIN_STACKSIZE ?= 10480
-
-LOG_LEVEL ?= LOG_ALL
-
-# Different build configurations. Optimized builds run without any debug symbols and with o3 optimizations
-APPLICATION_BUILD_OPTIMIZED = 0
-
-# Application run tests instead of the normal "main" function
-APPLICATION_RUN_TEST ?= 0
-
-
-# Default query to run if network is disabled
-DEFAULT_QUERY_AS_PB_CHAR_ARRAY ?={0xa,0x14,0xa,0x12,0xa,0x10,0xa,0xc,0xa,0x2,0x8,0x0,0xa,0x2,0x10,0x8,0xa,0x2,0x8,0xa,0x10,0x1}
 
 #build C array of sensors
 comma:= ,
@@ -110,7 +114,7 @@ QUIET ?= 1
 CFLAGS += -DEXECUTION_EPOCH_S=$(EXECUTION_EPOCH_S)
 CFLAGS += -DFORCED_LISTEN_EVERY_N_LOOP=$(FORCED_LISTEN_EVERY_N_LOOP)
 CFLAGS += -DTHREAD_STACKSIZE_MAIN=$(MAIN_STACKSIZE)
-
+CFLAGS += -DRUNTIME_STACK_MEMORY=$(RUNTIME_STACK_MEMORY)
 
 ## RIOT CONFIGURATION
 # Set the compile_commands.json file to a known location
