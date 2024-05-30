@@ -123,12 +123,12 @@ ifeq ($(APPLICATION_BUILD_OPTIMIZED),1)
   CREATE_STACKTEST = 0
 else
 # Debug stuff. We also want debug stuff to run when testing
-  USEMODULE += ssp # enable stack smashing protection. Mainly to get explicit panics if a stack overflow happens
+  #USEMODULE += ssp # enable stack smashing protection. Mainly to get explicit panics if a stack overflow happens
   DEVELHELP = 1 # development helpers
-  CREATE_STACKTEST = 1 # check stacksizes
+  #CREATE_STACKTEST = 1 # check stacksizes
   VERBOSE_ASSERT = 1
-  CFLAGS += -fstack-protector-all
-  CFLAGS += -g3 -Og # unoptimized and with debug symbols
+  #CFLAGS += -fstack-protector-all
+  #CFLAGS += -g3 -Og # unoptimized and with debug symbols
   CFLAGS += -Wall -Wextra  -Werror=array-bounds  # extra warnings
   #CFLAGS += -Werror -Wpedantic
   #CFLAGS += -Wformat -Wformat-nonliteral -Werror=format-security 

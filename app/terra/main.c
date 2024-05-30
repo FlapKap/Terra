@@ -82,25 +82,25 @@ static Number tflite_output[1];
 #endif
 
 static Number sensor_reads[SENSORS_ARRAY_LENGTH];
-static Number stack_memory[20];
+static Number stack_memory[5];
 static Stack stack = {0};
 
 static const uint32_t timeout_ms = EXECUTION_EPOCH_S * 1000;
-static uint32_t sleep_time_s = 0;
+static uint16_t sleep_time_s = 0;
 // tracking stuff
 static ztimer_stopwatch_t stopwatch = {0};
 
 // timing measurements
-static int32_t conf_load_time_ms = -1;
-static int32_t sensor_init_time_ms = -1;
-static int32_t env_init_time_ms = -1;
+static int16_t conf_load_time_ms = -1;
+static int16_t sensor_init_time_ms = -1;
+static int16_t env_init_time_ms = -1;
 static int32_t net_init_time_ms = -1;
-static int32_t sensor_collect_time_ms = -1;
-static int32_t exec_time_ms = -1;
-static int32_t sync_word_time_ms = -1;
+static int16_t sensor_collect_time_ms = -1;
+static int16_t exec_time_ms = -1;
+static int16_t sync_word_time_ms = -1;
 static int32_t listen_time_ms = -1;
 static int32_t send_time_ms = -1;
-static int32_t conf_save_time_ms = -1;
+static int16_t conf_save_time_ms = -1;
 
 void startup(void)
 {
@@ -156,7 +156,7 @@ void run_activities(void)
     bool res = serialization_deserialize_message(config.raw_message_buffer, config.raw_message_size, &msg);
     if (!res)
     {
-      LOG_ERROR("Failed to deserialize message\n");
+      LOG_ERROR("Failed to deserialize\n");
     }
   }
 
@@ -205,14 +205,14 @@ void run_activities(void)
     // 2. clear env and copy sensor values into env
     // 3. execute
     // 4. copy values from env into output
-    size_t response_id = 0;
-    for (size_t query_id = 0; query_id < msg.queries_count; query_id++)
+    int8_t response_id = 0;
+    for (int8_t query_id = 0; query_id < msg.queries_count; query_id++)
     {
       // 1.
       stack_clear_stack(&stack);
       // 2.
       env_clear_env();
-      for (size_t j = 0; j < ARRAY_SIZE(sensor_reads); j++)
+      for (uint8_t j = 0; j < ARRAY_SIZE(sensor_reads); j++)
       {
         env_set_value(j, sensor_reads[j]);
       }
@@ -226,7 +226,7 @@ void run_activities(void)
           resp.id = query_id;
 
           // 4. for each env value copy into response
-          for (size_t env_idx = 0; env_idx < ENVIRONMENT_LEN; env_idx++)
+          for (int8_t env_idx = 0; env_idx < ENVIRONMENT_LEN; env_idx++)
           {
             Number num;
             if (env_get_value(env_idx, &num))
@@ -325,16 +325,16 @@ int main(void)
 
   LOG_INFO(
       "TIMINGS> Loop: %" PRIi32 ", "
-      "Sync: %" PRIi32 " ms, "
-      "Load: %" PRIi32 " ms, "
-      "sensor init: %" PRIi32 " ms, "
-      "env init: %" PRIi32 " ms, "
+      "Sync: %" PRIi16 " ms, "
+      "Load: %" PRIi16 " ms, "
+      "sensor init: %" PRIi16 " ms, "
+      "env init: %" PRIi16 " ms, "
       "net init: %" PRIi32 " ms, "
-      "Collect: %" PRIi32 " ms, "
-      "Exec: %" PRIi32 " ms, "
+      "Collect: %" PRIi16 " ms, "
+      "Exec: %" PRIi16 " ms, "
       "Send: %" PRIi32 " ms, "
-      "save config: %" PRIi32 " ms, "
-      "Sleep: %" PRIu32 " s\n",
+      "save config: %" PRIi16 " ms, "
+      "Sleep: %" PRIu16 " s\n",
       config.loop_counter - 1, // since we already incremented the counter in run_activities
       sync_word_time_ms,
       conf_load_time_ms,

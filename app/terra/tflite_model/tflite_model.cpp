@@ -9,7 +9,7 @@
 
 #include "tflite_model.h"
 
-#define ENABLE_DEBUG 1
+#define ENABLE_DEBUG 0
 #include <debug.h>
 
 const tflite::Model* model = nullptr;
@@ -19,7 +19,7 @@ TfLiteTensor* output = nullptr;
 
 // Create an area of memory to use for input, output, and intermediate arrays.
 // Finding the minimum value for your model may require some trial and error.
-constexpr int kTensorArenaSize = 2 * 1024;
+constexpr int kTensorArenaSize =  1036;
 uint8_t tensor_arena[kTensorArenaSize];
 
 //DEFINE INPUT AND OUTPUT FUNCTIONS HERE
@@ -29,10 +29,10 @@ static bool tflite_model_copy_input(const Number* input_data, const size_t input
     // Copy input array in input tensor
 
     //print data to debug
-    double test_data[] = {-0.78670334, -111104808, -0.75984997,-0.78614863, 0.61591590, 0.39533073,-0.77594615, -0.99062349, -0.76685757, -0.76339546, -0.91252439, -0.81700908, -0.80688303, -0.39523543, -0.63286853, -0.68540174, -0.42793395, -0.72349461, -0.73508538, -110545106, -0.80093000, -0.79739966, -105830462, -0.77096873, -0.79826535, -105136734, -0.70872860, -0.77018562, -105119534, -0.77705343, -0.76926486, -0.38729043, -0.65491056, -0.64664830, -0.91299976, -0.66099265, -0.64731443, -0.60991834};
-    for (unsigned i = 0; i < ARRAY_SIZE(test_data); ++i) {
-        DEBUG("input_data[%d] = %f\n", i, test_data[i]);
-        input->data.f[i] = test_data[i];
+    //static float test_data[] = {-0.78670334, -111104808., -0.75984997,-0.78614863, 0.61591590, 0.39533073,-0.77594615, -0.99062349, -0.76685757, -0.76339546, -0.91252439, -0.81700908, -0.80688303, -0.39523543, -0.63286853, -0.68540174, -0.42793395, -0.72349461, -0.73508538, -110545106., -0.80093000, -0.79739966, -105830462., -0.77096873, -0.79826535, -105136734., -0.70872860, -0.77018562, -105119534., -0.77705343, -0.76926486, -0.38729043, -0.65491056, -0.64664830, -0.91299976, -0.66099265, -0.64731443, -0.60991834};
+    for (unsigned i = 0; i < input_data_size; ++i) {
+        DEBUG("input_data[%d] = %f\n", i, input_data[i].type._float);
+        input->data.f[i] = input_data[i].type._float;
     }
     return true;
 }
