@@ -208,7 +208,7 @@ void print_number_value_and_ucase(Number number)
 
 void print_stack(const Stack *stack)
 {
-    printf(" Stack (top: %d, size: %d):\n", stack->top, stack->size);
+    printf(" Stack (top: %d):\n", stack->top);
     if (stack->top == -1)
     {
         printf("  Empty\n");

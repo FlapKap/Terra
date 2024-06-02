@@ -68,7 +68,7 @@
 // }
 #else
 static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
-static TerraProtocol_Message msg = TerraProtocol_Message_init_default;
+static TerraProtocol_Message msg;
 static TerraConfiguration config = {
     .raw_message_size = 0,
     .raw_message_buffer = {0},
@@ -76,81 +76,47 @@ static TerraConfiguration config = {
 
 static bool raw_message_changed = false;
 
-//tflite model memory
+// tflite model memory
 #if MODULE_TFLITE_MODEL
 static Number tflite_output[1];
 #endif
 
 static Number sensor_reads[SENSORS_ARRAY_LENGTH];
-static Number stack_memory[RUNTIME_STACK_MEMORY];
-static Stack stack = {0};
+static Stack stack = {
+    .stack_memory = { {} },
+    .top = -1
+};
 
 static const uint32_t timeout_ms = EXECUTION_EPOCH_S * 1000;
-static uint16_t sleep_time_s = 0;
+static int32_t sleep_time_s = 0;
 // tracking stuff
 static ztimer_stopwatch_t stopwatch = {0};
 
 // timing measurements
-static int16_t conf_load_time_ms = -1;
-static int16_t sensor_init_time_ms = -1;
-static int16_t env_init_time_ms = -1;
+static int32_t conf_load_time_ms = -1;
+static int32_t deserialize_msg_ms = -1;
+static int32_t sensor_init_time_ms = -1;
 static int32_t net_init_time_ms = -1;
-static int16_t sensor_collect_time_ms = -1;
-static int16_t exec_time_ms = -1;
-static int16_t sync_word_time_ms = -1;
+static int32_t sensor_collect_time_ms = -1;
+static int32_t exec_time_ms = -1;
+static int32_t sync_word_time_ms = -1;
 static int32_t listen_time_ms = -1;
 static int32_t send_time_ms = -1;
-static int16_t conf_save_time_ms = -1;
+static int32_t conf_save_time_ms = -1;
 
-void startup(void)
+static void startup(void)
 {
-
+  // CONFIGURATION LOAD
   ztimer_stopwatch_reset(&stopwatch);
   print_build_info();
   print_device_info();
   configuration_load(&config, &loramac);
+
   conf_load_time_ms = ztimer_stopwatch_reset(&stopwatch);
-
-  // print available sensors:
-  sensors_print_available();
-
-  sensors_initialize_enabled();
-  sensor_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
-
-  LOG_INFO("enabled sensors\n");
-  sensors_print_enabled();
-
-  ztimer_stopwatch_reset(&stopwatch);
-  // initialize stack
-  stack_init_stack(stack_memory, ARRAY_SIZE(stack_memory), &stack);
-  env_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
-  LOG_INFO("environment and stack initialized:\n");
-  // env_print_env();
-  // print_stack(&stack);
-#if MODULE_TFLITE_MODEL    
-  LOG_INFO("Initialize TFLITE model...\n");
-  if (!tflite_model_init())
-  {
-    LOG_DEBUG("Failed to initialize TFLITE model\n");
-  }
-#endif
-  network_initialize_network();
-  LOG_INFO("network initialized\n");
-  net_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
-
-
-
-  LOG_INFO("Startup complete. Loaded config\n");
-  print_configuration(&config);
-  // network_send_heartbeat();
-}
-
-void run_activities(void)
-{
-  LOG_INFO("Running activities...\n");
-
+  
+  // DESERIALIZE MESSAGE
   LOG_INFO("Deserialize message if any...\n");
-  if (config.raw_message_size > 0 )
+  if (config.raw_message_size > 0)
   {
     LOG_INFO("Message there! Deserializing...\n");
     bool res = serialization_deserialize_message(config.raw_message_buffer, config.raw_message_size, &msg);
@@ -160,14 +126,38 @@ void run_activities(void)
     }
   }
 
+  deserialize_msg_ms = ztimer_stopwatch_reset(&stopwatch);
+
+  // SENSOR INITIALIZATION
+  sensors_print_available();
+  sensors_initialize_enabled();
+  sensor_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
+  LOG_INFO("enabled sensors\n");
+  sensors_print_enabled();
+
+  // NETWORK INITIALIZATION
+  network_initialize_network();
+  LOG_INFO("network initialized\n");
+  net_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
+
+  LOG_INFO("Startup complete. Loaded config\n");
+  print_configuration(&config);
+  // network_send_heartbeat();
+}
+
+static void run_activities(void)
+{
+  LOG_INFO("Running activities...\n");
+
   LOG_INFO("if any queries, or tflite model, collect measurements...\n");
-  if (msg.queries_count > 0 ) {
+  if (msg.queries_count > 0)
+  {
     LOG_INFO("queries there!");
   }
-  if (IS_ACTIVE(MODULE_TFLITE_MODEL)) {
+  if (IS_ACTIVE(MODULE_TFLITE_MODEL))
+  {
     LOG_INFO("tflite model there!");
   }
-
 
   if (msg.queries_count > 0 || IS_ACTIVE(MODULE_TFLITE_MODEL))
   {
@@ -175,22 +165,24 @@ void run_activities(void)
     LOG_INFO("collecting measurements...\n");
 
     ztimer_stopwatch_reset(&stopwatch);
-
-
-    sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
     sensors_collect_into_array(sensor_reads, ARRAY_SIZE(sensor_reads));
-  
-
-
+    sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
-    // Execute tflite model if there
-  if (IS_ACTIVE(MODULE_TFLITE_MODEL)) {
+  // Execute tflite model if there
+  if (IS_ACTIVE(MODULE_TFLITE_MODEL))
+  {
+      // TFLITE MODEL INITIALIZATION
+    LOG_INFO("Initialize TFLITE model...\n");
+    if (!tflite_model_init())
+    {
+      LOG_DEBUG("Failed to initialize TFLITE model\n");
+    }
     LOG_DEBUG("Running TFLITE model...\n");
     tflite_model_run(sensor_reads, ARRAY_SIZE(sensor_reads), tflite_output, ARRAY_SIZE(tflite_output));
-    for (size_t j = ARRAY_SIZE(sensor_reads); j < ARRAY_SIZE(sensor_reads) + ARRAY_SIZE(tflite_output); j++) {
+    for (size_t j = ARRAY_SIZE(sensor_reads); j < ARRAY_SIZE(sensor_reads) + ARRAY_SIZE(tflite_output); j++)
+    {
       env_set_value(j, tflite_output[j - ARRAY_SIZE(sensor_reads)]);
     }
-
   }
 
   if (msg.queries_count > 0)
@@ -216,33 +208,32 @@ void run_activities(void)
       {
         env_set_value(j, sensor_reads[j]);
       }
-        // 3.
-        bool finished = executeQuery(&msg.queries[query_id], &stack);
-        printf("finished: %s\n", finished ? "true" : "false");
-        if (finished)
+      // 3.
+      bool finished = executeQuery(&msg.queries[query_id], &stack);
+      printf("finished: %s\n", finished ? "true" : "false");
+      if (finished)
+      {
+        // get first free response field from output.
+        TerraProtocol_Output_QueryResponse resp = out.responses[response_id];
+        resp.id = query_id;
+
+        // 4. for each env value copy into response
+        for (int8_t env_idx = 0; env_idx < ENVIRONMENT_LEN; env_idx++)
         {
-          // get first free response field from output.
-          TerraProtocol_Output_QueryResponse resp = out.responses[response_id];
-          resp.id = query_id;
-
-          // 4. for each env value copy into response
-          for (int8_t env_idx = 0; env_idx < ENVIRONMENT_LEN; env_idx++)
+          Number num;
+          if (env_get_value(env_idx, &num))
           {
-            Number num;
-            if (env_get_value(env_idx, &num))
-            {
-              copy_number_to_instruction(&num, &(resp.response[resp.response_count]));
-              ++resp.response_count;
-            }
+            copy_number_to_instruction(&num, &(resp.response[resp.response_count]));
+            ++resp.response_count;
           }
-          // increment response count and id
-          out.responses_count++;
-          response_id++;
         }
+        // increment response count and id
+        out.responses_count++;
+        response_id++;
       }
-
-      exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
+    }
   }
+  exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
   LOG_INFO("Sending Responses if any...\n");
 
@@ -277,7 +268,7 @@ void run_activities(void)
   ++config.loop_counter;
 }
 
-void teardown(void)
+static void teardown(void)
 {
   LOG_INFO("teardown\n");
   ztimer_stopwatch_reset(&stopwatch);
@@ -286,7 +277,7 @@ void teardown(void)
   conf_save_time_ms = ztimer_stopwatch_reset(&stopwatch);
 }
 
-void disable_peripherals(void)
+static void disable_peripherals(void)
 {
   // i2c_release(I2C_DEV(0));
 
@@ -325,21 +316,21 @@ int main(void)
 
   LOG_INFO(
       "TIMINGS> Loop: %" PRIi32 ", "
-      "Sync: %" PRIi16 " ms, "
-      "Load: %" PRIi16 " ms, "
-      "sensor init: %" PRIi16 " ms, "
-      "env init: %" PRIi16 " ms, "
+      "Sync: %" PRIi32 " ms, "
+      "Load: %" PRIi32 " ms, "
+      "deserialize: %" PRIi32 " ms, "
+      "sensor init: %" PRIi32 " ms, "
       "net init: %" PRIi32 " ms, "
-      "Collect: %" PRIi16 " ms, "
-      "Exec: %" PRIi16 " ms, "
+      "Collect: %" PRIi32 " ms, "
+      "Exec: %" PRIi32 " ms, "
       "Send: %" PRIi32 " ms, "
-      "save config: %" PRIi16 " ms, "
-      "Sleep: %" PRIu16 " s\n",
+      "save config: %" PRIi32 " ms, "
+      "Sleep: %" PRIi32 " s\n",
       config.loop_counter - 1, // since we already incremented the counter in run_activities
       sync_word_time_ms,
       conf_load_time_ms,
+      deserialize_msg_ms,
       sensor_init_time_ms,
-      env_init_time_ms,
       net_init_time_ms,
       sensor_collect_time_ms,
       exec_time_ms,
