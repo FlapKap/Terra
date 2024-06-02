@@ -19,7 +19,7 @@ TfLiteTensor* output = nullptr;
 
 // Create an area of memory to use for input, output, and intermediate arrays.
 // Finding the minimum value for your model may require some trial and error.
-constexpr int kTensorArenaSize =  1036;
+constexpr int kTensorArenaSize =  1100;
 uint8_t tensor_arena[kTensorArenaSize];
 
 //DEFINE INPUT AND OUTPUT FUNCTIONS HERE
