@@ -163,8 +163,6 @@ static void run_activities(void)
   {
     // Collect measurements
     LOG_INFO("collecting measurements...\n");
-
-    ztimer_stopwatch_reset(&stopwatch);
     sensors_collect_into_array(sensor_reads, ARRAY_SIZE(sensor_reads));
     sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
@@ -190,7 +188,6 @@ static void run_activities(void)
     // Execute queries
     LOG_INFO("Execute Queries...\n");
     // play_syncword();
-    ztimer_stopwatch_reset(&stopwatch);
 
     // for each query
     // 1. clear stack
@@ -250,14 +247,14 @@ static void run_activities(void)
   else if (config.loop_counter % FORCED_LISTEN_EVERY_N_LOOP == 0)
   {
     network_send_heartbeat();
+
+    thread_yield_higher();
+    ztimer_sleep(ZTIMER_MSEC, 2000);
+    // check for new messages
+    raw_message_changed = network_get_message(config.raw_message_buffer, sizeof(config.raw_message_buffer), &(config.raw_message_size));
   }
-  send_time_ms = ztimer_stopwatch_reset(&stopwatch);
-
-  thread_yield_higher();
-  ztimer_sleep(ZTIMER_MSEC, 2000);
-  // check for new messages
-  raw_message_changed = network_get_message(config.raw_message_buffer, sizeof(config.raw_message_buffer), &(config.raw_message_size));
-
+  send_time_ms = ztimer_stopwatch_reset(&stopwatch);  
+  
   // figure out how long the iteration took and sleep for the remaining time
   // Note: since the default values are negative, they might subtract from the total if not set. however -1 ms is negligible so it is ignored
   int sleep_time_ms_tmp = timeout_ms - (sync_word_time_ms + listen_time_ms + sensor_collect_time_ms + exec_time_ms + send_time_ms);
