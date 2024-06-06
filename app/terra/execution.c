@@ -3,6 +3,7 @@
 #include "execution.h"
 #include "operators.h"
 #include "expression.h"
+#include <log.h>
 static Expression exp;
 
 bool executeQuery(TerraProtocol_Query *query, Stack *stack)
@@ -41,7 +42,7 @@ bool executeQuery(TerraProtocol_Query *query, Stack *stack)
 
     case TerraProtocol_Operation_window_tag:
       // window
-      puts("Window operation not yet supported");
+      LOG_ERROR("[execution.c] Window operation not yet supported");
       break;
 
     default:

@@ -5,6 +5,7 @@
 
 #include "print_utils.h"
 #include "debug.h"
+#include "log.h"
 
 void copy_number_to_instruction(const Number *src, TerraProtocol_Data *dest)
 {
@@ -68,7 +69,7 @@ void copy_instruction_to_number(const TerraProtocol_Data *src, Number *dest)
             dest->type._double = src->data._double;
             break;
     default:
-        DEBUG("Error: Invalid unionCase: %" PRIuLEAST16, src->which_data);
+        LOG_ERROR("[operators.c] Error: Invalid unionCase: %" PRIuLEAST16, src->which_data);
         break;
     }
 
@@ -377,7 +378,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
             {
             case NUMBER_UINT32:
                 if (n2->type._uint32 == 0){
-                    printf("Error: Division by zero");
+                    LOG_ERROR("[operators.c] Error: Division by zero");
                     return false;
                 }
 
@@ -386,7 +387,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 break;
             case NUMBER_INT32:
                 if (n2->type._int == 0) {
-                    printf("Error: Division by zero");
+                    LOG_ERROR("[operators.c] Error: Division by zero");
                     return false;
                 }
                 result->unionCase = NUMBER_INT32;
@@ -394,7 +395,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 break;
             case NUMBER_FLOAT:
                 if (n2->type._float == 0.0f){
-                    printf("Error: Division by zero");
+                    LOG_ERROR("[operators.c] Error: Division by zero");
                     return false;
                 }
                 result->unionCase = NUMBER_FLOAT;
@@ -402,7 +403,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 break;
             case NUMBER_DOUBLE:
                 if (n2->type._double == 0.0){
-                    printf("Error: Division by zero");
+                    LOG_ERROR("[operators.c] Error: Division by zero");
                     return false;
                 }
                 result->unionCase = NUMBER_DOUBLE;
@@ -583,7 +584,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 result->type._int = n1->type._uint32 && n2->type._int;
                 break;
             default:
-                printf("Error: Invalid AND operation");
+                LOG_ERROR("[operators.c] Error: Invalid AND operation");
                 result->type._int = 0;
                 return false;
             }
@@ -602,7 +603,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 result->type._int = n1->type._int & n2->type._int;
                 break;
             default:
-                printf("Error: Invalid AND operation");
+                LOG_ERROR("[operators.c] Error: Invalid AND operation");
                 result->type._int = 0;
                 result->unionCase = NUMBER_INT32;
                 return false;
@@ -610,7 +611,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
         }
         break;
         default:
-            printf("Error: Invalid AND operation");
+            LOG_ERROR("[operators.c] Error: Invalid AND operation");
             result->type._int = 0;
             result->unionCase = NUMBER_INT32;
             return false;
@@ -633,7 +634,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 result->type._int = n1->type._uint32 || n2->type._int;
                 break;
             default:
-                printf("Error: Invalid OR operation");
+                LOG_ERROR("[operators.c] Error: Invalid OR operation");
                 result->type._int = 0;
                 return false;
             }
@@ -650,14 +651,14 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 result->type._int = n1->type._int || n2->type._int;
                 break;
             default:
-                printf("Error: Invalid OR operation");
+                LOG_ERROR("[operators.c] Error: Invalid OR operation");
                 result->type._int = 0;
                 return false;
             }
         }
         break;
         default:
-            printf("Error: Invalid OR operation");
+            LOG_ERROR("[operators.c] Error: Invalid OR operation");
             result->type._int = 0;
             return false;
         }
@@ -712,7 +713,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 break;
 
             default:
-                printf("Error: Invalid MOD operation. Divisor must be integer");
+                LOG_ERROR("[operators.c] Error: Invalid MOD operation. Divisor must be integer");
                 result->type._int = 0;
                 result->unionCase = NUMBER_INT32;
                 return false;
@@ -732,7 +733,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 result->type._int = n1->type._int % n2->type._int;
                 break;
             default:
-                printf("Error: Invalid MOD operation. Divisor must be integer");
+                LOG_ERROR("[operators.c] Error: Invalid MOD operation. Divisor must be integer");
                 result->type._int = 0;
                 result->unionCase = NUMBER_INT32;
                 return false;
@@ -740,7 +741,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
         }
         break;
         default:
-            printf("Error: Invalid MOD operation. Dividend must be integer");
+            LOG_ERROR("[operators.c] Error: Invalid MOD operation. Dividend must be integer");
             result->type._int = 0;
             result->unionCase = NUMBER_INT32;
             return false;
@@ -757,7 +758,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
     case TerraProtocol_FLOOR:
     case TerraProtocol_ROUND:
     case TerraProtocol_ABS:
-        DEBUG("Error: Unary operation in bin_op: %d", op);
+        LOG_ERROR("[operators.c] Error: Unary operation in bin_op: %d", op);
         return false;
 
     }
@@ -821,7 +822,7 @@ bool un_op(const Number* number, const TerraProtocol_ExpressionInstructions op, 
         result->unionCase = NUMBER_DOUBLE;
         break;
     default:
-        printf("Error: Invalid unary operation: %d", op);
+        LOG_ERROR("[operators.c] Error: Invalid unary operation: %d", op);
         return false;
     }
 

@@ -55,7 +55,7 @@ bool sensors_collect_into_array(Number* arr, size_t arr_size)
 
     for (size_t i = 0; i < SENSORS_ARRAY_LENGTH; i++)
     {
-        LOG_INFO("collecting data from sensor %s\n", sensors[i]->name);
+        LOG_DEBUG("collecting data from sensor %s\n", sensors[i]->name);
         phydat_t data;
         //DEBUG("is the function pointer null: %d", sensors[i]->driver->read == NULL);
         sensors[i]->driver->read(sensors[i]->dev, &data);

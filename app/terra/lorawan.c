@@ -2,7 +2,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <time.h>
+#include <random.h>
 #ifndef BOARD_NATIVE
 #ifndef DISABLE_LORA
 #include "lorawan.h"
@@ -36,7 +38,7 @@ bool lorawan_send_message(uint8_t *serializedData, uint8_t len)
 {   
     assert(len <= LORAWAN_APP_DATA_MAX_SIZE);
     
-    LOG_INFO("Sending: %s\n", serializedData);
+    LOG_INFO("[lorawan.c] Sending: %s\n", serializedData);
     /* Try to send the message */
     uint8_t ret = semtech_loramac_send(&loramac, serializedData, len);
     if (ret != SEMTECH_LORAMAC_TX_DONE)
@@ -59,7 +61,7 @@ bool lorawan_send_message(uint8_t *serializedData, uint8_t len)
             LOG_ERROR("[lorawan.c] send_message: Message was transmitted but no ACK was received\n");
             break;
         default:
-            LOG_ERROR("Cannot send message, ret code: %d\n", ret);
+            LOG_ERROR("[lorawan.c] Cannot send message, ret code: %d\n", ret);
             break;
         }
         return false;
@@ -78,7 +80,7 @@ static void *_recv(void *arg)
         semtech_loramac_recv(&loramac);
         if (loramac.rx_data.payload_len > 0)
         {
-            LOG_DEBUG("Data received of length %d on port: %d\n",
+            LOG_DEBUG("[lorawan.c] Data received of length %d on port: %d\n",
                     loramac.rx_data.payload_len, loramac.rx_data.port);
         }
     }
@@ -97,8 +99,8 @@ int lorawan_initialize_lorawan(void)
         semtech_loramac_set_deveui(&loramac, deveui);
         semtech_loramac_set_appeui(&loramac, appeui);
         semtech_loramac_set_appkey(&loramac, appkey);
-        semtech_loramac_set_adr(&loramac, false);
-        semtech_loramac_set_dr(&loramac, LORAMAC_DR_0);
+        semtech_loramac_set_adr(&loramac, true);
+        //semtech_loramac_set_dr(&loramac, LORAMAC_DR_0);
         
         /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
         //semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
@@ -158,23 +160,23 @@ void lorawan_print_connection_info(void)
 
     uint8_t confirmable = (loramac_tx_mode_t) semtech_loramac_get_tx_mode(&loramac);
 
-    
-
-    printf("LoRaWAN Connection info:\n");
-    printf("  Joined: %s\n", joined ? "true" : "false");
-    printf("  Device Class: %c\n", class_str);
-    printf("  Device EUI: %s\n", deveui_str);
-    printf("  Application EUI: %s\n", appeui_str);
-    printf("  Application Key: %s\n", appkey_str);
-    printf("  Data Rate: %" PRIu32 "\n", (uint32_t) dr);
-    printf("  Public Network: %s\n", public_nw ? "true" : "false");
-    printf("  Confirmable: %s\n", confirmable == LORAMAC_TX_CNF ? "true" : "false");
-    printf("  AppSKey: %s\n", appskey_str);
-    printf("  NwkSKey: %s\n", nwkskey_str);
-    printf("  Device Address: %s\n", devaddr_str);
-    printf("  RX2 data rate: %" PRIu32 "\n", (uint32_t) rx2_dr);
-    printf("  RX2 frequency: %" PRIu32 "\n", rx2_freq);
-    printf("  Uplink counter: %" PRIu32"\n", uplink_counter);
+    // print connection info. Is done in multiple printf calls because otherwise i think it smashes the stack
+    printf("LoRaWAN Connection info: ");
+    printf("Joined: %s, ", joined ? "true" : "false");
+    printf("Device Class: %c, ", class_str);
+    printf("Device EUI: %s, ", deveui_str);
+    printf("Application EUI: %s, ", appeui_str);
+    printf("Application Key: %s, ", appkey_str);
+    printf("Data Rate: %" PRIu8 ", ", dr);
+    printf("Public Network: %s, ", public_nw ? "true" : "false");
+    printf("Confirmable: %s, ", confirmable == LORAMAC_TX_CNF ? "true" : "false");
+    printf("AppSKey: %s, ", appskey_str);
+    printf("NwkSKey: %s, ", nwkskey_str);
+    printf("Device Address: %s, ", devaddr_str);
+    printf("RX2 data rate: %" PRIu8 ", ", rx2_dr);
+    printf("RX2 frequency: %" PRIu32 ", ", rx2_freq);
+    printf("Uplink counter: %" PRIu32", ", uplink_counter);
+    printf("\n");
 
     
 }
@@ -186,20 +188,20 @@ bool lorawan_receive(void)
     loramac.rx_data.payload[loramac.rx_data.payload_len] = 0;
     if (loramac.rx_data.payload_len > 0)
     {
-        LOG_DEBUG("Data received of length %d on port: %d\n",
+        LOG_DEBUG("[lorawan.c] Data received of length %d on port: %d\n",
                    loramac.rx_data.payload_len, loramac.rx_data.port);
         return true;
     }
     else
     {
-        LOG_DEBUG("No data received. I guess this shouldn't happen?\n");
+        LOG_DEBUG("[lorawan.c] No data received. I guess this shouldn't happen?\n");
         return false;
     }
 }
 
 int lorawan_connect_lorawan(void)
 {
-    LOG_INFO("trying to join network\n");
+    LOG_INFO("[lorawan.c] trying to join network\n");
     /* Join the network if not already joined */
     while (!semtech_loramac_get_join_state(&loramac))
     {
@@ -207,17 +209,17 @@ int lorawan_connect_lorawan(void)
          * generated device address and to get the network and application session
          * keys.
          */
-        LOG_INFO("Starting join procedure\n");
+        LOG_INFO("[lorawan.c] Starting join procedure\n");
         if (semtech_loramac_join(&loramac, LORAMAC_JOIN_OTAA) != SEMTECH_LORAMAC_JOIN_SUCCEEDED)
         {
-            LOG_WARNING("Join procedure failed. Trying again after 10 seconds...\n");
-            ztimer_sleep(ZTIMER_MSEC, 10000);
+            LOG_WARNING("[lorawan.c] Join procedure failed. Trying again after 10 +-2 seconds...\n");
+            ztimer_sleep(ZTIMER_MSEC, 8000 + random_uint32() % 4000);
         }
     }
-    LOG_INFO("Join procedure succeeded\n");
+    LOG_INFO("[lorawan.c] Join procedure succeeded\n");
     // semtech_loramac_save();
     _main_pid = thread_getpid();
-    LOG_INFO("creating recv thread\n");
+    LOG_INFO("[lorawan.c] creating recv thread\n");
     _recv_pid = thread_create(_recv_stack, sizeof(_recv_stack),
                   THREAD_PRIORITY_MAIN - 1, 0, _recv, NULL, "recv thread");
     // printf("ret: %d\n", ret);

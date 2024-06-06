@@ -182,7 +182,7 @@ static inline uint32_t _get_number_of_sectors_for_buffer(void)
 {
     uint32_t num_sectors = sizeof(config_buffer) / (CONFIGURATION_MTD_DEVICE->pages_per_sector * CONFIGURATION_MTD_DEVICE->page_size);
     assert(num_sectors > 0 && num_sectors <= CONFIGURATION_MTD_DEVICE->sector_count);
-    printf("num sectors: %" PRIdSIZE " / ( %" PRIu32 " * %" PRIu32 ") %" PRIu32 "\n", sizeof(config_buffer), CONFIGURATION_MTD_DEVICE->pages_per_sector, CONFIGURATION_MTD_DEVICE->page_size, num_sectors);
+    DEBUG("[configuration.c] num sectors: %" PRIdSIZE " / ( %" PRIu32 " * %" PRIu32 ") %" PRIu32 "\n", sizeof(config_buffer), CONFIGURATION_MTD_DEVICE->pages_per_sector, CONFIGURATION_MTD_DEVICE->page_size, num_sectors);
     return num_sectors;
 }
 
