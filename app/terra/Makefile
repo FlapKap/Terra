@@ -7,7 +7,7 @@ RIOTBASE ?= $(PROJECT_BASE)/RIOT
 EXTERNAL_MODULE_DIRS += $(PROJECT_BASE)/modules $(CURDIR)/
 EXTERNAL_BOARD_DIRS += $(PROJECT_BASE)/boards
 
-MAIN_STACKSIZE ?= 4096 # change stack size
+MAIN_STACKSIZE ?= 5120 # change stack size
 
 # Terra APPLICATION CONFIGURATION
 
@@ -25,7 +25,7 @@ DEVEUI ?= 70B3D57ED005EA59
 APPKEY ?= 385794DDE70CE2EAB5B5B12A4807822C
 
 
-LOG_LEVEL ?= LOG_ALL
+LOG_LEVEL ?= LOG_INFO
 
 # Different build configurations. Optimized builds run without any debug symbols and with o3 optimizations
 APPLICATION_BUILD_OPTIMIZED = 0
@@ -38,6 +38,8 @@ APPLICATION_RUN_TEST ?= 0
 DEFAULT_QUERY_AS_PB_CHAR_ARRAY ?={0xa,0x14,0xa,0x12,0xa,0x10,0xa,0xc,0xa,0x2,0x8,0x0,0xa,0x2,0x10,0x8,0xa,0x2,0x8,0xa,0x10,0x1}
 
 
+
+
 # TFLITE MICRO
 ## if a tflite micro model is wished to be used, add it in the tflite_model module and set USEMODULE += tflite_model
 USEMODULE += tflite_model
@@ -45,7 +47,7 @@ USEMODULE += tflite_model
 # MODULES
 USEMODULE += saul_default
 USEMODULE += fmt
-
+USEMODULE += periph_hwrng # make sure that enough entropy is provided for the PRNG
 ## Timer stuff
 USEMODULE += ztimer ztimer_msec
 USEMODULE += periph_rtc
