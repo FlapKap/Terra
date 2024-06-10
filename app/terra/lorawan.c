@@ -100,7 +100,8 @@ int lorawan_initialize_lorawan(void)
         semtech_loramac_set_appeui(&loramac, appeui);
         semtech_loramac_set_appkey(&loramac, appkey);
         semtech_loramac_set_adr(&loramac, true);
-        //semtech_loramac_set_dr(&loramac, LORAMAC_DR_0);
+        semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
+        //semtech_loramac_set_tx_power(&loramac, LORAMAC_TX_PWR_0);
         
         /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
         //semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
@@ -212,8 +213,9 @@ int lorawan_connect_lorawan(void)
         LOG_INFO("[lorawan.c] Starting join procedure\n");
         if (semtech_loramac_join(&loramac, LORAMAC_JOIN_OTAA) != SEMTECH_LORAMAC_JOIN_SUCCEEDED)
         {
-            LOG_WARNING("[lorawan.c] Join procedure failed. Trying again after 10 +-2 seconds...\n");
-            ztimer_sleep(ZTIMER_MSEC, 8000 + random_uint32() % 4000);
+            uint32_t retry_sleep_ms = 20000 + random_uint32() % 20000;
+            LOG_WARNING("[lorawan.c] Join procedure failed. Trying again after 30s +-10s: %" PRIu32 " ms...\n",retry_sleep_ms);
+            ztimer_sleep(ZTIMER_MSEC, retry_sleep_ms);
         }
     }
     LOG_INFO("[lorawan.c] Join procedure succeeded\n");
