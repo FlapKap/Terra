@@ -722,6 +722,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 result->type._int = n1->type._uint32 % ((int) n2->type._double);
                 break;
             }
+            break;
         }
         case NUMBER_INT32:
         {
@@ -746,6 +747,7 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 result->type._int = n1->type._int % ((int) n2->type._double);
                 break;
             }
+            break;
         }
         break;
         default:
