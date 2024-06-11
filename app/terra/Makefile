@@ -94,6 +94,7 @@ SENSOR_NAMES ?= "Button(SW0)" "Button(SW0)"
 SENSOR_TYPES ?= SAUL_SENSE_BTN SAUL_SENSE_BTN
 FEATURES_REQUIRED += periph_flashpage_aux
 USEMODULE += mtd_flashpage mtd_write_page periph_flashpage_aux 
+USEMODULE += ztimer_no_periph_rtt
 SLOT_AUX_LEN := 0x8000
 endif
 ifneq ($(words SENSOR_NAMES),$(words SENSOR_TYPES))
