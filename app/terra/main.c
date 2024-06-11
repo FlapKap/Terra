@@ -252,6 +252,11 @@ static void run_activities(void)
     ztimer_sleep(ZTIMER_MSEC, 2000);
     // check for new messages
     raw_message_changed = network_get_message(config.raw_message_buffer, sizeof(config.raw_message_buffer), &(config.raw_message_size));
+    if (raw_message_changed)
+    {
+      LOG_INFO("Received message!\n");
+    }
+    
   }
   send_time_ms = ztimer_stopwatch_reset(&stopwatch);  
   
