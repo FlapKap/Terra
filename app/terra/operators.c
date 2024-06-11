@@ -711,14 +711,17 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 result->unionCase = NUMBER_INT32;
                 result->type._int = n1->type._uint32 % n2->type._int;
                 break;
-
-            default:
-                LOG_ERROR("[operators.c] Error: Invalid MOD operation. Divisor must be integer");
-                result->type._int = 0;
+            case NUMBER_FLOAT:
+                LOG_WARNING("[operators.c] Warning: Modulo operation on float. casts to int");
                 result->unionCase = NUMBER_INT32;
-                return false;
+                result->type._int = n1->type._uint32 % ((int) n2->type._float);
+                break;
+            case NUMBER_DOUBLE:
+                LOG_WARNING("[operators.c] Warning: Modulo operation on double. casts to int");
+                result->unionCase = NUMBER_INT32;
+                result->type._int = n1->type._uint32 % ((int) n2->type._double);
+                break;
             }
-            break;
         }
         case NUMBER_INT32:
         {
@@ -732,11 +735,16 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
                 result->unionCase = NUMBER_INT32;
                 result->type._int = n1->type._int % n2->type._int;
                 break;
-            default:
-                LOG_ERROR("[operators.c] Error: Invalid MOD operation. Divisor must be integer");
-                result->type._int = 0;
+            case NUMBER_FLOAT:
+                LOG_WARNING("[operators.c] Warning: Modulo operation on float. casts to int");
                 result->unionCase = NUMBER_INT32;
-                return false;
+                result->type._int = n1->type._int % ((int) n2->type._float);
+                break;
+            case NUMBER_DOUBLE:
+                LOG_WARNING("[operators.c] Warning: Modulo operation on double. casts to int");
+                result->unionCase = NUMBER_INT32;
+                result->type._int = n1->type._int % ((int) n2->type._double);
+                break;
             }
         }
         break;
