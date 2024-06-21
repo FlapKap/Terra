@@ -38,7 +38,12 @@ bool lorawan_send_message(uint8_t *serializedData, uint8_t len)
 {   
     assert(len <= LORAWAN_APP_DATA_MAX_SIZE);
     
-    LOG_INFO("[lorawan.c] Sending: %s\n", serializedData);
+    LOG_INFO("[lorawan.c] Sending:");
+    for (int i = 0; i < len; i++)
+    {
+        LOG_INFO(" %02x", serializedData[i]);
+    }
+    LOG_INFO(", len: %d\n", (int) len);
     /* Try to send the message */
     uint8_t ret = semtech_loramac_send(&loramac, serializedData, len);
     if (ret != SEMTECH_LORAMAC_TX_DONE)
@@ -100,7 +105,7 @@ int lorawan_initialize_lorawan(void)
         semtech_loramac_set_appeui(&loramac, appeui);
         semtech_loramac_set_appkey(&loramac, appkey);
         semtech_loramac_set_adr(&loramac, true);
-        semtech_loramac_set_dr(&loramac, LORAMAC_DR_5);
+        semtech_loramac_set_dr(&loramac, LORAMAC_DR_3);
         //semtech_loramac_set_tx_power(&loramac, LORAMAC_TX_PWR_0);
         
         /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
@@ -168,13 +173,13 @@ void lorawan_print_connection_info(void)
     printf("Device EUI: %s, ", deveui_str);
     printf("Application EUI: %s, ", appeui_str);
     printf("Application Key: %s, ", appkey_str);
-    printf("Data Rate: %" PRIu8 ", ", dr);
+    printf("Data Rate: %d, ", (int) dr);
     printf("Public Network: %s, ", public_nw ? "true" : "false");
     printf("Confirmable: %s, ", confirmable == LORAMAC_TX_CNF ? "true" : "false");
     printf("AppSKey: %s, ", appskey_str);
     printf("NwkSKey: %s, ", nwkskey_str);
     printf("Device Address: %s, ", devaddr_str);
-    printf("RX2 data rate: %" PRIu8 ", ", rx2_dr);
+    printf("RX2 data rate: %d, ", (int) rx2_dr);
     printf("RX2 frequency: %" PRIu32 ", ", rx2_freq);
     printf("Uplink counter: %" PRIu32", ", uplink_counter);
     printf("\n");
