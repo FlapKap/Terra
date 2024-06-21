@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <kernel_defines.h>
 #include <fmt.h>
@@ -45,6 +46,9 @@
 #if MODULE_TFLITE_MODEL
 #include "tflite_model/tflite_model.h"
 #endif
+
+// protobufs
+#include "terraprotocol.pb.h"
 
 // Testing
 #ifdef APPLICATION_RUN_TEST
@@ -211,8 +215,8 @@ static void run_activities(void)
       if (finished)
       {
         // get first free response field from output.
-        TerraProtocol_Output_QueryResponse resp = out.responses[response_id];
-        resp.id = query_id;
+        TerraProtocol_Output_QueryResponse* resp = &(out.responses[response_id]);
+        resp->id = query_id;
 
         // 4. for each env value copy into response
         for (int8_t env_idx = 0; env_idx < ENVIRONMENT_LEN; env_idx++)
@@ -220,8 +224,8 @@ static void run_activities(void)
           Number num;
           if (env_get_value(env_idx, &num))
           {
-            copy_number_to_instruction(&num, &(resp.response[resp.response_count]));
-            ++resp.response_count;
+            copy_number_to_instruction(&num, &(resp->response[resp->response_count]));
+            ++resp->response_count;
           }
         }
         // increment response count and id
