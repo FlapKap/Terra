@@ -61,9 +61,9 @@ if __name__ == "__main__":
                                  Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
                                  Data(instruction=Einstr.ABS),
                                  Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
+                                 Data(instruction=Einstr.FLOOR),
                                  Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.MOD),
                                  Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.EXP),
-                                 Data(instruction=Einstr.FLOOR),
                                  Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.DIV)]
                             ),
                             attribute=2,
@@ -84,10 +84,10 @@ if __name__ == "__main__":
                                  Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(_uint8=2), Data(instruction=Einstr.ADD),
                                  Data(instruction=Einstr.ABS),
                                  Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
+                                 Data(instruction=Einstr.FLOOR),
                                  Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.MOD),
                                  Data(instruction=Einstr.CEIL),
                                  Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.EXP),
-                                 Data(instruction=Einstr.FLOOR),
                                  Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.DIV)]
                             ),
                             attribute=2,
