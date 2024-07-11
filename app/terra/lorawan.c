@@ -104,8 +104,9 @@ int lorawan_initialize_lorawan(void)
         semtech_loramac_set_deveui(&loramac, deveui);
         semtech_loramac_set_appeui(&loramac, appeui);
         semtech_loramac_set_appkey(&loramac, appkey);
-        semtech_loramac_set_adr(&loramac, true);
-        semtech_loramac_set_dr(&loramac, LORAMAC_DR_3);
+        //semtech_loramac_set_adr(&loramac, true);
+        semtech_loramac_set_dr(&loramac, LORAMAC_DATA_RATE);
+        semtech_loramac_set_rx2_dr(&loramac, CONFIG_LORAMAC_DEFAULT_RX2_DR);
         //semtech_loramac_set_tx_power(&loramac, LORAMAC_TX_PWR_0);
         
         /* Use a fast datarate, e.g. BW125/SF7 in EU868 */
@@ -166,6 +167,7 @@ void lorawan_print_connection_info(void)
 
     uint8_t confirmable = (loramac_tx_mode_t) semtech_loramac_get_tx_mode(&loramac);
 
+
     // print connection info. Is done in multiple printf calls because otherwise i think it smashes the stack
     printf("LoRaWAN Connection info: ");
     printf("Joined: %s, ", joined ? "true" : "false");
@@ -179,6 +181,8 @@ void lorawan_print_connection_info(void)
     printf("AppSKey: %s, ", appskey_str);
     printf("NwkSKey: %s, ", nwkskey_str);
     printf("Device Address: %s, ", devaddr_str);
+    printf("RX1 delay: %d, ", CONFIG_LORAMAC_DEFAULT_RX1_DELAY);
+    printf("RX2 delay: %d, ", LORAMAC_DEFAULT_RX2_DELAY);
     printf("RX2 data rate: %d, ", (int) rx2_dr);
     printf("RX2 frequency: %" PRIu32 ", ", rx2_freq);
     printf("Uplink counter: %" PRIu32", ", uplink_counter);

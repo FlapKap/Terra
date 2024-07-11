@@ -17,7 +17,7 @@ def byte_string_as_c_char_array(bs: bytes) -> str:
 
 
 def print_protobuf_message(message: Message, name: str) -> None:
-    print(f"Message:{name}")
+    print(f"Message:{name} with length:{len(message.SerializeToString())}")
     print(f"Serialized String:{message.SerializeToString()}")
     print(
         f"Serialized As C Array:{byte_string_as_c_char_array(message.SerializeToString())}"
@@ -33,7 +33,22 @@ if __name__ == "__main__":
     messages = {}
 
     messages["empty_msg"] = Message(queries=[])
-
+    messages["map_short_msg"] = Message(
+        queries=[
+            Query(
+                operations=[
+                    Operation(
+                        MapOperation(
+                            Expression(
+                                [Data(instruction=Einstr.VAR), Data(_uint8=0)]
+                            ),
+                            attribute=0,
+                        )
+                    )
+                ]
+            )
+        ]
+    )
     messages["map_msg"] = Message(
         queries=[
             Query(
@@ -73,6 +88,37 @@ if __name__ == "__main__":
             )
         ]
     )
+
+    messages["semi_long_map_msg"] = Message(
+        queries=[
+            Query(
+                operations=[
+                    Operation(
+                        MapOperation(
+                            Expression(
+                                [Data(instruction=Einstr.VAR), Data(_uint8=0), Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
+                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
+                                 Data(instruction=Einstr.ABS),
+                                 Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
+                                 Data(instruction=Einstr.FLOOR),
+                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.MOD),
+
+                                 Data(instruction=Einstr.VAR), Data(_uint8=0), Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
+                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
+                                 Data(instruction=Einstr.ABS),
+                                 Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
+                                 Data(instruction=Einstr.FLOOR),
+                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.DIV),
+                                 Data(instruction=Einstr.ADD)
+                                 ]
+                            ),
+                            attribute=2,
+                        )
+                    )
+                ]
+            )
+        ]
+    )
     messages["long_msg"] = Message(
         queries=[
             Query(
@@ -81,7 +127,7 @@ if __name__ == "__main__":
                         MapOperation(
                             Expression(
                                 [Data(instruction=Einstr.VAR), Data(_uint8=0), Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
-                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(_uint8=2), Data(instruction=Einstr.ADD),
+                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
                                  Data(instruction=Einstr.ABS),
                                  Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
                                  Data(instruction=Einstr.FLOOR),

@@ -1,6 +1,7 @@
 
 // Standard library includes
 #include <stdio.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <math.h>
 #include <stdlib.h>
@@ -74,8 +75,8 @@
 static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
 static TerraProtocol_Message msg;
 static TerraConfiguration config = {
-    .raw_message_size = 0,
-    .raw_message_buffer = {0},
+    .raw_message_size = sizeof((uint8_t[])DEFAULT_QUERY_AS_PB_CHAR_ARRAY),
+    .raw_message_buffer = DEFAULT_QUERY_AS_PB_CHAR_ARRAY,
     .loop_counter = 0};
 
 static bool raw_message_changed = false;
@@ -87,9 +88,8 @@ static Number tflite_output[1];
 
 static Number sensor_reads[SENSORS_ARRAY_LENGTH];
 static Stack stack = {
-    .stack_memory = { {} },
-    .top = -1
-};
+    .stack_memory = {{}},
+    .top = -1};
 
 static const uint32_t timeout_ms = EXECUTION_EPOCH_S * 1000;
 static int32_t sleep_time_s = 0;
@@ -102,7 +102,8 @@ static int32_t deserialize_msg_ms = -1;
 static int32_t sensor_init_time_ms = -1;
 static int32_t net_init_time_ms = -1;
 static int32_t sensor_collect_time_ms = -1;
-static int32_t exec_time_ms = -1;
+static int32_t exec_tflite_time_ms = -1;
+static int32_t exec_query_time_ms = -1;
 static int32_t sync_word_time_ms = -1;
 static int32_t listen_time_ms = -1;
 static int32_t send_time_ms = -1;
@@ -117,7 +118,7 @@ static void startup(void)
   configuration_load(&config, &loramac);
 
   conf_load_time_ms = ztimer_stopwatch_reset(&stopwatch);
-  
+
   // DESERIALIZE MESSAGE
   LOG_INFO("Deserialize message if any...\n");
   if (config.raw_message_size > 0)
@@ -173,7 +174,7 @@ static void run_activities(void)
   // Execute tflite model if there
   if (IS_ACTIVE(MODULE_TFLITE_MODEL))
   {
-      // TFLITE MODEL INITIALIZATION
+    // TFLITE MODEL INITIALIZATION
     LOG_INFO("Initialize TFLITE model...\n");
     if (!tflite_model_init())
     {
@@ -185,6 +186,7 @@ static void run_activities(void)
     {
       env_set_value(j, tflite_output[j - ARRAY_SIZE(sensor_reads)]);
     }
+    exec_tflite_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
 
   if (msg.queries_count > 0)
@@ -215,7 +217,7 @@ static void run_activities(void)
       if (finished)
       {
         // get first free response field from output.
-        TerraProtocol_Output_QueryResponse* resp = &(out.responses[response_id]);
+        TerraProtocol_Output_QueryResponse *resp = &(out.responses[response_id]);
         resp->id = query_id;
 
         // 4. for each env value copy into response
@@ -233,9 +235,8 @@ static void run_activities(void)
         response_id++;
       }
     }
+    exec_query_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
-  exec_time_ms = ztimer_stopwatch_reset(&stopwatch);
-
   LOG_INFO("Sending Responses if any...\n");
 
   // if we have responses send them. if not, send heartbeat to make sure we have an opportunity to receive new messages
@@ -258,15 +259,14 @@ static void run_activities(void)
     raw_message_changed = network_get_message(config.raw_message_buffer, sizeof(config.raw_message_buffer), &(config.raw_message_size));
     if (raw_message_changed)
     {
-      LOG_INFO("Received message!\n");
+      LOG_INFO("Received message of length: %d!\n", config.raw_message_size);
     }
-    
+    send_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
-  send_time_ms = ztimer_stopwatch_reset(&stopwatch);  
-  
+
   // figure out how long the iteration took and sleep for the remaining time
   // Note: since the default values are negative, they might subtract from the total if not set. however -1 ms is negligible so it is ignored
-  int sleep_time_ms_tmp = timeout_ms - (sync_word_time_ms + listen_time_ms + sensor_collect_time_ms + exec_time_ms + send_time_ms);
+  int sleep_time_ms_tmp = timeout_ms - (sync_word_time_ms + listen_time_ms + sensor_collect_time_ms + (exec_tflite_time_ms + exec_query_time_ms) + send_time_ms);
   uint32_t sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
   // convert sleep_time_ms to second
   sleep_time_s = sleep_time_ms / 1000;
@@ -279,17 +279,29 @@ static void teardown(void)
   LOG_INFO("teardown\n");
   ztimer_stopwatch_reset(&stopwatch);
   LOG_INFO("saving config\n");
-  configuration_save(&config, &loramac, raw_message_changed);
+
+  // save the configuration. if it is the first loop, save it. if not, only save if the raw message changed
+  // Note: loop_counter 1 since we increment it as part of the run_activities function
+  if (config.raw_message_size > 0 && config.loop_counter == 1)
+  {
+    configuration_save(&config, &loramac, true);
+  }
+  else
+  {
+    configuration_save(&config, &loramac, raw_message_changed);
+  }
+
   conf_save_time_ms = ztimer_stopwatch_reset(&stopwatch);
 }
 
 static void disable_peripherals(void)
 {
-  // i2c_release(I2C_DEV(0));
+// i2c_release(I2C_DEV(0));
 
-  // spi should automatically be disabled whenever it is not used
-
+// spi should automatically be disabled whenever it is not used
+#ifdef MODULE_PERIPH_UART
   uart_poweroff(UART_DEV(0));
+#endif
   // TODO: figure out how to handle sensors
   // TODO: possibly also keep lora network stack turned off until actual usage
 }
@@ -328,7 +340,8 @@ int main(void)
       "sensor init: %" PRIi32 " ms, "
       "net init: %" PRIi32 " ms, "
       "Collect: %" PRIi32 " ms, "
-      "Exec: %" PRIi32 " ms, "
+      "Exec tflite: %" PRIi32 " ms, "
+      "Exec query: %" PRIi32 " ms, "
       "Send: %" PRIi32 " ms, "
       "save config: %" PRIi32 " ms, "
       "Sleep: %" PRIi32 " s\n",
@@ -339,7 +352,8 @@ int main(void)
       sensor_init_time_ms,
       net_init_time_ms,
       sensor_collect_time_ms,
-      exec_time_ms,
+      exec_tflite_time_ms,
+      exec_query_time_ms,
       send_time_ms,
       conf_save_time_ms,
       sleep_time_s);

@@ -41,7 +41,7 @@
 #endif
 
 #include <terraprotocol.pb.h>
-
+#include <stdint.h>
 
 typedef struct _TerraConfiguration {
     CONFIGURATION_LOOP_COUNTER_TYPE loop_counter;
@@ -53,10 +53,10 @@ typedef struct _TerraConfiguration {
  * @brief
  * @param config
  * @param loramac_config
- * @param raw_message_changed set to true if the raw message changed in the buffer. Otherwise it wont save that
+ * @param save_query set to true if the raw message changed in the buffer. Otherwise it wont save that
  * @return true if the save was successful. False otherwise
  * @note this might save to flash. This causes wear so use it as little as possible
  */
-bool configuration_save( TerraConfiguration* config, semtech_loramac_t* loramac_config, bool raw_message_changed);
+bool configuration_save( TerraConfiguration* config, semtech_loramac_t* loramac_config, bool save_query);
 bool configuration_load( TerraConfiguration* config, semtech_loramac_t* loramac_config );
 #endif // CONFIGURATION_H

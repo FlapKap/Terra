@@ -44,10 +44,10 @@ bool configuration_load(TerraConfiguration *config, semtech_loramac_t *loramac)
     return true;
 }
 
-bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac, bool raw_message_changed)
+bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac, bool save_query)
 {
     DEBUG("[configuration.c] Saving configuration\n");
-    if (raw_message_changed)
+    if (save_query)
     {
         memcpy(&config_stored, config, sizeof(TerraConfiguration));
     }
@@ -88,7 +88,7 @@ static size_t _write_uint32(size_t pos, uint32_t value)
     return eeprom_write(pos, array, sizeof(uint32_t));
 }
 
-bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac, bool raw_message_changed)
+bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac, bool save_query)
 {
     DEBUG("[configuration.c] Saving configuration\n");
 
@@ -108,7 +108,7 @@ bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac, 
         DEBUG("[configuration.c] eepreg: Address already in use when saving configuration\n");
         return false;
     case 0: // success
-    if (raw_message_changed) {
+    if (save_query) {
         pos += eeprom_write(pos, &config->raw_message_size, sizeof(config->raw_message_size));
         pos += eeprom_write(pos, &config->raw_message_buffer, config->raw_message_size);
     } else {
@@ -186,7 +186,7 @@ static inline uint32_t _get_number_of_sectors_for_buffer(void)
     return num_sectors;
 }
 
-bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac_config, bool raw_message_changed)
+bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac_config, bool save_query)
 {
     static_assert(sizeof(*config) == sizeof(TerraConfiguration), "config doesnt have type of TerraConfiguration"); // just sanitycheck that if we change the type of config we also need to change the type of config_buffer
     // take both app config and loramac config and write to mtd flash. Need to take care of flash page boundaries. Possibly also the erase state of bytes
@@ -243,7 +243,7 @@ bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac_c
     *config_bufferPtr++ = loop_counter & 0xFF;
 
     *config_bufferPtr++ = config->raw_message_size;
-    if (raw_message_changed) {
+    if (save_query) {
         memcpy(config_bufferPtr, config->raw_message_buffer, config->raw_message_size);
     }
 
