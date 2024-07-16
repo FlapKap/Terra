@@ -152,6 +152,7 @@ static void startup(void)
 
 static void run_activities(void)
 {
+  ztimer_stopwatch_reset(&stopwatch); //we reset again as there might be some heavy printing done before which could mess with the timing
   LOG_INFO("Running activities...\n");
 
   LOG_INFO("if any queries, or tflite model, collect measurements...\n");
@@ -169,8 +170,8 @@ static void run_activities(void)
     // Collect measurements
     LOG_INFO("collecting measurements...\n");
     sensors_collect_into_array(sensor_reads, ARRAY_SIZE(sensor_reads));
-    sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
+  sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
   // Execute tflite model if there
   if (IS_ACTIVE(MODULE_TFLITE_MODEL))
   {
@@ -186,8 +187,8 @@ static void run_activities(void)
     {
       env_set_value(j, tflite_output[j - ARRAY_SIZE(sensor_reads)]);
     }
-    exec_tflite_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
+  exec_tflite_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
   if (msg.queries_count > 0)
   {
@@ -235,8 +236,8 @@ static void run_activities(void)
         response_id++;
       }
     }
-    exec_query_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
+  exec_query_time_ms = ztimer_stopwatch_reset(&stopwatch);
   LOG_INFO("Sending Responses if any...\n");
 
   // if we have responses send them. if not, send heartbeat to make sure we have an opportunity to receive new messages
@@ -261,8 +262,8 @@ static void run_activities(void)
     {
       LOG_INFO("Received message of length: %d!\n", config.raw_message_size);
     }
-    send_time_ms = ztimer_stopwatch_reset(&stopwatch);
   }
+  send_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
   // figure out how long the iteration took and sleep for the remaining time
   // Note: since the default values are negative, they might subtract from the total if not set. however -1 ms is negligible so it is ignored
