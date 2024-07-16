@@ -65,7 +65,8 @@ if __name__ == "__main__":
             )
         ]
     )
-    messages["semi_long_msg"] = Message(
+
+    messages["medium_map_msg"] = Message(
         queries=[
             Query(
                 operations=[
@@ -73,13 +74,9 @@ if __name__ == "__main__":
                         MapOperation(
                             Expression(
                                 [Data(instruction=Einstr.VAR), Data(_uint8=0), Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
-                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
-                                 Data(instruction=Einstr.ABS),
-                                 Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
-                                 Data(instruction=Einstr.FLOOR),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.MOD),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.EXP),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.DIV)]
+                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), 
+                                 Data(instruction=Einstr.ABS)
+                                 ]
                             ),
                             attribute=2,
                         )
@@ -88,7 +85,6 @@ if __name__ == "__main__":
             )
         ]
     )
-
     messages["semi_long_map_msg"] = Message(
         queries=[
             Query(
@@ -102,14 +98,9 @@ if __name__ == "__main__":
                                  Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
                                  Data(instruction=Einstr.FLOOR),
                                  Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.MOD),
-
-                                 Data(instruction=Einstr.VAR), Data(_uint8=0), Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
-                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
-                                 Data(instruction=Einstr.ABS),
-                                 Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
-                                 Data(instruction=Einstr.FLOOR),
+                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.EXP),
                                  Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.DIV),
-                                 Data(instruction=Einstr.ADD)
+                                 Data(instruction=Einstr.CEIL),
                                  ]
                             ),
                             attribute=2,
@@ -119,6 +110,37 @@ if __name__ == "__main__":
             )
         ]
     )
+    messages["long_map_msg"] = Message(
+        queries=[
+            Query(
+                operations=[
+                    Operation(
+                        MapOperation(
+                            Expression(
+                                [Data(instruction=Einstr.VAR), Data(_uint8=0), Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
+                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
+                                 Data(instruction=Einstr.ABS),
+                                 Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
+                                 Data(instruction=Einstr.FLOOR),
+                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.MOD),
+                                 Data(instruction=Einstr.CEIL),
+                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.EXP),
+                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.DIV),
+                                 Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
+                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), 
+                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
+                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.MUL),
+                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.SUB),
+                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.DIV),
+                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.MUL),
+                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
+                                 ]
+                            ),
+                            attribute=2,
+                        )
+                    ),
+                ])])
+
     messages["long_msg"] = Message(
         queries=[
             Query(
