@@ -16,7 +16,9 @@ assert(len > 0);
   if (res)
   {
     DEBUG("[serialization.c] deserialized message of length %d\n", len);
-    print_terraprotocol_message(dest_msg);
+    if(ENABLE_DEBUG) {
+      print_terraprotocol_message(dest_msg);
+    }
   }
   return res;
 }
