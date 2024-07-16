@@ -5,6 +5,8 @@
 #include "stack.h"
 #include "environment.h"
 #include <terraprotocol.pb.h>
+#include <stdint.h>
+
 
 /**
  * @brief Executes the given query on the given stack. Assumes the stack is empty and

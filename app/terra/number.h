@@ -23,7 +23,11 @@ typedef struct {
 } Number;
 
 
-int compare(const Number* n1, const Number* n2);
-bool is_false(const Number*);
+int number_compare(const Number* n1, const Number* n2);
+void number_negate(const Number* n, Number* result);
+void number_add(const Number* n1, const Number* n2, Number* result);
+void number_sub(const Number* n1, const Number* n2, Number* result);
+void number_div(const Number* n1, const Number* n2, Number* result);
+bool number_is_false(const Number*);
 
 #endif /* NUMBER_H */

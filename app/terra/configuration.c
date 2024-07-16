@@ -10,6 +10,14 @@
 
 #include "assert.h"
 
+
+TerraConfiguration config = {
+    .raw_message_size = sizeof((uint8_t[])DEFAULT_QUERY_AS_PB_CHAR_ARRAY),
+    .raw_message_buffer = DEFAULT_QUERY_AS_PB_CHAR_ARRAY,
+    .loop_counter = 0
+};
+
+
 #ifdef CPU_ESP32
 static TerraConfiguration config_stored __attribute__((section(".rtc.bss")));
 // loramac config values

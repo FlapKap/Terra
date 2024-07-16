@@ -105,7 +105,7 @@ int lorawan_initialize_lorawan(void)
         semtech_loramac_set_appeui(&loramac, appeui);
         semtech_loramac_set_appkey(&loramac, appkey);
         //semtech_loramac_set_adr(&loramac, true);
-        semtech_loramac_set_dr(&loramac, LORAMAC_DATA_RATE);
+        //semtech_loramac_set_dr(&loramac, LORAMAC_DATA_RATE); //default is set in _init_loramac in semtech_loramac.c
         semtech_loramac_set_rx2_dr(&loramac, CONFIG_LORAMAC_DEFAULT_RX2_DR);
         //semtech_loramac_set_tx_power(&loramac, LORAMAC_TX_PWR_0);
         

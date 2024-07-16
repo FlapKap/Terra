@@ -77,19 +77,33 @@ enum WindowAggregationType {
     COUNT = 4;
 }
 
-enum WindowSizeType {
-    TIMEBASED = 0;
-    COUNTBASED = 1;
+message Aggregation {
+    WindowAggregationType aggregationType = 1;
+    int32 onAttribute = 2;
+    int32 asAttribute = 3;
+}
+
+message TumblingWindowOperation {
+    int32 size_ms = 1;
+}
+
+message SlidingWindowOperation {
+    int32 size_ms = 1;
+    int32 slide_ms = 2;
+}
+
+message ThresholdWindowOperation {
+    Expression predicate = 1;
+    int32 minimum_size = 2;
 }
 
 message WindowOperation {
-    int32 size = 1;
-    WindowSizeType sizeType = 2;
-    WindowAggregationType aggregationType = 3;
-    int32 startAttribute = 4;
-    int32 endAttribute = 5;
-    int32 resultAttribute = 6;
-    int32 readAttribute = 7;
+    Aggregation aggregation = 1;
+    oneof WindowOperation {
+        TumblingWindowOperation tumbling = 2;
+        SlidingWindowOperation sliding = 3;
+        ThresholdWindowOperation threshold = 4;
+    }
 }
 
 message Operation {

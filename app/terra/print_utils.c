@@ -4,25 +4,29 @@
 #include "lorawan.h"
 #include "serialization.h"
 
-void print_configuration(TerraConfiguration* config){
+void print_configuration(TerraConfiguration *config)
+{
     printf(
-            "---Configuration start ---\n"
-            "Loop counter: %" PRIu32 "\n",
-            config->loop_counter
-            );
-    if(config->raw_message_size > 0) {
+        "---Configuration start ---\n"
+        "Loop counter: %" PRIu32 "\n",
+        config->loop_counter);
+    if (config->raw_message_size > 0)
+    {
         TerraProtocol_Message message = TerraProtocol_Message_init_zero;
         serialization_deserialize_message(config->raw_message_buffer, config->raw_message_size, &message);
-        if (message.queries_count > 0) {
+        if (message.queries_count > 0)
+        {
             print_terraprotocol_message(&message);
-        } else {
+        }
+        else
+        {
             printf("Empty message\n");
         }
     }
 
 #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
     lorawan_print_connection_info();
-    
+
 #endif
     printf("---Configuration end ---\n");
 }
@@ -225,7 +229,6 @@ void print_stack(const Stack *stack)
     }
 }
 
-
 void print_expression(const Expression *expression)
 {
     printf("     Expression (length: %d, pc: %d):\n", expression->program->instructions_count, expression->pc);
@@ -269,63 +272,67 @@ void print_terraprotocol_filter(const TerraProtocol_FilterOperation *filter)
     print_terraprotocol_expression(&filter->predicate);
 }
 
-void print_terraprotocol_window_aggregation_type(TerraProtocol_WindowAggregationType type)
+void print_terraprotocol_aggregation(const TerraProtocol_Aggregation *agg)
 {
-    switch (type)
+    char *type = "Unknown";
+    switch (agg->aggregationType)
     {
     case TerraProtocol_MIN:
-        printf("MIN");
+        type = "MIN";
         break;
     case TerraProtocol_MAX:
-        printf("MAX");
+        type = "MAX";
         break;
     case TerraProtocol_SUM:
-        printf("SUM");
+        type = "SUM";
         break;
     case TerraProtocol_AVG:
-        printf("AVG");
+        type = "AVG";
         break;
     case TerraProtocol_COUNT:
-        printf("COUNT");
-        break;
-    default:
-        printf("Unknown WindowAggregationType");
+        type = "COUNT";
         break;
     }
+    printf("    Aggregation: %s (on attribute: %" PRIi32 ", as attribute: %" PRIi32 "):\n", type, agg->onAttribute, agg->asAttribute);
 }
 
-void print_terraprotocol_window_size_type(TerraProtocol_WindowSizeType type)
+void print_terraprotocol_tumblingwindowoperation(const TerraProtocol_TumblingWindowOperation *tumbling)
 {
-    switch (type)
-    {
-    case TerraProtocol_TIMEBASED:
-        printf("TIMEBASED");
-        break;
-    case TerraProtocol_COUNTBASED:
-        printf("COUNTBASED");
-        break;
-    default:
-        printf("Unknown WindowSizeType");
-        break;
-    }
+    printf("    Tumbling:\n");
+    printf("     size_ms: %" PRIi32 "\n", tumbling->size_ms);
+}
+
+void print_terraprotocol_slidingwindowoperation(const TerraProtocol_SlidingWindowOperation *sliding)
+{
+    printf("    Sliding:\n");
+    printf("     size_ms: %" PRIi32 "\n", sliding->size_ms);
+    printf("     slide_ms: %" PRIi32 "\n", sliding->slide_ms);
+}
+
+void print_terraprotocol_thresholdwindowoperation(const TerraProtocol_ThresholdWindowOperation *threshold)
+{
+    printf("    Threshold:\n");
+    printf("     predicate:\n");
+    print_terraprotocol_expression(&threshold->predicate);
+    printf("     minimum_size: %" PRIi32 "\n", threshold->minimum_size);
 }
 
 void print_terraprotocol_window(const TerraProtocol_WindowOperation *window)
 {
     printf("    Window:\n");
-    printf("     size: %" PRIi32 "\n", window->size);
-
-    printf("     sizeType: ");
-    print_terraprotocol_window_size_type(window->sizeType);
-    printf("\n");
-    printf("     aggregationType: ");
-    print_terraprotocol_window_aggregation_type(window->aggregationType);
-    printf("\n");
-
-    printf("     startAttribute: %" PRIi32 "\n", window->startAttribute);
-    printf("     endAttribute: %" PRIi32 "\n", window->endAttribute);
-    printf("     resultAttribute: %" PRIi32 "\n", window->resultAttribute);
-    printf("     readAttribute: %" PRIi32 "\n", window->readAttribute);
+    print_terraprotocol_aggregation(&window->aggregation);
+    switch (window->which_WindowOperation)
+    {
+    case TerraProtocol_WindowOperation_tumbling_tag:
+        print_terraprotocol_tumblingwindowoperation(&window->WindowOperation.tumbling);
+        break;
+    case TerraProtocol_WindowOperation_sliding_tag:
+        print_terraprotocol_slidingwindowoperation(&window->WindowOperation.sliding);
+        break;
+    case TerraProtocol_WindowOperation_threshold_tag:
+        print_terraprotocol_thresholdwindowoperation(&window->WindowOperation.threshold);
+        break;
+    }
 }
 
 void print_terraprotocol_operation(const TerraProtocol_Operation *operation)
@@ -407,13 +414,13 @@ void print_device_info(void)
     printf("CPU: %s\n", RIOT_CPU);
     printf("Board: %s\n", RIOT_BOARD);
     printf("Riot Version: %s\n", RIOT_VERSION);
-// #ifdef MODULE_PM_LAYERED
-//     printf("Number of power modes: %u\n", PM_NUM_MODES);
+    // #ifdef MODULE_PM_LAYERED
+    //     printf("Number of power modes: %u\n", PM_NUM_MODES);
 
-//     printf("current blockers:\n");
-//     pm_blocker_t blockers = pm_get_blocker();
-//     print_blockers(&blockers, PM_NUM_MODES);
-// #endif
+    //     printf("current blockers:\n");
+    //     pm_blocker_t blockers = pm_get_blocker();
+    //     print_blockers(&blockers, PM_NUM_MODES);
+    // #endif
 }
 void print_build_info(void)
 {

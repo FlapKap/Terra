@@ -42,11 +42,36 @@
 
 #include <terraprotocol.pb.h>
 #include <stdint.h>
+#include "number.h"
+#ifndef MAX_WINDOW_OPERATORS
+#define MAX_WINDOW_OPERATORS 5
+#endif
+
+typedef enum _windowState {
+    WINDOW_STATE_NOT_INITIALIZED,
+    WINDOW_STATE_RUNNING,
+    WINDOW_STATE_FINISHED
+} windowState;
+
+/**
+ * @brief This struct contains all the data a window needs to keep accross executions
+ * These values are saved in the configuration
+ */
+typedef struct _WindowData {
+    Number aggregation_value;
+    Number start_value;
+    Number end_value;
+
+    uint32_t count;
+    // field to check if this window is ready to be used or just a default value
+    windowState state;
+} WindowData;
 
 typedef struct _TerraConfiguration {
     CONFIGURATION_LOOP_COUNTER_TYPE loop_counter;
     uint8_t raw_message_size;
     uint8_t raw_message_buffer[LORAWAN_APP_DATA_MAX_SIZE];
+    WindowData window_data[MAX_WINDOW_OPERATORS]; // we match window_data by order of window operations. For example window_data[0] is matched to the first window in the deserialized and executed message
 } TerraConfiguration;
 
 /**

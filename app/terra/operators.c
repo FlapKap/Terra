@@ -667,32 +667,32 @@ bool bin_op(const Number* n1, const Number* n2, const TerraProtocol_ExpressionIn
     case TerraProtocol_LT:
     {
         result->unionCase = NUMBER_INT32;
-        result->type._int = compare(n1,n2) == -1;
+        result->type._int = number_compare(n1,n2) == -1;
 
         break;
     }
     case TerraProtocol_GT:
     {
         result->unionCase = NUMBER_INT32;
-        result->type._int = compare(n1,n2) == 1;
+        result->type._int = number_compare(n1,n2) == 1;
         break;
     }
     case TerraProtocol_EQ:
     {
         result->unionCase = NUMBER_INT32;
-        result->type._int = compare(n1,n2) == 0;
+        result->type._int = number_compare(n1,n2) == 0;
         break;
     }
     case TerraProtocol_LTEQ:
     {
         result->unionCase = NUMBER_INT32;
-        result->type._int = compare(n1,n2) <= 0;
+        result->type._int = number_compare(n1,n2) <= 0;
         break;
     }
     case TerraProtocol_GTEQ:
     {
         result->unionCase = NUMBER_INT32;
-        result->type._int = compare(n1,n2) >= 0;
+        result->type._int = number_compare(n1,n2) >= 0;
         break;
     }
     case TerraProtocol_MOD:

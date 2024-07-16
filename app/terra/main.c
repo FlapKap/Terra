@@ -74,10 +74,8 @@
 #else
 static TerraProtocol_Output out = TerraProtocol_Output_init_zero;
 static TerraProtocol_Message msg;
-static TerraConfiguration config = {
-    .raw_message_size = sizeof((uint8_t[])DEFAULT_QUERY_AS_PB_CHAR_ARRAY),
-    .raw_message_buffer = DEFAULT_QUERY_AS_PB_CHAR_ARRAY,
-    .loop_counter = 0};
+
+extern TerraConfiguration config;
 
 static bool raw_message_changed = false;
 
