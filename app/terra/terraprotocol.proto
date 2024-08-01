@@ -49,11 +49,7 @@ message Data {
 }
 
 message Output {
-    message QueryResponse {
-        int32 id = 1;
-        repeated Data response = 2 [(nanopb).max_count = 5];
-    }
-    repeated QueryResponse responses = 1 [(nanopb).max_count = 2];
+    repeated Data responses = 1 [(nanopb).max_count = 16];
 }
 
 message Expression {
@@ -62,7 +58,7 @@ message Expression {
 
 message MapOperation {
     Expression function = 1;
-    int32 attribute = 2;
+    uint32 attribute = 2;
 }
 
 message FilterOperation {
@@ -79,28 +75,28 @@ enum WindowAggregationType {
 
 message Aggregation {
     WindowAggregationType aggregationType = 1;
-    int32 onAttribute = 2;
-    int32 asAttribute = 3;
+    uint32 onAttribute = 2;
+    uint32 asAttribute = 3;
 }
 
 message TumblingWindowOperation {
-    int32 size_ms = 1;
+    uint32 size_ms = 1;
 }
 
 message SlidingWindowOperation {
-    int32 size_ms = 1;
-    int32 slide_ms = 2;
+    uint32 size_ms = 1;
+    uint32 slide_ms = 2;
 }
 
 message ThresholdWindowOperation {
     Expression predicate = 1;
-    int32 minimum_size = 2;
+    uint32 minimum_size = 2;
 }
 
 message WindowOperation {
     Aggregation aggregation = 1;
-    int32 startAttribute = 2;
-    int32 endAttribute = 3;
+    uint32 startAttribute = 2;
+    uint32 endAttribute = 3;
     oneof WindowOperation {
         TumblingWindowOperation tumbling = 4;
         SlidingWindowOperation sliding = 5;

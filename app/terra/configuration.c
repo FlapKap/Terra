@@ -101,7 +101,7 @@ bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac, 
     DEBUG("[configuration.c] Saving configuration\n");
 
     uint32_t pos;
-    int res = eepreg_add(&pos, CONFIGURATION_MAGIC, CONFIGURATION_TERRA_CONFIGURATION_SIZE);
+    int res = eepreg_add(&pos, CONFIGURATION_MAGIC, sizeof(TerraConfiguration));
     switch (res)
     {
     case -EIO:
@@ -123,7 +123,9 @@ bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac, 
             pos += sizeof(config->raw_message_size) + config->raw_message_size;
         }
         pos += _write_uint32(pos, config->loop_counter);
-#if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
+        
+        pos += eeprom_write(pos, &config->window_data, sizeof(config->window_data));
+        #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
         DEBUG("Saving loramac\n");
         semtech_loramac_save_config(loramac);
 #endif
@@ -157,6 +159,8 @@ bool configuration_load(TerraConfiguration *config, __attribute__((unused)) semt
         pos += eeprom_read(pos, &(config->raw_message_size), sizeof(config->raw_message_size));
         pos += eeprom_read(pos, &config->raw_message_buffer, config->raw_message_size);
         pos += _read_uint32(pos, &config->loop_counter);
+
+        pos += eeprom_read(pos, &config->window_data, sizeof(config->window_data));
         break;
     }
 
@@ -254,6 +258,10 @@ bool configuration_save(TerraConfiguration *config, semtech_loramac_t *loramac_c
     if (save_query) {
         memcpy(config_bufferPtr, config->raw_message_buffer, config->raw_message_size);
     }
+    config_bufferPtr += config->raw_message_size;
+
+    memcpy(config_bufferPtr, config->window_data, sizeof(config->window_data));
+    config_bufferPtr += sizeof(config->window_data);
 
     // write the buffer and handle any return errors TODO: make this raw_message_changed_aware
     int res = mtd_write_sector(CONFIGURATION_MTD_DEVICE, config_buffer, CONFIGURATION_MTD_SECTOR, _get_number_of_sectors_for_buffer());
@@ -380,6 +388,9 @@ bool configuration_load(TerraConfiguration *config, semtech_loramac_t *loramac_c
     config->raw_message_size = *config_bufferPtr++;
 
     memcpy(config->raw_message_buffer, config_bufferPtr, config->raw_message_size);
+    config_bufferPtr += config->raw_message_size;
+    memcpy(config->window_data, config_bufferPtr, sizeof(config->window_data));
+
 
     return true;
 }

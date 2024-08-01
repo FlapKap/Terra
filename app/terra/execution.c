@@ -8,17 +8,18 @@
 #include <log.h>
 #include <terraprotocol.pb.h>
 #include <ztimer.h>
+#include <time_units.h>
 
 static Expression exp;
 
 extern TerraConfiguration config;
 
-static bool executeAggregation(TerraProtocol_Aggregation *aggregation, WindowData *window_data)
+static void executeAggregation(TerraProtocol_Aggregation *aggregation, WindowData *window_data)
 {
   Number input;
 
   env_get_value(aggregation->onAttribute, &input);
-
+  window_data->count++; //increment execution count
   switch (aggregation->aggregationType)
   {
   case TerraProtocol_MIN:
@@ -56,43 +57,57 @@ static bool executeAggregation(TerraProtocol_Aggregation *aggregation, WindowDat
     break;
   }
   case TerraProtocol_COUNT:
-    // need to do nothing as the count is kept track of already
+    // need to do nothing as the count is kept track of already, so just copy count into aggregation
+    window_data->aggregation_value = (Number) {.unionCase = NUMBER_UINT32, .type._uint32 = window_data->count};
     break;
   }
-  return true;
 }
 
-static bool executeTumblingWindow(TerraProtocol_TumblingWindowOperation *tumbling, TerraProtocol_Aggregation *aggregation, WindowData *window_data)
+/**
+ * Execute a tumbling window
+ * @param tumbling The tumbling window operation
+ * @param aggregation The aggregation
+ * @param window_data The window data
+ */
+static void executeTumblingWindow(TerraProtocol_TumblingWindowOperation *tumbling, TerraProtocol_Aggregation *aggregation, WindowData *window_data)
 {
 
   // check if its the first execution
-  if (window_data->state == WINDOW_STATE_NOT_INITIALIZED)
+  if (window_data->state == WINDOW_STATE_NOT_INITIALIZED || window_data->state == WINDOW_STATE_FINISHED)
   {
     // first time executing the window so we need to initialize a bunch of values
     window_data->state = WINDOW_STATE_RUNNING;
     window_data->count = 0;
-
     env_get_value(aggregation->onAttribute, &window_data->start_value);
   }
 
   // check if we need to execute the aggregation
   // fallback without RTC. approximate by multiplying number of executions by epoch time
   // TODO: right now we have RTC so we could do this properly
-  uint32_t current_time = window_data->count * (EXECUTION_EPOCH_S * 1000);
-  if (current_time > (uint32_t)tumbling->size_ms)
+  uint32_t current_time = window_data->count * (EXECUTION_EPOCH_S * MS_PER_SEC);
+  uint32_t next_execution_time = current_time + (EXECUTION_EPOCH_S * MS_PER_SEC);
+  bool last_execution = next_execution_time > tumbling->size_ms;
+  LOG_INFO("Current time: %" PRIu32 " Next execution time: %" PRIu32 " Last execution: %s\n", current_time, next_execution_time, last_execution ? "true" : "false");
+  if (current_time <= (uint32_t)tumbling->size_ms)
   {
     executeAggregation(aggregation, window_data);
-    window_data->count++;
     env_get_value(aggregation->onAttribute, &window_data->end_value);
   }
-  else
+  
+  if(last_execution)
   {
     // we are done
     window_data->state = WINDOW_STATE_FINISHED;
+    env_set_value(aggregation->asAttribute, window_data->aggregation_value);
   }
-  return true;
 }
 
+/**
+ * Execute a window
+ * @param window The window operation
+ * @param window_data The window data
+ * @return true if the window is finished, false otherwise
+ */
 static bool executeWindow(TerraProtocol_WindowOperation *window, WindowData *window_data)
 {
   if (!window->has_aggregation)
@@ -100,41 +115,59 @@ static bool executeWindow(TerraProtocol_WindowOperation *window, WindowData *win
     LOG_ERROR("[execution.c] No aggregation in window");
     return false; // early exit if no aggregation is there
   }
-
+  
   switch (window->which_WindowOperation)
   {
   case TerraProtocol_WindowOperation_tumbling_tag:
   {
     TerraProtocol_TumblingWindowOperation *tumbling = &window->WindowOperation.tumbling;
     TerraProtocol_Aggregation *aggregation = &window->aggregation;
-    return executeTumblingWindow(tumbling, aggregation, window_data);
+    executeTumblingWindow(tumbling, aggregation, window_data);
     break;
   }
   case TerraProtocol_WindowOperation_sliding_tag:
   {
     LOG_ERROR("[execution.c] Sliding window not implemented");
-    return false;
     break;
   }
   case TerraProtocol_WindowOperation_threshold_tag:
   {
     LOG_ERROR("[execution.c] Threshold window not implemented");
-    return false;
     break;
   }
   default:
   {
     LOG_ERROR("[execution.c] Unknown window operation");
-    return false;
     break;
   }
   }
+
+  // if window is finished, update start and end values in environment
+  if (window_data->state == WINDOW_STATE_FINISHED)
+  {
+    env_set_value(window->startAttribute, window_data->start_value);
+    env_set_value(window->endAttribute, window_data->end_value);
+    return true;
+  }
+  return false;
 }
-static uint8_t current_window_index = 0;
+
+static bool executeMap(TerraProtocol_MapOperation *map, Stack *stack) {
+      expression_init_expression(&exp, &(map->function), stack);
+
+      Number number = expression_call(&exp);
+
+      // Set env value
+      env_set_value(map->attribute, number);
+
+      return true;
+}
+
 bool executeQuery(TerraProtocol_Query *query, Stack *stack)
 {
-  bool filter_triggered = false;
-  for (int i = 0; i < query->operations_count && !filter_triggered; i++)
+  static uint8_t current_window_index = 0; // used to keep track of the current window being executed. Note: This value is static which means its persistent across function calls
+  bool cancelled = false;
+  for (int i = 0; i < query->operations_count && !cancelled; i++)
   {
 
     switch (query->operations[i].which_operation)
@@ -143,12 +176,7 @@ bool executeQuery(TerraProtocol_Query *query, Stack *stack)
     {
       // map
       TerraProtocol_MapOperation *map = &query->operations[i].operation.map;
-      expression_init_expression(&exp, &(map->function), stack);
-
-      Number number = expression_call(&exp);
-
-      // Set env value
-      env_set_value(map->attribute, number);
+      executeMap(map, stack);
       break;
     }
     case TerraProtocol_Operation_filter_tag:
@@ -160,7 +188,7 @@ bool executeQuery(TerraProtocol_Query *query, Stack *stack)
 
       if (number_is_false(&number))
       {
-        filter_triggered = true;
+        cancelled = true;
       }
       break;
     }
@@ -169,8 +197,11 @@ bool executeQuery(TerraProtocol_Query *query, Stack *stack)
     {
       // window
       TerraProtocol_WindowOperation *window = &query->operations[i].operation.window;
-      executeWindow(window, &config.window_data[current_window_index]);
+      bool finished = executeWindow(window, &(config.window_data[current_window_index]));
       current_window_index++;
+
+      //if window is not finished, we cancel the rest of the query
+      cancelled = !finished;
       break;
     }
     default:
@@ -184,5 +215,5 @@ bool executeQuery(TerraProtocol_Query *query, Stack *stack)
     // empty stack after maps. Possible one after filter
     assert(stack->top == -1 || stack->top == 0 || stack->top == 1);
   }
-  return !filter_triggered;
+  return !cancelled;
 }

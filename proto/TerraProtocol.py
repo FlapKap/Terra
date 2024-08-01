@@ -110,14 +110,16 @@ class ThresholdWindowOperation(betterproto.Message):
 @dataclass
 class WindowOperation(betterproto.Message):
     aggregation: "Aggregation" = betterproto.message_field(1)
+    start_attribute: int = betterproto.int32_field(2)
+    end_attribute: int = betterproto.int32_field(3)
     tumbling: "TumblingWindowOperation" = betterproto.message_field(
-        2, group="WindowOperation"
+        4, group="WindowOperation"
     )
     sliding: "SlidingWindowOperation" = betterproto.message_field(
-        3, group="WindowOperation"
+        5, group="WindowOperation"
     )
     threshold: "ThresholdWindowOperation" = betterproto.message_field(
-        4, group="WindowOperation"
+        6, group="WindowOperation"
     )
 
 

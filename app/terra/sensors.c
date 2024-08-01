@@ -40,9 +40,10 @@ bool sensors_initialize_enabled(void)
     LOG_INFO("Initializing enabled sensors...\n");
     for (size_t i = 0; i < SENSORS_ARRAY_LENGTH; i++)
     {
+        LOG_INFO("initialising sensor type %d, name %s...", sensor_types[i], sensor_names[i]);
         sensors[i] = saul_reg_find_type_and_name(sensor_types[i], sensor_names[i]);
         assert(sensors[i] != NULL);
-        LOG_INFO("Sensor: %s, type: %d initialised\n", sensors[i]->name, sensors[i]->driver->type);
+        LOG_INFO(" initialised\n");
     }
 
     return true;

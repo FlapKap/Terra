@@ -13,7 +13,7 @@ MAIN_STACKSIZE ?= 5120 # change stack size
 
 EXECUTION_EPOCH_S ?= 20 # EXECUTE INTERVAL
 RUNTIME_STACK_MEMORY ?= 10 # RUNTIME STACK SIZE. Amount of Number's in the stack
-FORCED_LISTEN_EVERY_N_LOOP ?= 3 # FORCED LISTEN: send a heartbeat every N loop to guarantee a listen for incoming packets
+FORCED_LISTEN_EVERY_N_LOOP ?= 1000 # FORCED LISTEN: send a heartbeat every N loop to guarantee a listen for incoming packets
 
 
 ## LORA
@@ -29,7 +29,7 @@ LORAMAC_DEFAULT_RX1_DELAY ?= "(5000U)" # TTN default
 LORAMAC_DEFAULT_RX2_DR ?= LORAMAC_DR_3 # TTN default
 LORAMAC_DEFAULT_SYSTEM_MAX_RX_ERROR ?= 150
 
-LOG_LEVEL ?= LOG_INFO
+LOG_LEVEL ?= LOG_DEBUG
 
 # Different build configurations. Optimized builds run without any debug symbols and with o3 optimizations
 APPLICATION_BUILD_OPTIMIZED = 0
@@ -40,14 +40,14 @@ APPLICATION_RUN_TEST ?= 0
 
 # Default query to run, if any.
 
-DEFAULT_QUERY_AS_PB_BASE64 ?= CtMBCtABCs0BCsgBCgIIAQoCEAAKAggACgIQCAoCCAoKAggBCgIQAQoCCAsKAggACgIQAgoCCAgKAggUCgIIAAoCMGQKAggJCgIIEgoCCAAKAjAECgIIDAoCCBEKAggACgIwBAoCCBAKAggACgIwBAoCCAsKAggACgIQCAoCCAoKAggBCgIQAQoCCAsKAggACgIQAgoCCAgKAggACgIQAgoCCAoKAggACgIQAgoCCAkKAggACgIQAgoCCAsKAggACgIQAgoCCAoKAggACgIQAgoCCAgQAg==
+DEFAULT_QUERY_AS_PB_BASE64 ?= ChQKEhoQCgQIBBgBEAIYAyIECODUAw==
 
 
 
 
 # TFLITE MICRO
 ## if a tflite micro model is wished to be used, add it in the tflite_model module and set USEMODULE += tflite_model
-USEMODULE += tflite_model
+#USEMODULE += tflite_model
 
 # MODULES
 USEMODULE += saul_default
@@ -77,7 +77,7 @@ USEPKG += nanopb
 
 ## we define below per board settings like sensors and modules available just because different boards have different sensors available
 ifeq ($(strip $(BOARD)),b-l072z-lrwan1)
-
+USEMODULE += hts221
 SENSOR_NAMES ?= hts221 hts221 
 SENSOR_TYPES ?= SAUL_SENSE_TEMP SAUL_SENSE_HUM
 FEATURES_REQUIRED += periph_eeprom 
@@ -118,6 +118,7 @@ SENSORS_TYPES_ARRAY ?= {$(subst $(space),$(comma),$(SENSOR_TYPES))}
 QUIET ?= 1
 
 ## Apply configuration
+CFLAGS += -DLOG_LEVEL=$(LOG_LEVEL)
 
 CFLAGS += -DEXECUTION_EPOCH_S=$(EXECUTION_EPOCH_S)
 CFLAGS += -DFORCED_LISTEN_EVERY_N_LOOP=$(FORCED_LISTEN_EVERY_N_LOOP)

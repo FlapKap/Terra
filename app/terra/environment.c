@@ -5,7 +5,8 @@
 typedef struct _EnvUnit
 {
     Number number;
-    bool valid;
+    bool fromQuery;
+    bool fromSensor;
 } EnvEntry;
 
 
@@ -16,36 +17,57 @@ void env_clear_env(void)
 {
     for (int i = 0; i < ENVIRONMENT_LEN; i++)
     {
-        envMemory[i].valid = false;
+        envMemory[i].number = (Number) {.type._uint32 = 0, .unionCase = NUMBER_UINT32};
+        envMemory[i].fromQuery = false;
+        envMemory[i].fromSensor = false;
     }
 }
 
 bool env_get_value(int index, Number* out)
 {
     assert(index >= 0 && index < ENVIRONMENT_LEN);
-    if (!envMemory[index].valid){
-        return false;
+    if (envMemory[index].fromQuery || envMemory[index].fromSensor){
+        *out = envMemory[index].number;
+        return true;
     }
     else {
-        *out = envMemory[index].number;
+        return false;
     }
-    return true;
 }
 
-void env_set_value(int index, Number val)
+bool env_get_query_value(int index, Number* out)
+{
+    assert(index >= 0 && index < ENVIRONMENT_LEN);
+    if (envMemory[index].fromQuery){
+        *out = envMemory[index].number;
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+void env_set_value(int index, const Number val)
 {
     assert(index >= 0 && index < ENVIRONMENT_LEN);
     envMemory[index].number = val;
-    envMemory[index].valid = true;
+    envMemory[index].fromQuery = true;
+}
+
+void env_set_sensor_value(int index, const Number val)
+{
+    assert(index >= 0 && index < ENVIRONMENT_LEN);
+    envMemory[index].number = val;
+    envMemory[index].fromSensor = true;
 }
 
 void env_print_env(void){
     printf("Environment (size: %d): \n", ENVIRONMENT_LEN);
     for (int i = 0; i < ENVIRONMENT_LEN; i++)
     {
-        if (envMemory[i].valid)
+        if (envMemory[i].fromQuery || envMemory[i].fromSensor)
         {
-            printf("  %d: ", i);
+            printf("  %d, source %s: ", i, envMemory[i].fromQuery ? "query" : "sensor");
             print_number_value_and_ucase(envMemory[i].number);
         }
     }

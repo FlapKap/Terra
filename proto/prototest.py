@@ -345,6 +345,8 @@ if __name__ == "__main__":
                                 on_attribute=0,
                                 as_attribute=1,
                             ),
+                            start_attribute=2,
+                            end_attribute=3,
                             tumbling=TumblingWindowOperation(size_ms=60000),
                         )
                     )

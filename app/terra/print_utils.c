@@ -377,15 +377,15 @@ void print_terraprotocol_message(const TerraProtocol_Message *message)
     }
 }
 
-void print_terraprotocol_query_response(const TerraProtocol_Output_QueryResponse *response)
-{
-    printf("Query Response (id: %" PRIi32 ", amount of instructions: %d):\n", response->id, response->response_count);
-    for (int i = 0; i < response->response_count; i++)
-    {
-        printf("Instruction %d:\n", i + 1);
-        print_terraprotocol_data(&response->response[i]);
-    }
-}
+// void print_terraprotocol_query_response(const TerraProtocol_Output_QueryResponse *response)
+// {
+//     printf("Query Response (id: %" PRIi32 ", amount of instructions: %d):\n", response->id, response->response_count);
+//     for (int i = 0; i < response->response_count; i++)
+//     {
+//         printf("Instruction %d:\n", i + 1);
+//         print_terraprotocol_data(&response->response[i]);
+//     }
+// }
 
 void print_terraprotocol_output_message(const TerraProtocol_Output *message)
 {
@@ -393,7 +393,8 @@ void print_terraprotocol_output_message(const TerraProtocol_Output *message)
     for (int i = 0; i < message->responses_count; i++)
     {
         printf("Response %d:\n", i + 1);
-        print_terraprotocol_query_response(&message->responses[i]);
+        //print_terraprotocol_query_response(&message->responses[i]);
+        print_terraprotocol_data(&message->responses[i]);
         printf("\n");
     }
 }

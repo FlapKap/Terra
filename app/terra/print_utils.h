@@ -28,7 +28,7 @@ void print_terraprotocol_window(const TerraProtocol_WindowOperation* window);
 void print_terraprotocol_operation(const TerraProtocol_Operation* operation);
 void print_terraprotocol_query(const TerraProtocol_Query* query);
 void print_terraprotocol_message(const TerraProtocol_Message* message);
-void print_terraprotocol_query_response(const TerraProtocol_Output_QueryResponse* response);
+//void print_terraprotocol_query_response(const TerraProtocol_Output_QueryResponse* response);
 void print_terraprotocol_output_message(const TerraProtocol_Output* message);
 #ifdef MODULE_PM_LAYERED
 void print_blockers(pm_blocker_t *blockers, size_t size);

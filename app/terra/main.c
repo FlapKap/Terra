@@ -150,7 +150,7 @@ static void startup(void)
 
 static void run_activities(void)
 {
-  ztimer_stopwatch_reset(&stopwatch); //we reset again as there might be some heavy printing done before which could mess with the timing
+  ztimer_stopwatch_reset(&stopwatch); // we reset again as there might be some heavy printing done before which could mess with the timing
   LOG_INFO("Running activities...\n");
 
   LOG_INFO("if any queries, or tflite model, collect measurements...\n");
@@ -158,9 +158,9 @@ static void run_activities(void)
   {
     LOG_INFO("queries there!");
   }
-  #ifdef MODULE_TFLITE_MODEL
-    LOG_INFO("tflite model there!");
-  #endif
+#ifdef MODULE_TFLITE_MODEL
+  LOG_INFO("tflite model there!");
+#endif
 
   if (msg.queries_count > 0 || IS_ACTIVE(MODULE_TFLITE_MODEL))
   {
@@ -169,23 +169,23 @@ static void run_activities(void)
     sensors_collect_into_array(sensor_reads, ARRAY_SIZE(sensor_reads));
   }
   sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
-  // Execute tflite model if there
-  #ifdef MODULE_TFLITE_MODEL
-  
-    // TFLITE MODEL INITIALIZATION
-    LOG_INFO("Initialize TFLITE model...\n");
-    if (!tflite_model_init())
-    {
-      LOG_DEBUG("Failed to initialize TFLITE model\n");
-    }
-    LOG_DEBUG("Running TFLITE model...\n");
-    tflite_model_run(sensor_reads, ARRAY_SIZE(sensor_reads), tflite_output, ARRAY_SIZE(tflite_output));
-    for (size_t j = ARRAY_SIZE(sensor_reads); j < ARRAY_SIZE(sensor_reads) + ARRAY_SIZE(tflite_output); j++)
-    {
-      env_set_value(j, tflite_output[j - ARRAY_SIZE(sensor_reads)]);
-    }
+// Execute tflite model if there
+#ifdef MODULE_TFLITE_MODEL
 
-  #endif
+  // TFLITE MODEL INITIALIZATION
+  LOG_INFO("Initialize TFLITE model...\n");
+  if (!tflite_model_init())
+  {
+    LOG_DEBUG("Failed to initialize TFLITE model\n");
+  }
+  LOG_DEBUG("Running TFLITE model...\n");
+  tflite_model_run(sensor_reads, ARRAY_SIZE(sensor_reads), tflite_output, ARRAY_SIZE(tflite_output));
+  for (size_t j = ARRAY_SIZE(sensor_reads); j < ARRAY_SIZE(sensor_reads) + ARRAY_SIZE(tflite_output); j++)
+  {
+    env_set_value(j, tflite_output[j - ARRAY_SIZE(sensor_reads)]);
+  }
+
+#endif
   exec_tflite_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
   if (msg.queries_count > 0)
@@ -194,44 +194,44 @@ static void run_activities(void)
     LOG_INFO("Execute Queries...\n");
     // play_syncword();
 
-    // for each query
+    // first copy sensor values into environment
+    // then for each query
     // 1. clear stack
-    // 2. clear env and copy sensor values into env
-    // 3. execute
-    // 4. copy values from env into output
-    int8_t response_id = 0;
+    // 2. execute
+
+    // then copy each value into output
+
+    env_clear_env();
+    for (uint8_t j = 0; j < ARRAY_SIZE(sensor_reads); j++)
+    {
+      env_set_sensor_value(j, sensor_reads[j]);
+    }
+    
+    bool cancelled = false;
     for (int8_t query_id = 0; query_id < msg.queries_count; query_id++)
     {
       // 1.
       stack_clear_stack(&stack);
       // 2.
-      env_clear_env();
-      for (uint8_t j = 0; j < ARRAY_SIZE(sensor_reads); j++)
+      if (!executeQuery(&msg.queries[query_id], &stack))
       {
-        env_set_value(j, sensor_reads[j]);
+        LOG_INFO("Query got cancelled: id %d\n", query_id);
+        cancelled = true;
+        break;
       }
-      // 3.
-      bool finished = executeQuery(&msg.queries[query_id], &stack);
-      printf("finished: %s\n", finished ? "true" : "false");
-      if (finished)
-      {
-        // get first free response field from output.
-        TerraProtocol_Output_QueryResponse *resp = &(out.responses[response_id]);
-        resp->id = query_id;
+    }
 
-        // 4. for each env value copy into response
-        for (int8_t env_idx = 0; env_idx < ENVIRONMENT_LEN; env_idx++)
+    // if cancelled, do nothing. if not, copy each value into output
+    if (!cancelled)
+    {
+      for (int8_t env_idx = 0; env_idx < ENVIRONMENT_LEN; env_idx++)
+      {
+        Number num;
+        if (env_get_query_value(env_idx, &num))
         {
-          Number num;
-          if (env_get_value(env_idx, &num))
-          {
-            copy_number_to_instruction(&num, &(resp->response[resp->response_count]));
-            ++resp->response_count;
-          }
+          copy_number_to_instruction(&num, &(out.responses[out.responses_count]));
+          ++out.responses_count;
         }
-        // increment response count and id
-        out.responses_count++;
-        response_id++;
       }
     }
   }
@@ -244,6 +244,9 @@ static void run_activities(void)
     LOG_INFO("Sending Responses...\n");
     uint8_t buffer[LORAWAN_APP_DATA_MAX_SIZE] = {0};
     size_t bytes_written;
+
+    print_terraprotocol_output_message(&out);
+
     serialization_serialize_output(&out, buffer, sizeof(buffer), &bytes_written);
     network_send_message(buffer, bytes_written);
   }
@@ -357,11 +360,11 @@ int main(void)
       conf_save_time_ms,
       sleep_time_s);
 
-  puts("sleeping");
+  puts("sleeping\n\n");
   disable_peripherals();
   rtc_get_time(&time);
   time.tm_sec += sleep_time_s;
-  rtc_set_alarm(&time, _rtc_alarm, NULL);
+  rtc_set_alarm(&time, _rtc_alarm, NULL); //NOTE: its not possible to set an alarm with a sub-second component. so there is gonna be drift due to this
 #ifdef CPU_ESP32
   pm_set(ESP_PM_DEEP_SLEEP);
 #else
