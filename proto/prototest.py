@@ -22,8 +22,10 @@ def print_protobuf_message(message: Message, name: str) -> None:
     print(
         f"Serialized As C Array:{byte_string_as_c_char_array(message.SerializeToString())}"
     )
-    
-    print(f"Serialized as 2 digit hex: {' '.join([f'{int(b):02x}' for b in message.SerializeToString()])}")
+
+    print(
+        f"Serialized as 2 digit hex: {' '.join([f'{int(b):02x}' for b in message.SerializeToString()])}"
+    )
     print(f"Serialized as dict:{message.to_dict()}")
     print(f"Serialized as base64:{base64.b64encode(message.SerializeToString())}")
 
@@ -39,9 +41,7 @@ if __name__ == "__main__":
                 operations=[
                     Operation(
                         MapOperation(
-                            Expression(
-                                [Data(instruction=Einstr.VAR), Data(_uint8=0)]
-                            ),
+                            Expression([Data(instruction=Einstr.VAR), Data(_uint8=0)]),
                             attribute=0,
                         )
                     )
@@ -56,7 +56,11 @@ if __name__ == "__main__":
                     Operation(
                         MapOperation(
                             Expression(
-                                [Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL)]
+                                [
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                ]
                             ),
                             attribute=1,
                         )
@@ -73,10 +77,17 @@ if __name__ == "__main__":
                     Operation(
                         MapOperation(
                             Expression(
-                                [Data(instruction=Einstr.VAR), Data(_uint8=0), Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
-                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), 
-                                 Data(instruction=Einstr.ABS)
-                                 ]
+                                [
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=1),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.ABS),
+                                ]
                             ),
                             attribute=2,
                         )
@@ -92,16 +103,34 @@ if __name__ == "__main__":
                     Operation(
                         MapOperation(
                             Expression(
-                                [Data(instruction=Einstr.VAR), Data(_uint8=0), Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
-                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
-                                 Data(instruction=Einstr.ABS),
-                                 Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
-                                 Data(instruction=Einstr.FLOOR),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.MOD),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.EXP),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.DIV),
-                                 Data(instruction=Einstr.CEIL),
-                                 ]
+                                [
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=1),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=2),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.ABS),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=50),
+                                    Data(instruction=Einstr.SUB),
+                                    Data(instruction=Einstr.FLOOR),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.MOD),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.EXP),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.CEIL),
+                                ]
                             ),
                             attribute=2,
                         )
@@ -117,29 +146,66 @@ if __name__ == "__main__":
                     Operation(
                         MapOperation(
                             Expression(
-                                [Data(instruction=Einstr.VAR), Data(_uint8=0), Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
-                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
-                                 Data(instruction=Einstr.ABS),
-                                 Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
-                                 Data(instruction=Einstr.FLOOR),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.MOD),
-                                 Data(instruction=Einstr.CEIL),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.EXP),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.DIV),
-                                 Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
-                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), 
-                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
-                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.MUL),
-                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.SUB),
-                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.DIV),
-                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.MUL),
-                                 Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
-                                 ]
+                                [
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=1),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=2),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.ABS),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=50),
+                                    Data(instruction=Einstr.SUB),
+                                    Data(instruction=Einstr.FLOOR),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.MOD),
+                                    Data(instruction=Einstr.CEIL),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.EXP),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=1),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=2),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=2),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=2),
+                                    Data(instruction=Einstr.SUB),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=2),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=2),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=2),
+                                    Data(instruction=Einstr.ADD),
+                                ]
                             ),
                             attribute=2,
                         )
                     ),
-                ])])
+                ]
+            )
+        ]
+    )
 
     messages["long_msg"] = Message(
         queries=[
@@ -148,36 +214,70 @@ if __name__ == "__main__":
                     Operation(
                         MapOperation(
                             Expression(
-                                [Data(instruction=Einstr.VAR), Data(_uint8=0), Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL),
-                                 Data(instruction=Einstr.VAR), Data(_uint8=1), Data(instruction=Einstr.DIV), Data(instruction=Einstr.CONST), Data(_uint8=2), Data(instruction=Einstr.ADD),
-                                 Data(instruction=Einstr.ABS),
-                                 Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.SUB),
-                                 Data(instruction=Einstr.FLOOR),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.MOD),
-                                 Data(instruction=Einstr.CEIL),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.EXP),
-                                 Data(instruction=Einstr.CONST), Data(_int8=2), Data(instruction=Einstr.DIV)]
+                                [
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=1),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=2),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.ABS),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=50),
+                                    Data(instruction=Einstr.SUB),
+                                    Data(instruction=Einstr.FLOOR),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.MOD),
+                                    Data(instruction=Einstr.CEIL),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.EXP),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.DIV),
+                                ]
                             ),
                             attribute=2,
                         )
                     ),
                     Operation(
                         filter=FilterOperation(
-                            predicate=Expression([
-                                Data(instruction=Einstr.CONST), Data(_int8=1),
-                                Data(instruction=Einstr.CONST), Data(_int8=1),
-                                Data(instruction=Einstr.CONST), Data(_int8=1),
-                                Data(instruction=Einstr.CONST), Data(_int8=1),
-                                Data(instruction=Einstr.CONST), Data(_int8=1),
-                                Data(instruction=Einstr.CONST), Data(_int8=1),
-                                Data(instruction=Einstr.CONST), Data(_int8=1),
-                                Data(instruction=Einstr.ADD),Data(instruction=Einstr.ADD),Data(instruction=Einstr.ADD),Data(instruction=Einstr.ADD),Data(instruction=Einstr.ADD),Data(instruction=Einstr.ADD),Data(instruction=Einstr.ADD),
-                                Data(instruction=Einstr.CONST), Data(_int8=1),
-                                Data(instruction=Einstr.LT)
-                            ]
+                            predicate=Expression(
+                                [
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=1),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=1),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=1),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=1),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=1),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=1),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=1),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=1),
+                                    Data(instruction=Einstr.LT),
+                                ]
                             )
                         )
-                    )
+                    ),
                 ]
             )
         ]
@@ -190,7 +290,11 @@ if __name__ == "__main__":
                     Operation(
                         filter=FilterOperation(
                             predicate=Expression(
-                                [Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.LT)]
+                                [
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.LT),
+                                ]
                             )
                         )
                     )
@@ -206,14 +310,22 @@ if __name__ == "__main__":
                     Operation(
                         map=MapOperation(
                             Expression(
-                                [Data(instruction=Einstr.CONST), Data(_uint8=8), Data(instruction=Einstr.MUL)]
+                                [
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                ]
                             )
                         )
                     ),
                     Operation(
                         filter=FilterOperation(
                             predicate=Expression(
-                                [Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.GT)]
+                                [
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=50),
+                                    Data(instruction=Einstr.GT),
+                                ]
                             )
                         )
                     ),
@@ -228,13 +340,12 @@ if __name__ == "__main__":
                 [
                     Operation(
                         window=WindowOperation(
-                            3,
-                            WindowSizeType.COUNTBASED,
-                            WindowAggregationType.COUNT,
-                            0,
-                            1,
-                            2,
-                            3,
+                            aggregation=Aggregation(
+                                aggregation_type=WindowAggregationType.COUNT,
+                                on_attribute=0,
+                                as_attribute=1,
+                            ),
+                            tumbling=TumblingWindowOperation(size_ms=60000),
                         )
                     )
                 ]
@@ -248,7 +359,9 @@ if __name__ == "__main__":
                 operations=[
                     Operation(
                         map=MapOperation(
-                            function=Expression([Data(instruction=Einstr.CONST), Data(_uint8=8)]),
+                            function=Expression(
+                                [Data(instruction=Einstr.CONST), Data(_uint8=8)]
+                            ),
                             attribute=0,
                         )
                     )
@@ -257,20 +370,21 @@ if __name__ == "__main__":
             Query(
                 [
                     Operation(
-                        window=WindowOperation(
-                            3,
-                            WindowSizeType.COUNTBASED,
-                            WindowAggregationType.COUNT,
-                            0,
-                            1,
-                            2,
-                            3,
+                        map=MapOperation(
+                            function=Expression(
+                                [Data(instruction=Einstr.CONST), Data(_uint8=8)]
+                            ),
+                            attribute=0,
                         )
                     ),
                     Operation(
                         filter=FilterOperation(
                             predicate=Expression(
-                                [Data(instruction=Einstr.CONST), Data(_int8=50), Data(instruction=Einstr.LT)]
+                                [
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=50),
+                                    Data(instruction=Einstr.LT),
+                                ]
                             )
                         )
                     ),

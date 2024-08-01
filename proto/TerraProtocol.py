@@ -41,11 +41,6 @@ class WindowAggregationType(betterproto.Enum):
     COUNT = 4
 
 
-class WindowSizeType(betterproto.Enum):
-    TIMEBASED = 0
-    COUNTBASED = 1
-
-
 @dataclass
 class Data(betterproto.Message):
     instruction: "ExpressionInstructions" = betterproto.enum_field(1, group="data")
@@ -89,14 +84,41 @@ class FilterOperation(betterproto.Message):
 
 
 @dataclass
+class Aggregation(betterproto.Message):
+    aggregation_type: "WindowAggregationType" = betterproto.enum_field(1)
+    on_attribute: int = betterproto.int32_field(2)
+    as_attribute: int = betterproto.int32_field(3)
+
+
+@dataclass
+class TumblingWindowOperation(betterproto.Message):
+    size_ms: int = betterproto.int32_field(1)
+
+
+@dataclass
+class SlidingWindowOperation(betterproto.Message):
+    size_ms: int = betterproto.int32_field(1)
+    slide_ms: int = betterproto.int32_field(2)
+
+
+@dataclass
+class ThresholdWindowOperation(betterproto.Message):
+    predicate: "Expression" = betterproto.message_field(1)
+    minimum_size: int = betterproto.int32_field(2)
+
+
+@dataclass
 class WindowOperation(betterproto.Message):
-    size: int = betterproto.int32_field(1)
-    size_type: "WindowSizeType" = betterproto.enum_field(2)
-    aggregation_type: "WindowAggregationType" = betterproto.enum_field(3)
-    start_attribute: int = betterproto.int32_field(4)
-    end_attribute: int = betterproto.int32_field(5)
-    result_attribute: int = betterproto.int32_field(6)
-    read_attribute: int = betterproto.int32_field(7)
+    aggregation: "Aggregation" = betterproto.message_field(1)
+    tumbling: "TumblingWindowOperation" = betterproto.message_field(
+        2, group="WindowOperation"
+    )
+    sliding: "SlidingWindowOperation" = betterproto.message_field(
+        3, group="WindowOperation"
+    )
+    threshold: "ThresholdWindowOperation" = betterproto.message_field(
+        4, group="WindowOperation"
+    )
 
 
 @dataclass
