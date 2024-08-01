@@ -158,10 +158,9 @@ static void run_activities(void)
   {
     LOG_INFO("queries there!");
   }
-  if (IS_ACTIVE(MODULE_TFLITE_MODEL))
-  {
+  #ifdef MODULE_TFLITE_MODEL
     LOG_INFO("tflite model there!");
-  }
+  #endif
 
   if (msg.queries_count > 0 || IS_ACTIVE(MODULE_TFLITE_MODEL))
   {
@@ -171,8 +170,8 @@ static void run_activities(void)
   }
   sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
   // Execute tflite model if there
-  if (IS_ACTIVE(MODULE_TFLITE_MODEL))
-  {
+  #ifdef MODULE_TFLITE_MODEL
+  
     // TFLITE MODEL INITIALIZATION
     LOG_INFO("Initialize TFLITE model...\n");
     if (!tflite_model_init())
@@ -185,7 +184,8 @@ static void run_activities(void)
     {
       env_set_value(j, tflite_output[j - ARRAY_SIZE(sensor_reads)]);
     }
-  }
+
+  #endif
   exec_tflite_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
   if (msg.queries_count > 0)
