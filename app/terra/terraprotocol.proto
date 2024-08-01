@@ -99,10 +99,12 @@ message ThresholdWindowOperation {
 
 message WindowOperation {
     Aggregation aggregation = 1;
+    int32 startAttribute = 2;
+    int32 endAttribute = 3;
     oneof WindowOperation {
-        TumblingWindowOperation tumbling = 2;
-        SlidingWindowOperation sliding = 3;
-        ThresholdWindowOperation threshold = 4;
+        TumblingWindowOperation tumbling = 4;
+        SlidingWindowOperation sliding = 5;
+        ThresholdWindowOperation threshold = 6;
     }
 }
 
