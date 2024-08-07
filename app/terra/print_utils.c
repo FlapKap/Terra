@@ -4,25 +4,46 @@
 #include "lorawan.h"
 #include "serialization.h"
 
+void print_window_data(WindowData *window_data)
+{
+    printf("Window data: Aggregation value: ");
+    print_number_value_and_ucase(window_data->aggregation_value);
+    printf(", Start value: ");
+    print_number_value_and_ucase(window_data->start_value);
+    printf(", End value: ");
+    print_number_value_and_ucase(window_data->end_value);
+    printf(", Count: %" PRIu32, window_data->count);
+    switch (window_data->state)
+    {
+    case WINDOW_STATE_NOT_INITIALIZED:
+        printf(", State: Not initialized\n");
+        break;
+    case WINDOW_STATE_RUNNING:
+        printf(", State: Running\n");
+        break;
+    case WINDOW_STATE_FINISHED:
+        printf(", State: Finished\n");
+        break;
+    default:
+        printf(", State: Unknown\n");
+    }
+}
+
 void print_configuration(TerraConfiguration *config)
 {
     printf(
         "---Configuration start ---\n"
-        "Loop counter: %" PRIu32 "\n",
-        config->loop_counter);
-    if (config->raw_message_size > 0)
+        "Loop counter: %" PRIu32 "\n"
+        "Raw message size: %" PRIu8 "\n",
+        config->loop_counter,
+        config->raw_message_size);
+    
+    printf("WindowData count: %d\n", MAX_WINDOW_OPERATORS);
+    for (size_t i = 0; i < MAX_WINDOW_OPERATORS; i++)
     {
-        TerraProtocol_Message message = TerraProtocol_Message_init_zero;
-        serialization_deserialize_message(config->raw_message_buffer, config->raw_message_size, &message);
-        if (message.queries_count > 0)
-        {
-            print_terraprotocol_message(&message);
-        }
-        else
-        {
-            printf("Empty message\n");
-        }
+        print_window_data(&config->window_data[i]);
     }
+    
 
 #if !(defined(APPLICATION_RUN_TEST) || defined(DISABLE_LORA))
     lorawan_print_connection_info();

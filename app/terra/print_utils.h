@@ -10,6 +10,7 @@
 #endif
 
 void print_configuration(TerraConfiguration* config);
+void print_window_data(WindowData* window_data);
 void print_terraprotocol_expression_instruction(TerraProtocol_ExpressionInstructions instr);
 void print_terraprotocol_data(const TerraProtocol_Data* instr);
 void print_terraprotocol_data_array(const TerraProtocol_Data* instruction, size_t size);

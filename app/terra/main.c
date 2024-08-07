@@ -89,8 +89,7 @@ static Stack stack = {
     .stack_memory = {{}},
     .top = -1};
 
-static const uint32_t timeout_ms = EXECUTION_EPOCH_S * 1000;
-static int32_t sleep_time_s = 0;
+static const uint32_t timeout_ms = EXECUTION_EPOCH_S * MS_PER_SEC;
 // tracking stuff
 static ztimer_stopwatch_t stopwatch = {0};
 
@@ -103,9 +102,15 @@ static int32_t sensor_collect_time_ms = -1;
 static int32_t exec_tflite_time_ms = -1;
 static int32_t exec_query_time_ms = -1;
 static int32_t sync_word_time_ms = -1;
-static int32_t listen_time_ms = -1;
 static int32_t send_time_ms = -1;
 static int32_t conf_save_time_ms = -1;
+
+static inline int32_t get_sleep_time_ms(void)
+{
+  return timeout_ms - (conf_load_time_ms + deserialize_msg_ms + sensor_init_time_ms + net_init_time_ms +
+                       sensor_collect_time_ms + exec_tflite_time_ms + exec_query_time_ms + sync_word_time_ms +
+                       send_time_ms + conf_save_time_ms);
+}
 
 static void startup(void)
 {
@@ -114,7 +119,7 @@ static void startup(void)
   print_build_info();
   print_device_info();
   configuration_load(&config, &loramac);
-
+  print_configuration(&config);
   conf_load_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
   // DESERIALIZE MESSAGE
@@ -123,6 +128,7 @@ static void startup(void)
   {
     LOG_INFO("Message there! Deserializing...\n");
     bool res = serialization_deserialize_message(config.raw_message_buffer, config.raw_message_size, &msg);
+    print_terraprotocol_message(&msg);
     if (!res)
     {
       LOG_ERROR("Failed to deserialize\n");
@@ -132,11 +138,11 @@ static void startup(void)
   deserialize_msg_ms = ztimer_stopwatch_reset(&stopwatch);
 
   // SENSOR INITIALIZATION
-  sensors_print_available();
+  //sensors_print_available();
   sensors_initialize_enabled();
   sensor_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
-  LOG_INFO("enabled sensors\n");
-  sensors_print_enabled();
+  // LOG_INFO("enabled sensors\n");
+  // sensors_print_enabled();
 
   // NETWORK INITIALIZATION
   network_initialize_network();
@@ -144,13 +150,11 @@ static void startup(void)
   net_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
   LOG_INFO("Startup complete. Loaded config\n");
-  print_configuration(&config);
   // network_send_heartbeat();
 }
 
 static void run_activities(void)
 {
-  ztimer_stopwatch_reset(&stopwatch); // we reset again as there might be some heavy printing done before which could mess with the timing
   LOG_INFO("Running activities...\n");
 
   LOG_INFO("if any queries, or tflite model, collect measurements...\n");
@@ -206,7 +210,7 @@ static void run_activities(void)
     {
       env_set_sensor_value(j, sensor_reads[j]);
     }
-    
+
     bool cancelled = false;
     for (int8_t query_id = 0; query_id < msg.queries_count; query_id++)
     {
@@ -266,12 +270,7 @@ static void run_activities(void)
   }
   send_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
-  // figure out how long the iteration took and sleep for the remaining time
-  // Note: since the default values are negative, they might subtract from the total if not set. however -1 ms is negligible so it is ignored
-  int sleep_time_ms_tmp = timeout_ms - (sync_word_time_ms + listen_time_ms + sensor_collect_time_ms + (exec_tflite_time_ms + exec_query_time_ms) + send_time_ms);
-  uint32_t sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
-  // convert sleep_time_ms to second
-  sleep_time_s = sleep_time_ms / 1000;
+
   LOG_INFO("Done with everything\n");
   ++config.loop_counter;
 }
@@ -334,6 +333,14 @@ int main(void)
   teardown();
   ztimer_release(ZTIMER_MSEC);
 
+
+    // figure out how long the iteration took and sleep for the remaining time
+  // Note: since the default values are negative, they might subtract from the total if not set. however -1 ms is negligible so it is ignored
+  int sleep_time_ms_tmp = get_sleep_time_ms();
+  uint32_t sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
+  // convert sleep_time_ms to second
+  uint32_t sleep_time_s = sleep_time_ms / MS_PER_SEC;
+
   LOG_INFO(
       "TIMINGS> Loop: %" PRIi32 ", "
       "Sync: %" PRIi32 " ms, "
@@ -364,7 +371,7 @@ int main(void)
   disable_peripherals();
   rtc_get_time(&time);
   time.tm_sec += sleep_time_s;
-  rtc_set_alarm(&time, _rtc_alarm, NULL); //NOTE: its not possible to set an alarm with a sub-second component. so there is gonna be drift due to this
+  rtc_set_alarm(&time, _rtc_alarm, NULL); // NOTE: its not possible to set an alarm with a sub-second component. so there is gonna be drift due to this
 #ifdef CPU_ESP32
   pm_set(ESP_PM_DEEP_SLEEP);
 #else

@@ -79,7 +79,8 @@
 			"xtimer.h": "c",
 			"scd30_params.h": "c",
 			"sps30.h": "c",
-			"scd30_internal.h": "c"
+			"scd30_internal.h": "c",
+			"inttypes.h": "c"
 		}
 	}
 }

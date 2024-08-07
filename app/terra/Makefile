@@ -47,7 +47,7 @@ DEFAULT_QUERY_AS_PB_BASE64 ?= ChQKEhoQCgQIBBgBEAIYAyIECODUAw==
 
 # TFLITE MICRO
 ## if a tflite micro model is wished to be used, add it in the tflite_model module and set USEMODULE += tflite_model
-#USEMODULE += tflite_model
+USEMODULE += tflite_model
 
 # MODULES
 USEMODULE += saul_default
