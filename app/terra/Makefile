@@ -29,7 +29,7 @@ LORAMAC_DEFAULT_RX1_DELAY ?= "(5000U)" # TTN default
 LORAMAC_DEFAULT_RX2_DR ?= LORAMAC_DR_3 # TTN default
 LORAMAC_DEFAULT_SYSTEM_MAX_RX_ERROR ?= 150
 
-LOG_LEVEL ?= LOG_DEBUG
+LOG_LEVEL ?= LOG_INFO
 
 # Different build configurations. Optimized builds run without any debug symbols and with o3 optimizations
 APPLICATION_BUILD_OPTIMIZED = 0
@@ -40,7 +40,7 @@ APPLICATION_RUN_TEST ?= 0
 
 # Default query to run, if any.
 
-DEFAULT_QUERY_AS_PB_BASE64 ?= ChQKEhoQCgQIBBgBEAIYAyIECODUAw==
+#DEFAULT_QUERY_AS_PB_BASE64 ?= ChQKEhoQCgQIBBgBEAIYAyIECODUAw==
 
 
 

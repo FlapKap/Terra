@@ -355,6 +355,27 @@ if __name__ == "__main__":
         ]
     )
 
+    messages["window_10_min_msg"] = Message(
+        queries=[
+            Query(
+                [
+                    Operation(
+                        window=WindowOperation(
+                            aggregation=Aggregation(
+                                aggregation_type=WindowAggregationType.COUNT,
+                                on_attribute=0,
+                                as_attribute=1,
+                            ),
+                            start_attribute=2,
+                            end_attribute=3,
+                            tumbling=TumblingWindowOperation(size_ms=600000),
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+
     messages["multiple_msg"] = Message(
         queries=[
             Query(
