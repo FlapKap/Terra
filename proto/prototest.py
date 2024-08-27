@@ -396,6 +396,70 @@ if __name__ == "__main__":
             )
         ]
     )
+
+    messages["window_16_min_msg"] = Message(
+        queries=[
+            Query(
+                [
+                    Operation(
+                        window=WindowOperation(
+                            aggregation=Aggregation(
+                                aggregation_type=WindowAggregationType.COUNT,
+                                on_attribute=0,
+                                as_attribute=1,
+                            ),
+                            start_attribute=2,
+                            end_attribute=3,    
+                            tumbling=TumblingWindowOperation(size_ms=960000),
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+
+    messages["window_8_min_msg"] = Message(
+        queries=[
+            Query(
+                [
+                    Operation(
+                        window=WindowOperation(
+                            aggregation=Aggregation(
+                                aggregation_type=WindowAggregationType.COUNT,
+                                on_attribute=0,
+                                as_attribute=1,
+                            ),
+                            start_attribute=2,
+                            end_attribute=3,    
+                            tumbling=TumblingWindowOperation(size_ms=480000),
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+
+    messages["window_4_min_msg"] = Message(
+        queries=[
+            Query(
+                [
+                    Operation(
+                        window=WindowOperation(
+                            aggregation=Aggregation(
+                                aggregation_type=WindowAggregationType.COUNT,
+                                on_attribute=0,
+                                as_attribute=1,
+                            ),
+                            start_attribute=2,
+                            end_attribute=3,
+                            tumbling=TumblingWindowOperation(size_ms=240000),
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+
     messages["window_2_min_msg"] = Message(
         queries=[
             Query(

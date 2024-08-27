@@ -138,8 +138,14 @@ static void startup(void)
   deserialize_msg_ms = ztimer_stopwatch_reset(&stopwatch);
 
   // SENSOR INITIALIZATION
+  // only initialize if there is a query to run
   //sensors_print_available();
-  sensors_initialize_enabled();
+  if (msg.queries_count > 0 || IS_ACTIVE(MODULE_TFLITE_MODEL))
+  {
+    sensors_initialize_enabled();
+  }
+  
+
   sensor_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
   // LOG_INFO("enabled sensors\n");
   // sensors_print_enabled();

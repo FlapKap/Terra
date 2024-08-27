@@ -86,7 +86,7 @@ static void executeTumblingWindow(TerraProtocol_TumblingWindowOperation *tumblin
   // TODO: right now we have RTC so we could do this properly
   uint32_t current_time = window_data->count * (EXECUTION_EPOCH_S * MS_PER_SEC);
   uint32_t next_execution_time = current_time + (EXECUTION_EPOCH_S * MS_PER_SEC);
-  bool last_execution = next_execution_time > tumbling->size_ms;
+  bool last_execution = next_execution_time >= tumbling->size_ms; //the >= essentially means windows are exclusive right? so if next execution time matches exactly then this is still the last execution so we finish and wont include the next
   LOG_INFO("Current time: %" PRIu32 " Next execution time: %" PRIu32 " Last execution: %s\n", current_time, next_execution_time, last_execution ? "true" : "false");
   if (current_time <= (uint32_t)tumbling->size_ms)
   {
