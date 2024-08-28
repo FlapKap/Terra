@@ -35,7 +35,7 @@ if __name__ == "__main__":
     messages = {}
 
     messages["empty_msg"] = Message(queries=[])
-    messages["map_short_msg"] = Message(
+    messages["map_16byte_msg"] = Message(
         queries=[
             Query(
                 operations=[
@@ -49,6 +49,105 @@ if __name__ == "__main__":
             )
         ]
     )
+
+    messages["map_32byte_msg"] = Message(
+        queries=[
+            Query(
+                operations=[
+                    Operation(
+                        MapOperation(
+                            Expression(
+                                [
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.FLOOR),
+                                ]
+                            ),
+                            attribute=0,
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+    messages["map_64byte_msg"] = Message(
+        queries=[
+            Query(
+                operations=[
+                    Operation(
+                        MapOperation(
+                            Expression(
+                                [
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.FLOOR),
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=1),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.ABS),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.FLOOR),
+                                ]
+                            ),
+                            attribute=0,
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+    messages["map_114byte_msg"] = Message(
+        queries=[
+            Query(
+                operations=[
+                    Operation(
+                        MapOperation(
+                            Expression(
+                                [
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=1),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=2),
+                                    Data(instruction=Einstr.ADD),
+                                    Data(instruction=Einstr.ABS),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=50),
+                                    Data(instruction=Einstr.SUB),
+                                    Data(instruction=Einstr.FLOOR),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.MOD),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.EXP),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_int8=2),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.CEIL),
+                                ]
+                            ),
+                            attribute=2,
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+
     messages["map_msg"] = Message(
         queries=[
             Query(
@@ -374,7 +473,7 @@ if __name__ == "__main__":
                 ]
             )
         ]
-)
+    )
 
     messages["window_10_min_msg"] = Message(
         queries=[
@@ -409,7 +508,7 @@ if __name__ == "__main__":
                                 as_attribute=1,
                             ),
                             start_attribute=2,
-                            end_attribute=3,    
+                            end_attribute=3,
                             tumbling=TumblingWindowOperation(size_ms=960000),
                         )
                     )
@@ -430,7 +529,7 @@ if __name__ == "__main__":
                                 as_attribute=1,
                             ),
                             start_attribute=2,
-                            end_attribute=3,    
+                            end_attribute=3,
                             tumbling=TumblingWindowOperation(size_ms=480000),
                         )
                     )
