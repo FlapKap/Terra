@@ -261,6 +261,7 @@ static void run_activities(void)
     network_send_message(buffer, bytes_written);
   }
   // if no responses, send heartbeat if we haven't sent one for n loops.
+  // NOTE: we dont check if we have a query to run or not. This means this will only trigger on first loop and then every n loops. If N is high it will take a long time to get a query if we miss the first one.
   else if (config.loop_counter % FORCED_LISTEN_EVERY_N_LOOP == 0)
   {
     network_send_heartbeat();
