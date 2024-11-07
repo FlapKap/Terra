@@ -35,6 +35,21 @@ if __name__ == "__main__":
     messages = {}
 
     messages["empty_msg"] = Message(queries=[])
+    messages["map_tflite_msg"] = Message(
+        queries=[
+            Query(
+                operations=[
+                    Operation(
+                        MapOperation(
+                            Expression([Data(instruction=Einstr.VAR), Data(_uint8=2)]),
+                            attribute=0,
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+
     messages["map_16byte_msg"] = Message(
         queries=[
             Query(
@@ -73,6 +88,33 @@ if __name__ == "__main__":
             )
         ]
     )
+    messages["map_46byte_msg"] = Message(
+        queries=[
+            Query(
+                operations=[
+                    Operation(
+                        MapOperation(
+                            Expression(
+                                [
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=256),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=256),
+                                    Data(instruction=Einstr.DIV),
+                                    Data(instruction=Einstr.FLOOR),
+                                ]
+                            ),
+                            attribute=0,
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+
     messages["map_64byte_msg"] = Message(
         queries=[
             Query(
@@ -104,7 +146,7 @@ if __name__ == "__main__":
             )
         ]
     )
-    messages["map_114byte_msg"] = Message(
+    messages["map_128byte_msg"] = Message(
         queries=[
             Query(
                 operations=[
@@ -121,26 +163,107 @@ if __name__ == "__main__":
                                     Data(_uint8=1),
                                     Data(instruction=Einstr.DIV),
                                     Data(instruction=Einstr.CONST),
-                                    Data(_uint8=2),
-                                    Data(instruction=Einstr.ADD),
-                                    Data(instruction=Einstr.ABS),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
                                     Data(instruction=Einstr.CONST),
-                                    Data(_int8=50),
-                                    Data(instruction=Einstr.SUB),
-                                    Data(instruction=Einstr.FLOOR),
-                                    Data(instruction=Einstr.CONST),
-                                    Data(_int8=2),
-                                    Data(instruction=Einstr.MOD),
-                                    Data(instruction=Einstr.CONST),
-                                    Data(_int8=2),
-                                    Data(instruction=Einstr.EXP),
-                                    Data(instruction=Einstr.CONST),
-                                    Data(_int8=2),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=1),
                                     Data(instruction=Einstr.DIV),
-                                    Data(instruction=Einstr.CEIL),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.FLOOR)
+
                                 ]
                             ),
-                            attribute=2,
+                            attribute=0,
+                        )
+                    )
+                ]
+            )
+        ]
+    )
+    
+    messages["map_214byte_msg"] = Message(
+        queries=[
+            Query(
+                operations=[
+                    Operation(
+                        MapOperation(
+                            Expression(
+                                [                                    
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=512),
+                                    Data(instruction=Einstr.MUL),
+
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=1),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=1),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=512),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=1),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+
+                                    Data(instruction=Einstr.VAR),
+                                    Data(_uint8=0),
+                                    Data(instruction=Einstr.CONST),
+                                    Data(_uint8=8),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.MUL),
+                                    Data(instruction=Einstr.MUL),
+                                    # Data(instruction=Einstr.FLOOR),
+                                    # Data(instruction=Einstr.CEIL)
+                                ]
+                            ),
+                            attribute=0,
                         )
                     )
                 ]

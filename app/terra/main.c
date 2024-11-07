@@ -139,12 +139,11 @@ static void startup(void)
 
   // SENSOR INITIALIZATION
   // only initialize if there is a query to run
-  //sensors_print_available();
-  if (msg.queries_count > 0 || IS_ACTIVE(MODULE_TFLITE_MODEL))
+  // sensors_print_available();
+  if (msg.queries_count > 0)
   {
     sensors_initialize_enabled();
   }
-  
 
   sensor_init_time_ms = ztimer_stopwatch_reset(&stopwatch);
   // LOG_INFO("enabled sensors\n");
@@ -163,16 +162,16 @@ static void run_activities(void)
 {
   LOG_INFO("Running activities...\n");
 
-  LOG_INFO("if any queries, or tflite model, collect measurements...\n");
+  LOG_INFO("if any queries, collect measurements...\n");
   if (msg.queries_count > 0)
   {
     LOG_INFO("queries there!");
-  }
+  } 
 #ifdef MODULE_TFLITE_MODEL
   LOG_INFO("tflite model there!");
 #endif
 
-  if (msg.queries_count > 0 || IS_ACTIVE(MODULE_TFLITE_MODEL))
+  if (msg.queries_count > 0)
   {
     // Collect measurements
     LOG_INFO("collecting measurements...\n");
@@ -181,7 +180,8 @@ static void run_activities(void)
   sensor_collect_time_ms = ztimer_stopwatch_reset(&stopwatch);
 // Execute tflite model if there
 #ifdef MODULE_TFLITE_MODEL
-
+if (msg.queries_count > 0) // however only execute if we have a query. If not we would never be able to transfer any result
+  {
   // TFLITE MODEL INITIALIZATION
   LOG_INFO("Initialize TFLITE model...\n");
   if (!tflite_model_init())
@@ -190,11 +190,7 @@ static void run_activities(void)
   }
   LOG_DEBUG("Running TFLITE model...\n");
   tflite_model_run(sensor_reads, ARRAY_SIZE(sensor_reads), tflite_output, ARRAY_SIZE(tflite_output));
-  for (size_t j = ARRAY_SIZE(sensor_reads); j < ARRAY_SIZE(sensor_reads) + ARRAY_SIZE(tflite_output); j++)
-  {
-    env_set_value(j, tflite_output[j - ARRAY_SIZE(sensor_reads)]);
   }
-
 #endif
   exec_tflite_time_ms = ztimer_stopwatch_reset(&stopwatch);
 
@@ -216,6 +212,14 @@ static void run_activities(void)
     {
       env_set_sensor_value(j, sensor_reads[j]);
     }
+// also copy tflite output if there
+#ifdef MODULE_TFLITE_MODEL
+    for (size_t j = ARRAY_SIZE(sensor_reads); j < ARRAY_SIZE(sensor_reads) + ARRAY_SIZE(tflite_output); j++)
+    {
+      LOG_DEBUG("copying result from  tflite_output[%d] to %d\n", j - ARRAY_SIZE(sensor_reads), j);
+      env_set_sensor_value(j, tflite_output[j - ARRAY_SIZE(sensor_reads)]);
+    }
+#endif
 
     bool cancelled = false;
     for (int8_t query_id = 0; query_id < msg.queries_count; query_id++)
@@ -276,7 +280,6 @@ static void run_activities(void)
     }
   }
   send_time_ms = ztimer_stopwatch_reset(&stopwatch);
-
 
   LOG_INFO("Done with everything\n");
   ++config.loop_counter;
@@ -340,8 +343,7 @@ int main(void)
   teardown();
   ztimer_release(ZTIMER_MSEC);
 
-
-    // figure out how long the iteration took and sleep for the remaining time
+  // figure out how long the iteration took and sleep for the remaining time
   // Note: since the default values are negative, they might subtract from the total if not set. however -1 ms is negligible so it is ignored
   int sleep_time_ms_tmp = get_sleep_time_ms();
   uint32_t sleep_time_ms = MAX(sleep_time_ms_tmp, 0);
