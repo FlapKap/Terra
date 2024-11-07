@@ -1,1 +1,5 @@
 terraprotocol.proto long_names:false mangle_names:M_NONE enum_to_string:false
+TerraProtocol.Output.responses max_count:16
+TerraProtocol.Expression.instructions max_count:50
+TerraProtocol.Query.operations max_count:2
+TerraProtocol.Message.queries max_count:1

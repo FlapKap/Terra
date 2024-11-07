@@ -1,7 +1,6 @@
 // This file is a direct copy of: https://github.com/FlapKap/nebulastream-ed-runtime/blob/main/proto/EndDeviceProtocol.proto
 
 syntax = "proto3";
-import "nanopb.proto";
 
 package TerraProtocol;
 
@@ -49,11 +48,11 @@ message Data {
 }
 
 message Output {
-    repeated Data responses = 1 [(nanopb).max_count = 16];
+    repeated Data responses = 1;
 }
 
 message Expression {
-    repeated Data instructions = 1 [(nanopb).max_count = 50];
+    repeated Data instructions = 1;
 }
 
 message MapOperation {
@@ -114,9 +113,9 @@ message Operation {
 
 message Query {
     //bytes resultType = 2; //For some reason minipb breaks if I make this a repeated enum or int32
-    repeated Operation operations = 1 [(nanopb).max_count = 2];   
+    repeated Operation operations = 1;   
 }
 
 message Message {
-    repeated Query queries = 1 [(nanopb).max_count = 1];
+    repeated Query queries = 1;
 }
